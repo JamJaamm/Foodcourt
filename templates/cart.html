@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Checkout{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/cart.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="cart-layout">
+  <div class="container">
+    
+    <div class="row g-4" id="cart-nonempty-view">
+      
+      <!-- Left Column — Order Summary -->
+      <div class="col-lg-7">
+        
+        <!-- Cart Card: Items list -->
+        <div class="cart-card">
+          <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+            <h3 class="cart-card-title mb-0"><i class="fa-solid fa-basket-shopping text-primary"></i>Your Order Items</h3>
+            <button class="fc-btn fc-btn-outline fc-btn-sm" onclick="clearFullCart()" id="clear-cart-btn" style="border-color: var(--danger); color: var(--danger);">
+              <i class="fa-solid fa-trash-can me-1"></i> Clear Cart
+            </button>
+          </div>
+          
+          <div id="checkout-items-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Cart Card: Promo Code -->
+        <div class="cart-card">
+          <h3 class="cart-card-title"><i class="fa-solid fa-ticket text-primary"></i>Promo Code</h3>
+          <div class="promo-input-group">
+            <input type="text" class="promo-input" id="promo-code-input" placeholder="Enter promo code (e.g. SAVE10)">
+            <button class="fc-btn fc-btn-primary" onclick="applyPromoCode()">Apply</button>
+          </div>
+          <div class="promo-feedback" id="promo-feedback-message"></div>
+        </div>
+
+        <!-- Cart Card: Totals breakdown -->
+        <div class="cart-card">
+          <h3 class="cart-card-title"><i class="fa-solid fa-receipt text-primary"></i>Order Summary</h3>
+          <div class="checkout-totals-list">
+            <div class="checkout-totals-row">
+              <span>Subtotal</span>
+              <span id="checkout-subtotal">$0.00</span>
+            </div>
+            <div class="checkout-totals-row">
+              <span>Delivery Fee</span>
+              <span id="checkout-delivery">$0.00</span>
+            </div>
+            <div class="checkout-totals-row text-success fw-bold d-none" id="discount-row">
+              <span>Discount (<span id="discount-code-label">SAVE10</span>)</span>
+              <span id="checkout-discount">-$0.00</span>
+            </div>
+            <div class="checkout-totals-row grand-total">
+              <span>Grand Total</span>
+              <span id="checkout-total">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column — Checkout Form -->
+      <div class="col-lg-5">
+        
+        <!-- Cart Card: Delivery Details -->
+        <div class="cart-card">
+          <h3 class="cart-card-title"><i class="fa-solid fa-location-dot text-primary"></i>Delivery Address</h3>
+          
+          <div id="saved-addresses-container">
+            <!-- Rendered by JS from mock saved addresses -->
+          </div>
+
+          <div class="form-floating-custom mt-3">
+            <input type="text" id="delivery-address-manual" placeholder="Or enter a different address..." style="font-size:13px;padding:12px 14px;">
+          </div>
+        </div>
+
+        <!-- Cart Card: Delivery Time -->
+        <div class="cart-card">
+          <h3 class="cart-card-title"><i class="fa-regular fa-clock text-primary"></i>Delivery Time</h3>
+          <div class="form-floating-custom mb-3">
+            <select id="delivery-time-select" onchange="toggleScheduledTime(this)">
+              <option value="asap">Deliver as soon as possible (ASAP)</option>
+              <option value="schedule">Schedule for later</option>
+            </select>
+          </div>
+          <div class="form-floating-custom d-none" id="scheduled-time-wrap">
+            <input type="datetime-local" id="delivery-time-picker">
+          </div>
+        </div>
+
+        <!-- Cart Card: Payment Method -->
+        <div class="cart-card">
+          <h3 class="cart-card-title"><i class="fa-regular fa-credit-card text-primary"></i>Payment Method</h3>
+          
+          <div class="payment-tabs">
+            <button class="payment-tab-btn active" id="pay-tab-card" onclick="switchPaymentMethod('card')">
+              <i class="fa-solid fa-credit-card d-block mb-1"></i> Credit Card
+            </button>
+            <button class="payment-tab-btn" id="pay-tab-cash" onclick="switchPaymentMethod('cash')">
+              <i class="fa-solid fa-hand-holding-dollar d-block mb-1"></i> Cash on Delivery
+            </button>
+            <button class="payment-tab-btn" id="pay-tab-wallet" onclick="switchPaymentMethod('wallet')">
+              <i class="fa-solid fa-wallet d-block mb-1"></i> Digital Wallet
+            </button>
+          </div>
+
+          <!-- Credit Card details -->
+          <div id="payment-card-details">
+            <form id="credit-card-form" onsubmit="event.preventDefault()">
+              <div class="form-floating-custom">
+                <input type="text" id="cc-number" placeholder="Card Number" maxlength="19" required>
+              </div>
+              <div class="card-form-grid">
+                <div class="form-floating-custom">
+                  <input type="text" id="cc-expiry" placeholder="MM/YY" maxlength="5" required>
+                </div>
+                <div class="form-floating-custom">
+                  <input type="text" id="cc-cvv" placeholder="CVV" maxlength="3" required>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Cash on Delivery notice -->
+          <div class="d-none text-muted text-center py-3" id="payment-cash-details" style="font-size:13px;">
+            <p class="mb-0">💵 You can pay with cash or card directly to our courier upon arrival.</p>
+          </div>
+
+          <!-- Digital Wallet choice -->
+          <div class="d-none" id="payment-wallet-details">
+            <button class="fc-btn w-100 py-3 mb-2" style="background:#000;color:#fff;border-radius:var(--radius-md);font-weight:700;">
+               Pay with Apple Pay
+            </button>
+            <button class="fc-btn w-100 py-3" style="background:#4285F4;color:#fff;border-radius:var(--radius-md);font-weight:700;">
+              <i class="fa-brands fa-google me-1"></i> Pay with Google Pay
+            </button>
+          </div>
+        </div>
+
+        <!-- Place Order Button -->
+        <button class="fc-btn fc-btn-primary fc-btn-lg w-100 py-3 mt-2" id="place-order-btn" onclick="submitOrder()" style="font-size:16px;font-weight:800;">
+          Place Order <span id="btn-total-label">$0.00</span>
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- Empty Cart View -->
+    <div class="empty-state d-none" id="cart-empty-view">
+      <div class="empty-state-emoji">🛒</div>
+      <h3 class="empty-state-title">Your Cart is Empty</h3>
+      <p class="empty-state-desc">You haven't added any items to your cart yet. Visit our restaurants page to discover delicious food!</p>
+      <a href="/restaurants/" class="fc-btn fc-btn-primary">Browse Restaurants</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SUCCESS OVERLAY MODAL
+     ═══════════════════════════════════════════ -->
+<div class="success-overlay" id="checkout-success-overlay">
+  <div class="success-card">
+    <div class="success-checkmark">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    
+    <h3 style="font-family:var(--font-display);font-weight:800;font-size:26px;color:var(--text-primary);margin-bottom:12px;">Order Placed! 🎉</h3>
+    <p class="text-secondary" style="font-size:14px;line-height:1.6;margin-bottom:24px;">Your order has been received and is being prepared with love. Your order number is <strong style="color:var(--primary)" id="success-order-id">FC-2024-0847</strong>.</p>
+    
+    <div class="d-flex flex-column gap-2">
+      <a href="/tracking/" class="fc-btn fc-btn-primary w-100 py-3" style="font-weight:700;">
+        <i class="fa-solid fa-map-location-dot me-1"></i> Track Your Order
+      </a>
+      <a href="/dashboard/" class="fc-btn fc-btn-outline w-100 py-3" style="font-weight:600;">
+        Go to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.FOODCOURT_USER = {
+  isAuthenticated: {{ request.user.is_authenticated|lower }},
+  name: "{{ request.user.first_name }}"
+};
+window.FOODCOURT_USER_ADDRESSES = {{ user_addresses_json|safe }};
+</script>
+<script src="{% static 'js/cart.js' %}"></script>
+{% endblock %}

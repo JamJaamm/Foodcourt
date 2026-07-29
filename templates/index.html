@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Delicious Food, Delivered Fast{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/index.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════
+     HERO SECTION
+═══════════════════════════════════════════ -->
+<section class="hero" style="margin-top:calc(-1 * var(--navbar-h));padding-top:calc(var(--navbar-h) + 60px);">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="container">
+    <div class="row align-items-center g-5">
+
+      <!-- Left: text -->
+      <div class="col-lg-6 hero-content">
+        <div class="hero-eyebrow">
+          <span>🔥</span>
+          <span>Now delivering in 500+ cities</span>
+        </div>
+
+        <h1 class="hero-headline">
+          Delicious Food,<br>
+          <span class="highlight">Delivered Fast</span><br>
+          To Your Door
+        </h1>
+
+        <p class="hero-sub">
+          Order from the best local restaurants with blazing-fast delivery, live tracking, and a seamless experience you'll love every time.
+        </p>
+
+        <div class="hero-ctas">
+          <a href="/restaurants/" class="fc-btn fc-btn-primary fc-btn-lg" id="hero-order-btn">
+            <i class="fa-solid fa-bag-shopping"></i> Order Now
+          </a>
+          <a href="#how-it-works" class="fc-btn fc-btn-lg" style="background:rgba(255,255,255,0.1);color:#fff;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);">
+            <i class="fa-solid fa-play"></i> How It Works
+          </a>
+        </div>
+
+        <!-- Search -->
+        <div class="hero-search-wrap">
+          <form class="hero-search" id="hero-search-form" onsubmit="heroSearch(event)">
+            <i class="fa-solid fa-magnifying-glass hero-search-icon"></i>
+            <input type="text" class="hero-search-input" id="hero-search-input" placeholder="Search for food or restaurants...">
+            <div class="hero-search-divider"></div>
+            <i class="fa-solid fa-location-dot" style="color:var(--primary);margin-right:6px;font-size:14px;"></i>
+            <input type="text" class="hero-search-loc" placeholder="Your location">
+            <button type="submit" class="hero-search-btn">
+              <i class="fa-solid fa-magnifying-glass me-1"></i> Search
+            </button>
+          </form>
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-num" data-count="500">0</div>
+            <div class="hero-stat-label">Restaurants</div>
+          </div>
+          <div class="hero-stat-sep"></div>
+          <div>
+            <div class="hero-stat-num" data-count="30">0<span style="font-size:1rem">min</span></div>
+            <div class="hero-stat-label">Avg. Delivery</div>
+          </div>
+          <div class="hero-stat-sep"></div>
+          <div>
+            <div class="hero-stat-num" data-count="50">0<span style="font-size:1rem">k+</span></div>
+            <div class="hero-stat-label">Happy Customers</div>
+          </div>
+          <div class="hero-stat-sep"></div>
+          <div>
+            <div class="hero-stat-num">4.9<i class="fa-solid fa-star" style="color:var(--warning);font-size:1.2rem;margin-left:4px;"></i></div>
+            <div class="hero-stat-label">App Rating</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: floating visual -->
+      <div class="col-lg-6 d-none d-lg-flex justify-content-center">
+        <div class="hero-float-area w-100">
+          <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&q=80"
+               alt="Delicious food" class="hero-main-img" loading="eager">
+
+          <!-- Floating card 1 -->
+          <div class="hero-float-card card-1">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=40&q=80"
+                   style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">
+              <div>
+                <div style="font-size:12px;font-weight:700;">The Burger Lab</div>
+                <div style="font-size:10px;opacity:0.6;">🚴 22 min away</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="color:var(--warning);font-size:11px;">★★★★★</span>
+              <span style="font-size:10px;opacity:0.7;">4.8 (1.8k)</span>
+            </div>
+          </div>
+
+          <!-- Floating card 2 -->
+          <div class="hero-float-card card-2">
+            <div style="font-size:11px;opacity:0.6;margin-bottom:6px;">🛵 Your order is on the way!</div>
+            <div style="display:flex;gap:4px;margin-bottom:8px;">
+              <div style="flex:1;height:4px;background:var(--primary);border-radius:4px;"></div>
+              <div style="flex:1;height:4px;background:var(--primary);border-radius:4px;"></div>
+              <div style="flex:1;height:4px;background:rgba(255,255,255,0.2);border-radius:4px;"></div>
+              <div style="flex:1;height:4px;background:rgba(255,255,255,0.2);border-radius:4px;"></div>
+            </div>
+            <div style="font-size:10px;opacity:0.7;">ETA: <strong style="color:var(--accent)">8 minutes</strong></div>
+          </div>
+
+          <!-- Floating card 3 -->
+          <div class="hero-float-card card-3" style="width:165px;">
+            <div style="font-size:22px;margin-bottom:6px;">🎉</div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:2px;">Order Delivered!</div>
+            <div style="font-size:10px;opacity:0.6;">Rate your experience</div>
+            <div style="color:var(--warning);font-size:14px;margin-top:6px;">★★★★★</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CATEGORIES SECTION
+═══════════════════════════════════════════ -->
+<section class="categories-section">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-4 reveal">
+      <div>
+        <span class="eyebrow">Browse by Type</span>
+        <h2 class="section-title mt-1" style="font-size:clamp(1.5rem,3vw,2.2rem)">What Are You<br>Craving Today?</h2>
+      </div>
+      <a href="/restaurants/" class="fc-btn fc-btn-outline fc-btn-sm">
+        View All <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+    <div class="categories-scroll reveal-group" id="categories-container">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FEATURED RESTAURANTS
+═══════════════════════════════════════════ -->
+<section class="featured-section">
+  <div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-5 reveal">
+      <div>
+        <span class="eyebrow">Top Picks Near You</span>
+        <h2 class="section-title mt-1" style="font-size:clamp(1.5rem,3vw,2.2rem)">Featured<br>Restaurants</h2>
+      </div>
+      <a href="/restaurants/" class="fc-btn fc-btn-outline fc-btn-sm d-none d-md-flex">
+        See All <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 reveal-group" id="featured-restaurants">
+      <!-- Skeleton shown first, then replaced by JS -->
+    </div>
+    <div class="text-center mt-4 d-md-none">
+      <a href="/restaurants/" class="fc-btn fc-btn-outline">See All Restaurants <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════ -->
+<section class="how-section" id="how-it-works">
+  <div class="container">
+    <div class="text-center mb-5 reveal">
+      <span class="eyebrow">Simple & Fast</span>
+      <h2 class="section-title mt-2">How FoodCourt Works</h2>
+      <p class="section-subtitle mx-auto">From craving to doorstep in three simple steps.</p>
+    </div>
+    <div class="row g-4 g-lg-5 position-relative reveal-group">
+      <div class="col-md-4 step-col">
+        <div class="step-card reveal">
+          <div class="step-num">1</div>
+          <div class="step-icon">🔍</div>
+          <h5 class="step-title">Browse Restaurants</h5>
+          <p class="step-desc">Discover hundreds of top-rated local restaurants, filter by cuisine, rating, and delivery time.</p>
+          <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="col-md-4 step-col">
+        <div class="step-card reveal">
+          <div class="step-num">2</div>
+          <div class="step-icon">🛒</div>
+          <h5 class="step-title">Choose Your Food</h5>
+          <p class="step-desc">Pick your favourite dishes, customise your order and add everything to your cart in seconds.</p>
+          <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+        </div>
+      </div>
+      <div class="col-md-4 step-col">
+        <div class="step-card reveal">
+          <div class="step-num">3</div>
+          <div class="step-icon">🚀</div>
+          <h5 class="step-title">Fast Delivery</h5>
+          <p class="step-desc">Track your order live as it gets picked up and delivered to your door, piping hot.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     PROMO BANNER
+═══════════════════════════════════════════ -->
+<section style="padding:0 0 var(--space-20);">
+  <div class="container">
+    <div class="reveal" style="background:linear-gradient(135deg,var(--secondary) 0%,#252550 100%);border-radius:var(--radius-xl);padding:48px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px;position:relative;overflow:hidden;">
+      <div style="position:absolute;right:-40px;top:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,107,53,0.2),transparent);border-radius:50%;pointer-events:none;"></div>
+      <div>
+        <div style="display:inline-block;background:rgba(255,107,53,0.15);border:1px solid rgba(255,107,53,0.3);color:var(--primary-light);padding:4px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-bottom:12px;">🎉 Limited Offer</div>
+        <h3 style="font-family:var(--font-display);font-weight:800;color:#fff;font-size:clamp(1.4rem,3vw,2rem);margin-bottom:8px;">First order? Get 20% off!</h3>
+        <p style="color:rgba(255,255,255,0.6);font-size:15px;margin:0;">Use code <strong style="color:var(--primary-light);background:rgba(255,107,53,0.15);padding:2px 10px;border-radius:6px;">FIRST20</strong> at checkout</p>
+      </div>
+      <a href="/restaurants/" class="fc-btn fc-btn-primary fc-btn-lg" style="flex-shrink:0;">
+        Order Now <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     TESTIMONIALS
+═══════════════════════════════════════════ -->
+<section class="testimonials-section">
+  <div class="container">
+    <div class="text-center mb-5 reveal">
+      <span class="eyebrow" style="color:var(--primary-light);">Customer Love</span>
+      <h2 class="section-title mt-2" style="color:#fff;">What People Are Saying</h2>
+      <p class="section-subtitle mx-auto" style="color:rgba(255,255,255,0.55);">Don't take our word for it — hear from our happy customers.</p>
+    </div>
+    <div class="row g-4 reveal-group" id="testimonials-container">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CTA SECTION
+═══════════════════════════════════════════ -->
+<section class="cta-section">
+  <div class="container cta-inner reveal">
+    <div style="font-size:56px;margin-bottom:16px;">🍕🍔🍣</div>
+    <h2 class="cta-title">Ready to Order?</h2>
+    <p class="cta-sub">Join 50,000+ food lovers already using FoodCourt. Your next great meal is one tap away.</p>
+    <div class="cta-btns">
+      <a href="/restaurants/" class="cta-btn-white">
+        <i class="fa-solid fa-bag-shopping"></i> Start Ordering
+      </a>
+      <a href="/register/" class="cta-btn-outline-white">
+        <i class="fa-solid fa-user-plus"></i> Create Free Account
+      </a>
+    </div>
+    <div style="margin-top:32px;display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.8);font-size:14px;"><i class="fa-solid fa-check-circle"></i> No monthly fees</div>
+      <div style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.8);font-size:14px;"><i class="fa-solid fa-check-circle"></i> Free delivery on first order</div>
+      <div style="display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.8);font-size:14px;"><i class="fa-solid fa-check-circle"></i> 24/7 customer support</div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/index.js' %}"></script>
+{% endblock %}

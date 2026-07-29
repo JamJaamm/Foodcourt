@@ -1,0 +1,156 @@
+/* ============================================================
+   FoodCourt — Base / Global Styles
+   ============================================================ */
+
+/* ── Reset & Box Model ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--font-regular);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background-color: var(--bg);
+  min-height: 100%;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+a  { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+a:hover { color: var(--primary); }
+ul, ol { list-style: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
+
+/* ── Selection ── */
+::selection { background: var(--primary-glow); color: var(--primary-dark); }
+
+/* ── Focus ── */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+}
+
+h1 { font-size: clamp(2rem, 5vw, var(--text-6xl)); }
+h2 { font-size: clamp(1.75rem, 4vw, var(--text-5xl)); }
+h3 { font-size: clamp(1.5rem, 3vw, var(--text-4xl)); }
+h4 { font-size: clamp(1.25rem, 2.5vw, var(--text-3xl)); }
+h5 { font-size: clamp(1.1rem, 2vw, var(--text-2xl)); }
+h6 { font-size: clamp(1rem, 1.5vw, var(--text-xl)); }
+
+p { color: var(--text-secondary); line-height: var(--leading-relaxed); }
+
+small { font-size: var(--text-xs); }
+
+/* ── Utilities ── */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, #FFD166 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-cool {
+  background: linear-gradient(135deg, var(--accent) 0%, #3B82F6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+}
+
+.gradient-bg-dark {
+  background: linear-gradient(135deg, var(--secondary) 0%, #2D2D5E 100%);
+}
+
+.section-pad  { padding: var(--space-24) 0; }
+.section-pad-sm { padding: var(--space-16) 0; }
+
+.container-narrow { max-width: var(--content-max); margin: 0 auto; }
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-weight: var(--font-black);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.section-subtitle {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  max-width: 560px;
+}
+
+/* ── Dividers ── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-8) 0;
+}
+
+/* ── Overflow scroll ── */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.scroll-x::-webkit-scrollbar { display: none; }
+
+/* ── Aspect ratios ── */
+.aspect-video     { aspect-ratio: 16/9; }
+.aspect-square    { aspect-ratio: 1; }
+.aspect-restaurant { aspect-ratio: 4/3; }
+
+/* ── Object fit ── */
+.object-cover { object-fit: cover; width: 100%; height: 100%; }
+
+/* ── Page padding for navbar ── */
+.page-content { padding-top: var(--navbar-h); }
+
+/* ── Responsive helpers ── */
+@media (max-width: 576px) {
+  .section-pad { padding: var(--space-16) 0; }
+}

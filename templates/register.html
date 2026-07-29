@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Register{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="auth-container">
+  
+  <!-- Left Split Panel: Brand details (desktop only) -->
+  <div class="auth-brand-panel">
+    <div style="font-size:48px;margin-bottom:20px;">✨</div>
+    <h1 class="auth-brand-title">Join 50,000+<br>food lovers.</h1>
+    <p class="auth-brand-tagline">Create an account to unlock premium features like customized diet preferences, double rewards points, and faster checkouts.</p>
+    
+    <!-- Testimonial card float mockup -->
+    <div class="testimonial-card mt-5 reveal" style="max-width:380px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12)">
+      <div style="color:var(--warning);font-size:11px;margin-bottom:8px;">★★★★★</div>
+      <p style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85);font-style:italic;">"The account features are amazing. I can save multiple work/home addresses and reorder my weekly protein bowls in just one tap. Love it!"</p>
+      <div class="d-flex align-items-center gap-2 mt-3">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&q=80" style="width:32px;height:32px;border-radius:50%;object-fit:cover" alt="">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#fff;">Sarah Mitchell</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4)">New York</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Split Panel: Form Card -->
+  <div class="auth-form-panel">
+    <div class="auth-card reveal">
+      
+      <div class="auth-header">
+        <h2 class="auth-title">Create Account</h2>
+        <p class="auth-subtitle">Join us to start ordering delicious food</p>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-danger mb-4" style="border-radius: var(--radius-md); font-size: var(--text-sm);">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error }}
+      </div>
+      {% endif %}
+
+      <!-- Credentials Form -->
+      <form method="POST" onsubmit="handleRegisterFormSubmit(event)">
+        {% csrf_token %}
+        <!-- Name row (2 columns) -->
+        <div class="row g-2 mb-3">
+          <div class="col-6" style="position:relative">
+            <i class="fa-regular fa-user auth-input-icon"></i>
+            <input type="text" class="auth-input" name="first_name" id="reg-fname" placeholder="First Name" value="{{ form_data.first_name|default:'' }}" required style="padding-left:40px;">
+          </div>
+          <div class="col-6" style="position:relative">
+            <input type="text" class="auth-input" name="last_name" id="reg-lname" placeholder="Last Name" value="{{ form_data.last_name|default:'' }}" required style="padding-left:16px;">
+          </div>
+        </div>
+
+        <!-- Email Input -->
+        <div class="auth-form-group">
+          <i class="fa-regular fa-envelope auth-input-icon"></i>
+          <input type="email" class="auth-input" name="email" id="reg-email" placeholder="Email Address" value="{{ form_data.email|default:'' }}" required>
+        </div>
+
+        <!-- Phone Input -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-phone auth-input-icon"></i>
+          <input type="text" class="auth-input" name="phone" id="reg-phone" placeholder="Phone Number" value="{{ form_data.phone|default:'' }}">
+        </div>
+
+        <!-- Password Input with strength meter -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" name="password" id="reg-password" placeholder="Password" oninput="checkPasswordStrength(this.value)" required>
+          <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-password', this)" tabindex="-1">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+          
+          <div class="pw-strength-container" id="pw-strength-meter">
+            <div class="pw-strength-bar"></div>
+            <div class="pw-strength-bar"></div>
+            <div class="pw-strength-bar"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px;font-weight:600;" id="pw-strength-label">Password strength</div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" name="confirm_password" id="reg-confirm-password" placeholder="Confirm Password" required>
+          <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)" tabindex="-1">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+
+        <hr>
+        <p style="text-align: center; font-family: 'Courier New', Courier, monospace, 'Times New Roman', Times, serif,cursive; margin-bottom: 12px;"><b>OR SIGN-UP WITH</b></p>
+        <div class="auth-social-row">
+          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+            <i class="fa-brands fa-google text-danger"></i> Google
+          </button>
+          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+            <i class="fa-brands fa-apple text-dark"></i> Apple
+          </button>
+          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+            <i class="fa-brands fa-facebook text-primary"></i> Facebook
+          </button>
+          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+            <i class="fa-brands fa-x-twitter text-primary"></i> X
+          </button>
+        </div>
+
+        <!-- Terms terms checkboxes -->
+        <div class="auth-form-footer justify-content-start mb-4">
+          <label class="d-flex align-items-center gap-2 text-secondary" style="cursor:pointer;line-height:1.4;">
+            <input type="checkbox" id="reg-terms" required>
+            <span>I agree to the <a href="#" class="text-primary fw-semibold text-decoration-none">Terms of Service</a> & <a href="#" class="text-primary fw-semibold text-decoration-none">Privacy Policy</a></span>
+          </label>
+        </div>
+
+        <!-- Submit CTA -->
+        <button type="submit" class="fc-btn fc-btn-primary fc-btn-lg w-100 py-3 mt-2" id="reg-submit-btn" style="font-weight:700;">
+          Create Account
+        </button>
+      </form>
+
+      <!-- Toggle auth card page links -->
+      <div class="text-center mt-4 text-secondary" style="font-size:13px;">
+        Already have an account? <a href="/login/" class="text-primary fw-bold text-decoration-none">Sign In</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function checkPasswordStrength(password) {
+    const bars = document.querySelectorAll('#pw-strength-meter .pw-strength-bar');
+    const label = document.getElementById('pw-strength-label');
+    
+    // Reset strength bars
+    bars.forEach(b => {
+      b.className = 'pw-strength-bar';
+    });
+
+    if (!password) {
+      label.textContent = 'Password strength';
+      return;
+    }
+
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
+
+    if (strength === 1) {
+      bars[0].classList.add('weak');
+      label.textContent = 'Weak password (try adding numbers/symbols) ⚠️';
+      label.style.color = 'var(--danger)';
+    } else if (strength === 2) {
+      bars[0].classList.add('fair');
+      bars[1].classList.add('fair');
+      label.textContent = 'Fair password (add a special character) 👍';
+      label.style.color = 'var(--warning)';
+    } else if (strength === 3) {
+      bars[0].classList.add('strong');
+      bars[1].classList.add('strong');
+      bars[2].classList.add('strong');
+      label.textContent = 'Strong password! 🚀';
+      label.style.color = 'var(--success)';
+    }
+  }
+
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-regular fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-regular fa-eye';
+    }
+  }
+
+  function handleRegisterFormSubmit(event) {
+    const p1 = document.getElementById('reg-password').value;
+    const p2 = document.getElementById('reg-confirm-password').value;
+
+    if (p1 !== p2) {
+      event.preventDefault();
+      Toast.show('Passwords do not match!', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('reg-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Registering...`;
+  }
+</script>
+{% endblock %}

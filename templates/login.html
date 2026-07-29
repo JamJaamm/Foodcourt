@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Login{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="auth-container">
+  
+  <!-- Left Split Panel: Brand details (desktop only) -->
+  <div class="auth-brand-panel">
+    <div style="font-size:48px;margin-bottom:20px;">🔥</div>
+    <h1 class="auth-brand-title">Your next great meal<br>is one tap away.</h1>
+    <p class="auth-brand-tagline">Sign in to order from the best local kitchens, track delivery in real time, and earn points on every bite.</p>
+    
+    <div class="auth-feature-list">
+      <div class="auth-feature-item">
+        <div class="auth-feature-icon"><i class="fa-solid fa-check"></i></div>
+        <span>Discover 500+ curated premium local restaurants</span>
+      </div>
+      <div class="auth-feature-item">
+        <div class="auth-feature-icon"><i class="fa-solid fa-check"></i></div>
+        <span>Avg. 30 minutes lightning-fast delivery to your door</span>
+      </div>
+      <div class="auth-feature-item">
+        <div class="auth-feature-icon"><i class="fa-solid fa-check"></i></div>
+        <span>Interactive maps with live courier coordinate tracking</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Split Panel: Form Card -->
+  <div class="auth-form-panel">
+    <div class="auth-card reveal">
+      
+      <div class="auth-header">
+        <h2 class="auth-title">Welcome Back</h2>
+        <p class="auth-subtitle">Enter your details to sign in</p>
+      </div>
+
+      <!-- Social Logins -->
+      <div class="auth-social-row">
+        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+          <i class="fa-brands fa-google text-danger"></i> Google
+        </button>
+        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+          <i class="fa-brands fa-apple text-dark"></i> Apple
+        </button>
+        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+          <i class="fa-brands fa-facebook text-primary"></i> Phone
+        </button>
+        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
+          <i class="fa-brands fa-x-twitter text-primary"></i> X
+        </button>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-danger mb-4" style="border-radius: var(--radius-md); font-size: var(--text-sm);">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error }}
+      </div>
+      {% endif %}
+
+      <!-- Credentials Form -->
+      <form method="POST" onsubmit="showLoadingSpinner(this)">
+        {% csrf_token %}
+        <!-- Email Input -->
+        <div class="auth-form-group">
+          <i class="fa-regular fa-envelope auth-input-icon"></i>
+          <input type="email" class="auth-input" name="email" id="login-email" placeholder="Email Address" value="{{ email_val|default:'' }}" required>
+        </div>
+
+        <!-- Password Input -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" name="password" id="login-password" placeholder="Password" required>
+        </div>
+
+        <!-- Form footer controls -->
+        <div class="auth-form-footer">
+          <label class="d-flex align-items-center gap-1 text-secondary" style="cursor:pointer;">
+            <input type="checkbox" name="remember_me" id="login-remember"> Remember me
+          </label>
+          <a href="#" class="text-primary fw-semibold text-decoration-none" onclick="Toast.show('Password reset link sent to your email!', 'info')">Forgot Password?</a>
+        </div>
+
+        <!-- Submit CTA -->
+        <button type="submit" class="fc-btn fc-btn-primary fc-btn-lg w-100 py-3 mt-2" id="login-submit-btn" style="font-weight:700;">
+          Sign In
+        </button>
+      </form>
+
+      <!-- Toggle auth card page links -->
+      <div class="text-center mt-4 text-secondary" style="font-size:13px;">
+        Don't have an account? <a href="/register/" class="text-primary fw-bold text-decoration-none">Sign Up</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function showLoadingSpinner(form) {
+    const btn = document.getElementById('login-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Signing In...`;
+  }
+</script>
+{% endblock %}

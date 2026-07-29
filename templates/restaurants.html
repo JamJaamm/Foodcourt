@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Find the Best Local Restaurants{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/restaurants.css' %}">
+{% endblock %}
+
+{% block content %}
+
+
+<div class="filter-bar">
+  <div class="container">
+    <div class="filter-bar-inner">
+      <!-- Search & Sort Row -->
+      <div class="filter-bar-row">
+        <div class="filter-search-wrap">
+          <i class="fa-solid fa-magnifying-glass filter-search-icon"></i>
+          <input type="text" class="filter-search-input" id="restaurants-search-input" placeholder="Search by restaurant or cuisine...">
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+          <select class="filter-sort-select" id="restaurants-sort-select">
+            <option value="default">Sort by: Popular</option>
+            <option value="rating">Top Rated</option>
+            <option value="deliveryTime">Fastest Delivery</option>
+            <option value="minOrder">Lowest Min. Order</option>
+            <option value="distance">Nearest</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Categories row -->
+      <div class="filter-pills-scroll" id="filter-pills-container">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Toggles & Stats Row -->
+      <div class="filter-bar-row pt-1">
+        <div class="filter-toggles-row">
+          <label class="filter-checkbox-btn">
+            <input type="checkbox" id="toggle-free-delivery">
+            <span class="filter-checkbox-label">🏍️ Free Delivery</span>
+          </label>
+          <label class="filter-checkbox-btn">
+            <input type="checkbox" id="toggle-open-now">
+            <span class="filter-checkbox-label">🟢 Open Now</span>
+          </label>
+          <label class="filter-checkbox-btn">
+            <input type="checkbox" id="toggle-top-rated">
+            <span class="filter-checkbox-label">⭐ Top Rated (4.7+)</span>
+          </label>
+          <label class="filter-checkbox-btn">
+            <input type="checkbox" id="toggle-vegetarian">
+            <span class="filter-checkbox-label">🥗 Vegetarian Options</span>
+          </label>
+        </div>
+
+        <div class="filter-results-count" id="results-count">
+          Showing 12 restaurants
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     RESTAURANTS GRID
+     ═══════════════════════════════════════════ -->
+<section class="restaurants-container">
+  <div class="container">
+    
+    <!-- Restaurants Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 reveal-group" id="restaurants-grid">
+      <!-- Skeletons shown here on load, then replaced by JS -->
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state d-none" id="restaurants-empty-state">
+      <div class="empty-state-emoji">🔍</div>
+      <h3 class="empty-state-title">No Restaurants Found</h3>
+      <p class="empty-state-desc">We couldn't find any restaurants matching your search. Try resetting your filters or typing something else.</p>
+      <button class="fc-btn fc-btn-primary" onclick="resetFilters()">Reset All Filters</button>
+    </div>
+
+    <!-- Pagination -->
+    <div class="fc-pagination" id="restaurants-pagination">
+      <button class="fc-btn fc-btn-outline fc-btn-icon" disabled><i class="fa-solid fa-chevron-left"></i></button>
+      <span class="text-secondary fw-semibold">Page 1 of 1</span>
+      <button class="fc-btn fc-btn-outline fc-btn-icon" disabled><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/restaurants.js' %}"></script>
+{% endblock %}

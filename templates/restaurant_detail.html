@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Order from {{ restaurant.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/restaurant_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════
+     HERO BANNER
+     ═══════════════════════════════════════════ -->
+<section class="rd-hero" style="margin-top:calc(-1 * var(--navbar-h));padding-top:var(--navbar-h);">
+  <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&q=80" alt="Restaurant Banner" class="rd-hero-img" id="rd-hero-img">
+  <div class="rd-hero-overlay">
+    <div class="container">
+      <div class="rd-hero-info">
+        <h1 class="rd-name" id="rd-name">Loading Restaurant...</h1>
+        <p class="rd-description" id="rd-description">...</p>
+        
+        <div class="rd-meta-row">
+          <span class="rd-meta-item">
+            <i class="fa-solid fa-star text-warning"></i>
+            <span id="rd-rating">4.8</span>
+            <span style="opacity:0.7" id="rd-reviews-count">(1,200 reviews)</span>
+          </span>
+          <span class="rd-meta-item">
+            <i class="fa-regular fa-clock"></i>
+            <span id="rd-delivery-time">25 min</span>
+          </span>
+          <span class="rd-meta-item">
+            <i class="fa-solid fa-motorcycle"></i>
+            <span id="rd-delivery-fee">Free delivery</span>
+          </span>
+          <span class="rd-meta-item" id="rd-open-status">
+            <i class="fa-solid fa-circle text-success" style="font-size:10px"></i> Open Now
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     STICKY MENU TABS
+     ═══════════════════════════════════════════ -->
+<div class="rd-menu-tabs-wrapper">
+  <div class="container">
+    <div class="rd-menu-tabs" id="rd-menu-tabs-container">
+      <!-- Tabs like Starters, Mains, Desserts, Drinks will be rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LAYOUT: MENU & CART
+     ═══════════════════════════════════════════ -->
+<section class="rd-layout">
+  <div class="container">
+    <div class="row g-4">
+      
+      <!-- Left Column: Menu sections & Reviews -->
+      <div class="col-lg-8">
+        
+        <!-- Menu sections -->
+        <div id="menu-container">
+          <!-- Rendered dynamically by JS -->
+        </div>
+
+        <hr style="border-color:var(--border);margin:var(--space-12) 0;">
+
+        <!-- Reviews section -->
+        <h3 class="rd-section-title" id="reviews-section"><i class="fa-regular fa-star me-2"></i>Customer Reviews</h3>
+        
+        <!-- Summary cards -->
+        <div class="rd-reviews-summary mb-5">
+          <div class="rd-reviews-big-rating">
+            <div id="reviews-summary-avg">4.8</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-top:4px;">out of 5 stars</div>
+          </div>
+          
+          <div class="rd-review-bars">
+            <div class="rd-review-bar-row">
+              <span style="width:40px;text-align:right;">5 ★</span>
+              <div class="rd-review-bar"><div class="rd-review-bar-fill" style="width:85%"></div></div>
+              <span style="width:30px;opacity:0.7;">85%</span>
+            </div>
+            <div class="rd-review-bar-row">
+              <span style="width:40px;text-align:right;">4 ★</span>
+              <div class="rd-review-bar"><div class="rd-review-bar-fill" style="width:10%"></div></div>
+              <span style="width:30px;opacity:0.7;">10%</span>
+            </div>
+            <div class="rd-review-bar-row">
+              <span style="width:40px;text-align:right;">3 ★</span>
+              <div class="rd-review-bar"><div class="rd-review-bar-fill" style="width:3%"></div></div>
+              <span style="width:30px;opacity:0.7;">3%</span>
+            </div>
+            <div class="rd-review-bar-row">
+              <span style="width:40px;text-align:right;">2 ★</span>
+              <div class="rd-review-bar"><div class="rd-review-bar-fill" style="width:1%"></div></div>
+              <span style="width:30px;opacity:0.7;">1%</span>
+            </div>
+            <div class="rd-review-bar-row">
+              <span style="width:40px;text-align:right;">1 ★</span>
+              <div class="rd-review-bar"><div class="rd-review-bar-fill" style="width:1%"></div></div>
+              <span style="width:30px;opacity:0.7;">1%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comments list -->
+        <div id="reviews-comments-list">
+          <!-- Rendered by JS -->
+        </div>
+
+      </div>
+
+      <!-- Right Column: Sticky Cart Sidebar -->
+      <div class="col-lg-4">
+        <div class="rd-cart-card" id="rd-cart-sidebar">
+          <h4 class="rd-cart-title">
+            <span>🛒 Your Order</span>
+            <span class="fc-badge fc-badge-accent cart-badge" style="font-size:12px;">0</span>
+          </h4>
+          
+          <div class="rd-cart-items" id="rd-cart-items-container">
+            <!-- Dynamic rows of cart items -->
+          </div>
+
+          <!-- Empty state -->
+          <div class="text-center py-5" id="rd-cart-empty-state">
+            <div style="font-size:36px;margin-bottom:8px;">🛍️</div>
+            <div class="fw-semibold text-secondary mb-1">Your cart is empty</div>
+            <div class="text-muted" style="font-size:12px">Choose delicious food from the menu to start ordering!</div>
+          </div>
+
+          <div class="d-none" id="rd-cart-nonempty-state">
+            <div class="rd-cart-totals">
+              <div class="rd-cart-total-row">
+                <span>Subtotal</span>
+                <span id="rd-cart-subtotal">$0.00</span>
+              </div>
+              <div class="rd-cart-total-row">
+                <span>Delivery Fee</span>
+                <span id="rd-cart-delivery">$0.00</span>
+              </div>
+              <div class="rd-cart-total-row grand-total">
+                <span>Total</span>
+                <span id="rd-cart-total">$0.00</span>
+              </div>
+            </div>
+
+            <a href="/cart/" class="fc-btn fc-btn-primary w-100 py-3" style="font-weight:700;">
+              Go to Checkout <i class="fa-solid fa-arrow-right ms-1"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/restaurant_detail.js' %}"></script>
+{% endblock %}

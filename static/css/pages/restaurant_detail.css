@@ -1,0 +1,437 @@
+/* ============================================================
+   FoodCourt — Restaurant Detail (restaurant_detail.css)
+   ============================================================ */
+
+/* ── Hero Banner ── */
+.rd-hero {
+  position: relative;
+  height: 380px;
+  overflow: hidden;
+  background: var(--secondary);
+}
+
+.rd-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+  transform: scale(1.05);
+  transition: transform var(--transition-slow);
+}
+
+.rd-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 100%);
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: var(--space-8);
+  color: #fff;
+}
+
+.rd-hero-info {
+  width: 100%;
+}
+
+.rd-name {
+  font-family: var(--font-display);
+  font-weight: var(--font-black);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.15;
+  margin-bottom: var(--space-2);
+}
+
+.rd-description {
+  font-size: var(--text-base);
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+}
+
+.rd-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+}
+
+.rd-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(4px);
+}
+
+/* ── Sticky Tab Bar ── */
+.rd-menu-tabs-wrapper {
+  position: sticky;
+  top: var(--navbar-h);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border);
+  z-index: var(--z-sticky);
+}
+
+.rd-menu-tabs {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: var(--space-3) 0;
+}
+
+.rd-menu-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.rd-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  color: var(--text-secondary);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--transition-fast);
+}
+
+.rd-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.rd-tab-btn.active {
+  color: var(--primary);
+}
+
+.rd-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--primary);
+  border-radius: var(--radius-full) var(--radius-full) 0 0;
+}
+
+/* ── Layout & Sidebar ── */
+.rd-layout {
+  padding: var(--space-8) 0 var(--space-20);
+}
+
+/* Food cards */
+.rd-section-title {
+  font-family: var(--font-display);
+  font-weight: var(--font-bold);
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-5);
+  margin-top: var(--space-10);
+}
+
+.rd-section:first-child .rd-section-title {
+  margin-top: 0;
+}
+
+.fc-food-card {
+  display: flex;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-spring), box-shadow var(--transition-base);
+  height: 100%;
+}
+
+.fc-food-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.fd-img {
+  width: 130px;
+  height: 100%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.fd-body {
+  flex: 1;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.fd-name {
+  font-weight: var(--font-bold);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.fd-price {
+  font-weight: var(--font-bold);
+  font-size: var(--text-base);
+  color: var(--primary);
+}
+
+.fd-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  /* Multi-line truncation */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fd-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.fd-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+/* Quantity selector */
+.fc-qty-selector {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  padding: 4px;
+}
+
+.fc-qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-xs);
+}
+
+.fc-qty-btn:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.fc-qty-value {
+  width: 24px;
+  text-align: center;
+  font-weight: var(--font-bold);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+}
+
+/* ── Cart Drawer / Sidebar ── */
+.rd-cart-card {
+  position: sticky;
+  top: calc(var(--navbar-h) + var(--space-8));
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+}
+
+.rd-cart-title {
+  font-family: var(--font-display);
+  font-weight: var(--font-bold);
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rd-cart-items {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: var(--space-4);
+  padding-right: 6px;
+}
+
+.rd-cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.rd-cart-item:last-child {
+  border-bottom: none;
+}
+
+.rd-ci-info {
+  flex: 1;
+}
+
+.rd-ci-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.rd-ci-price {
+  font-size: var(--text-xs);
+  color: var(--primary);
+  font-weight: var(--font-medium);
+}
+
+.rd-cart-totals {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+}
+
+.rd-cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.rd-cart-total-row:last-child {
+  margin-bottom: 0;
+}
+
+.rd-cart-total-row.grand-total {
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding-top: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Reviews summary */
+.rd-reviews-summary {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.rd-reviews-big-rating {
+  font-family: var(--font-display);
+  font-weight: var(--font-black);
+  font-size: 48px;
+  color: var(--text-primary);
+  line-height: 1;
+  text-align: center;
+}
+
+.rd-review-bars {
+  flex: 1;
+  min-width: 240px;
+}
+
+.rd-review-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--text-xs);
+  margin-bottom: 4px;
+}
+
+.rd-review-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.rd-review-bar-fill {
+  height: 100%;
+  background: var(--warning);
+  border-radius: var(--radius-full);
+}
+
+/* Review row list */
+.rd-review-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-xs);
+}
+
+.rd-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.rd-review-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rd-review-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rd-review-username {
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.rd-review-date {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.rd-review-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}

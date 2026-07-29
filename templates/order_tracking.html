@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Track Your Order{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/tracking.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="tracking-layout">
+  <div class="container">
+    
+    <!-- Title card -->
+    <div class="tracking-card">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <span style="font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;">Live Order Tracker</span>
+          <h2 style="font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--text-primary);margin-top:2px;" id="track-order-id">Order #FC-2026-8472</h2>
+        </div>
+        <div class="text-md-end">
+          <div style="font-size:13px;color:var(--text-secondary);">Estimated Delivery Time</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text-primary);" id="track-eta-time">--:--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Tracker Steps Card -->
+    <div class="tracking-card">
+      <div class="progress-steps-row">
+        <div class="progress-line-bg"></div>
+        <div class="progress-line-fill" id="track-progress-fill"></div>
+
+        <!-- Step 1 -->
+        <div class="progress-step-node complete" id="step-node-1">
+          <div class="progress-step-circle"><i class="fa-solid fa-check"></i></div>
+          <div class="progress-step-label">Order Confirmed</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="progress-step-node complete" id="step-node-2">
+          <div class="progress-step-circle"><i class="fa-solid fa-check"></i></div>
+          <div class="progress-step-label">🍳 Preparing</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="progress-step-node active" id="step-node-3">
+          <div class="progress-step-circle"><i class="fa-solid fa-motorcycle"></i></div>
+          <div class="progress-step-label">🛵 On the Way</div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="progress-step-node" id="step-node-4">
+          <div class="progress-step-circle"><i class="fa-solid fa-house-chimney"></i></div>
+          <div class="progress-step-label">🏠 Delivered</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="row g-4">
+      
+      <!-- Left Column: Map and Status Logs -->
+      <div class="col-lg-8">
+        
+        <!-- Live Map card -->
+        <div class="map-placeholder-card mb-4" id="tracking-map">
+          <!-- Roads -->
+          <div class="map-road r1"></div>
+          <div class="map-road r2"></div>
+          <div class="map-road r3"></div>
+          <div class="map-road r4"></div>
+
+          <!-- Pins -->
+          <div class="map-pin restaurant" title="The Burger Lab">🏪</div>
+          <div class="map-pin home" title="Your House">📍</div>
+
+          <!-- Driver scooter -->
+          <div class="map-driver-marker" id="driver-scooter">🛵</div>
+        </div>
+
+        <!-- Status Timeline Card -->
+        <div class="tracking-card">
+          <h3 class="tracking-card-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i>Live Updates Feed</h3>
+          
+          <div class="timeline-list" id="tracking-timeline">
+            <!-- Appended from JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: ETA Timer, Driver Info, Summary -->
+      <div class="col-lg-4">
+        
+        <!-- Countdown ETA Timer -->
+        <div class="tracking-card text-center py-5">
+          <div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Arriving In</div>
+          <div class="eta-number my-3" id="countdown-timer">12:00</div>
+          <div style="font-size:12px;color:var(--text-muted);" id="countdown-subtext">Our rider is heading to your destination.</div>
+        </div>
+
+        <!-- Driver details -->
+        <div class="tracking-card">
+          <h3 class="tracking-card-title"><i class="fa-solid fa-user-ninja text-primary"></i>Your Courier</h3>
+          
+          <div class="d-flex align-items-center gap-3">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="Driver Profile" class="driver-avatar" id="driver-avatar">
+            <div class="flex-grow-1">
+              <div class="driver-name" id="driver-name">Marcus Johnson</div>
+              <div class="driver-meta" id="driver-vehicle">Honda CB500 · NY-2847</div>
+              <div style="font-size:11px;color:var(--warning);margin-top:2px;">
+                <i class="fa-solid fa-star"></i> 4.9 <span style="color:var(--text-muted)">(1.2k trips)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-2 mt-4">
+            <div class="col-6">
+              <a href="tel:+15550192" class="fc-btn fc-btn-outline w-100 text-center" style="font-size:13px;font-weight:600;" id="driver-call">
+                <i class="fa-solid fa-phone me-1"></i> Call Rider
+              </a>
+            </div>
+            <div class="col-6">
+              <button class="fc-btn fc-btn-primary w-100" style="font-size:13px;font-weight:600;" onclick="Toast.show('Chat feature coming soon!', 'info')">
+                <i class="fa-solid fa-comments me-1"></i> Message
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Summary breakdown -->
+        <div class="tracking-card">
+          <h3 class="tracking-card-title"><i class="fa-solid fa-list-ul text-primary"></i>Order Summary</h3>
+          
+          <div id="order-tracking-items">
+            <!-- Dynamic rows of items -->
+          </div>
+
+          <hr style="border-color:var(--border);">
+
+          <div class="d-flex justify-content-between align-items-center font-semibold text-secondary" style="font-size:13px;">
+            <span>Delivery Address</span>
+            <span style="font-weight:400;max-width:180px;text-align:right;" id="track-address-label">...</span>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center font-bold text-primary mt-3" style="font-size:15px;">
+            <span>Paid Amount</span>
+            <span id="track-amount-paid">$0.00</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tracking.js' %}"></script>
+{% endblock %}
