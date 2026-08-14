@@ -73,7 +73,40 @@
 
         <!-- Reviews section -->
         <h3 class="rd-section-title" id="reviews-section"><i class="fa-regular fa-star me-2"></i>Customer Reviews</h3>
-        
+
+        <!-- Review form -->
+        <div class="rd-review-form-card mb-4" id="rd-review-form-card">
+          {% if request.user.is_authenticated %}
+          <h4 class="rd-review-form-title"><i class="fa-regular fa-pen-to-square me-2 text-primary"></i>Rate This Restaurant</h4>
+          <form onsubmit="window.submitReview(event)">
+            {% csrf_token %}
+            <div class="rd-star-picker" id="rd-star-picker">
+              <span class="rd-star" data-val="1" onclick="window.setReviewRating(1)">★</span>
+              <span class="rd-star" data-val="2" onclick="window.setReviewRating(2)">★</span>
+              <span class="rd-star" data-val="3" onclick="window.setReviewRating(3)">★</span>
+              <span class="rd-star" data-val="4" onclick="window.setReviewRating(4)">★</span>
+              <span class="rd-star" data-val="5" onclick="window.setReviewRating(5)">★</span>
+              <span class="rd-star-labels" id="rd-star-labels">Tap a star to rate</span>
+            </div>
+            <input type="hidden" id="review-rating" value="0">
+            <div class="rd-review-comment-wrap">
+              <textarea id="review-comment" rows="3" placeholder="Any room for improvements?" maxlength="500" class="form-control"></textarea>
+              <span class="rd-review-counter" id="rd-review-counter">0/500</span>
+            </div>
+            <div class="rd-review-form-actions">
+              <span class="rd-review-privacy"><i class="fa-regular fa-shield-halved me-1"></i>Posted by {{ request.user.first_name|default:request.user.username }}</span><br>
+
+              <button type="submit" class="fc-btn fc-btn-primary">Submit Review <i class="fa-solid fa-paper-plane ms-1"></i></button>
+            </div>
+          </form>
+          {% else %}
+          <p class="text-muted mb-0" style="font-size:14px;">
+            <i class="fa-regular fa-circle-user me-1"></i>
+            <a href="/login/" class="text-primary fw-bold">Sign in</a> to rate and review this restaurant.
+          </p>
+          {% endif %}
+        </div>
+
         <!-- Summary cards -->
         <div class="rd-reviews-summary mb-5">
           <div class="rd-reviews-big-rating">
@@ -140,15 +173,15 @@
             <div class="rd-cart-totals">
               <div class="rd-cart-total-row">
                 <span>Subtotal</span>
-                <span id="rd-cart-subtotal">$0.00</span>
+                <span id="rd-cart-subtotal">₦0.00</span>
               </div>
               <div class="rd-cart-total-row">
                 <span>Delivery Fee</span>
-                <span id="rd-cart-delivery">$0.00</span>
+                <span id="rd-cart-delivery">₦0.00</span>
               </div>
               <div class="rd-cart-total-row grand-total">
                 <span>Total</span>
-                <span id="rd-cart-total">$0.00</span>
+                <span id="rd-cart-total">₦0.00</span>
               </div>
             </div>
 
@@ -166,5 +199,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/restaurant_detail.js' %}"></script>
+{{ restaurant_json|json_script:"db-restaurant-data" }}
+{{ menu_json|json_script:"db-menu-data" }}
+{{ reviews_json|json_script:"db-reviews-data" }}
+<script src="{% static 'js/restaurant_detail.js' %}?v=3"></script>
 {% endblock %}

@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
+import os.path
+from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from a .env file at the project root (if present).
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -37,7 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'Foodcourt'
+    'channels',
+    # 'notifications',
+    'Foodcourt',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -63,12 +71,23 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'Foodcourt.views.auth_context_processor',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'Foodcourt.wsgi.application'
+ASGI_APPLICATION = "Foodcourt.asgi.application"
+
+
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # Database
@@ -85,6 +104,9 @@ DATABASES = {
     }
 }
 
+
+# Redirect to the project's login page instead of Django's default /accounts/login/
+LOGIN_URL = 'login'
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -127,7 +149,8 @@ STATICFILES_DIRS = [
 ]
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -143,3 +166,23 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 EMAIL_USE_TLS = False
 DEFAULT_FROM_EMAIL = 'FoodCourt <noreply@foodcourt.local>'
+
+# Fixed base URL used for building absolute links in emails (e.g. password reset).
+# Change to your real domain in production.
+SITE_URL = 'http://127.0.0.1:8000'
+
+
+# ── Paystack ──────────────────────────────────────────────────────────────
+# Never hard-code keys in the repository. Provide them via environment
+# variables (or a .env file exported into the shell).
+# PAYSTACK_PUBLIC_KEY  = pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# PAYSTACK_SECRET_KEY  = sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+PAYSTACK_PUBLIC_KEY = os.environ.get('PAYSTACK_PUBLIC_KEY', '')
+PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
+PAYSTACK_CURRENCY = os.environ.get('PAYSTACK_CURRENCY', 'NGN')
+
+
+# ── Third-party patches ───────────────────────────────────────────────────
+# Must run at import time so Django's template context copying works on
+# Python 3.14 with Django 4.2.x (see Foodcourt/patches.py).
+from . import patches  # noqa: E402,F401

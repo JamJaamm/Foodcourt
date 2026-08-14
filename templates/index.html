@@ -276,5 +276,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/index.js' %}"></script>
+{{ db_restaurants|json_script:"db-restaurants-data" }}
+<script src="{% static 'js/index.js' %}?v=2"></script>
 {% endblock %}

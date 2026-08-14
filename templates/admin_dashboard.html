@@ -1,0 +1,709 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load money_tags %}
+
+{% block title %}FoodCourt — Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+<style>
+  .admin-quick-link { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-card); text-decoration: none; transition: all 0.2s; height: 100%; }
+  .admin-quick-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); text-decoration: none; border-color: var(--primary); }
+  .admin-quick-link .ql-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 17px; background: var(--primary-subtle); color: var(--primary); flex-shrink: 0; }
+  .admin-quick-link .ql-title { font-weight: 700; font-size: 14px; color: var(--text-primary); }
+  .admin-quick-link .ql-sub { font-size: 12px; color: var(--text-secondary); }
+  .db-table-wrap { overflow-x: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .db-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .db-table th { text-align: left; padding: 14px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--bg-elevated); font-weight: 700; }
+  .db-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+  .db-table tr:last-child td { border-bottom: none; }
+  .db-table tr:hover td { background: var(--primary-subtle); }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; text-transform: capitalize; }
+  .status-pending { background: #fff3e0; color: #e65100; }
+  .status-confirmed { background: #e3f2fd; color: #1565c0; }
+  .status-preparing { background: #fff8e1; color: #f57f17; }
+  .status-ready { background: #e8f5e9; color: #2e7d32; }
+  .status-out_for_delivery { background: #f3e5f5; color: #7b1fa2; }
+  .status-delivered { background: #e8f5e9; color: #1b5e20; }
+  .status-cancelled { background: #ffebee; color: #c62828; }
+  .addr-form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .db-card .form-control { padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); font-size: 13px; }
+  .db-card .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="dashboard-layout">
+  <div class="container">
+
+    <div class="row g-4">
+
+      <!-- Left Column: Sidebar -->
+      <div class="col-lg-3">
+        <div class="db-sidebar">
+
+          <!-- Profile header info -->
+          <div class="db-profile-header">
+            <div class="db-avatar-container">
+              <div class="db-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
+                <i class="fa-solid fa-shield-halved" style="font-size:34px;color:var(--primary);"></i>
+              </div>
+            </div>
+            <div class="db-username">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+            <div class="db-email">{% if restaurant %}{{ restaurant.name }}{% else %}Admin{% endif %}</div>
+          </div>
+
+          <!-- Sidebar menu -->
+          <div class="db-menu-list">
+            <a href="/admin-dashboard/" class="db-menu-btn {% if section != 'riders' and section != 'restaurants' and section != 'orders' and section != 'payments' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-gauge"></i> Overview
+            </a>
+            <a href="/admin-dashboard/restaurants/" class="db-menu-btn {% if section == 'restaurants' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-store"></i> Restaurants
+            </a>
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <a href="/admin-dashboard/orders/" class="db-menu-btn {% if section == 'orders' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-list-check"></i> Orders
+            </a>
+            <a href="/admin-dashboard/riders/" class="db-menu-btn {% if section == 'riders' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-people-carry-box"></i> Riders
+            </a>
+            <a href="/admin-dashboard/payments/" class="db-menu-btn {% if section == 'payments' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-credit-card"></i> Payments
+            </a>
+            {% endif %}
+            <a href="{% url 'logout' %}" class="db-menu-btn mt-3" style="color: var(--danger); text-decoration: none;">
+              <i class="fa-solid fa-right-from-bracket"></i> Log Out
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Column: Workspace -->
+      <div class="col-lg-9">
+
+        {% if section == 'riders' %}
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="db-header-title" style="margin-bottom:4px;">Rider Management 🛵</h2>
+            <p class="text-secondary mb-0">Review, approve, or reject rider applications.</p>
+          </div>
+          <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Overview
+          </a>
+        </div>
+
+        <!-- Platform stats -->
+        <div class="db-stats-row" style="margin-top:18px;">
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.pending_riders }}</div>
+            <div class="db-stat-label">Awaiting Approval</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.new_riders }}</div>
+            <div class="db-stat-label">New Applications</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
+            <div class="db-stat-label">Approved Riders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
+            <div class="db-stat-label">Restaurants</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-label">Total Users</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+        </div>
+
+        <!-- Status filter -->
+        <div class="d-flex gap-2 flex-wrap my-4">
+          <a href="/admin-dashboard/riders/" class="status-badge status-pending" style="padding:7px 14px;text-decoration:none;{% if not rider_status_filter %}box-shadow:0 0 0 2px #e65100;{% endif %}">All</a>
+          <a href="/admin-dashboard/riders/?status=verified" class="status-badge status-ready" style="padding:7px 14px;text-decoration:none;{% if rider_status_filter == 'verified' %}box-shadow:0 0 0 2px #2e7d32;{% endif %}">Awaiting Approval</a>
+          <a href="/admin-dashboard/riders/?status=pending" class="status-badge status-confirmed" style="padding:7px 14px;text-decoration:none;{% if rider_status_filter == 'pending' %}box-shadow:0 0 0 2px #1565c0;{% endif %}">Pending Verification</a>
+          <a href="/admin-dashboard/riders/?status=approved" class="status-badge status-delivered" style="padding:7px 14px;text-decoration:none;{% if rider_status_filter == 'approved' %}box-shadow:0 0 0 2px #1b5e20;{% endif %}">Approved</a>
+          <a href="/admin-dashboard/riders/?status=rejected" class="status-badge status-cancelled" style="padding:7px 14px;text-decoration:none;{% if rider_status_filter == 'rejected' %}box-shadow:0 0 0 2px #c62828;{% endif %}">Rejected</a>
+        </div>
+
+        <!-- Rider applications table -->
+        <div class="db-card">
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead>
+                <tr><th>Rider</th><th>Contact</th><th>Vehicle</th><th>Location</th><th>Bank</th><th>Status</th><th>Applied</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {% for app in riders %}
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div style="width:34px;height:34px;border-radius:50%;background:var(--primary-subtle);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ app.first_name|first }}{{ app.last_name|first }}</div>
+                      <div>
+                        <div style="font-weight:700;">{{ app.first_name }} {{ app.last_name }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ app.dob|date:"M d, Y"|default:"—" }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div>{{ app.email }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ app.phone }}</div>
+                  </td>
+                  <td>
+                    <div>{{ app.vehicle_type }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ app.vehicle_brand }} {{ app.vehicle_model }} · {{ app.vehicle_plate }}</div>
+                  </td>
+                  <td>{{ app.city }}, {{ app.state }}</td>
+                  <td>
+                    <div>{{ app.bank_name }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ app.account_number }}</div>
+                  </td>
+                  <td><span class="status-badge status-{% if app.status == 'verified' %}ready{% elif app.status == 'approved' %}delivered{% elif app.status == 'rejected' %}cancelled{% else %}confirmed{% endif %}">{{ app.get_status_display }}</span></td>
+                  <td style="font-size:12px;color:var(--text-muted);">{{ app.created_at|date:"M d, Y" }}</td>
+                  <td>
+                    <div style="display:flex;gap:6px;">
+                      {% if app.status != 'approved' %}
+                      <form method="POST" action="{% url 'approve_rider' app.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;font-weight:700;border:none;border-radius:8px;padding:6px 12px;"><i class="fa-solid fa-check me-1"></i>Approve</button>
+                      </form>
+                      {% endif %}
+                      {% if app.status != 'rejected' %}
+                      <form method="POST" action="{% url 'reject_rider' app.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm" style="background:#ffebee;color:#c62828;font-weight:700;border:none;border-radius:8px;padding:6px 12px;"><i class="fa-solid fa-xmark me-1"></i>Reject</button>
+                      </form>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center text-muted py-4">No rider applications found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% elif section == 'restaurants' %}
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="db-header-title" style="margin-bottom:4px;">Registered Restaurants 🏪</h2>
+            <p class="text-secondary mb-0">All restaurants currently on the FoodCourt platform.</p>
+          </div>
+          <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Overview
+          </a>
+        </div>
+
+        <!-- Platform stats -->
+        <div class="db-stats-row" style="margin-top:18px;">
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
+            <div class="db-stat-label">Restaurants</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
+            <div class="db-stat-label">Approved Riders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.pending_riders }}</div>
+            <div class="db-stat-label">Riders Awaiting Approval</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-label">Total Users</div>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <form method="GET" class="d-flex gap-2 my-4" style="max-width:420px;">
+          <input type="text" name="q" value="{{ restaurant_query }}" class="form-control" placeholder="Search by name or owner email...">
+          <button type="submit" class="fc-btn fc-btn-primary" style="white-space:nowrap;"><i class="fa-solid fa-magnifying-glass me-1"></i>Search</button>
+        </form>
+
+        <!-- Restaurants table -->
+        <div class="db-card">
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead>
+                <tr><th>Restaurant</th><th>Cuisine</th><th>Owner</th><th>Rating</th><th>Orders</th><th>Menu</th><th>Status</th><th>Joined</th></tr>
+              </thead>
+              <tbody>
+                {% for r in restaurant_rows %}
+                <tr>
+                  <td>
+                    <div style="font-weight:700;">{{ r.name }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ r.address }}</div>
+                  </td>
+                  <td>{{ r.cuisine }}</td>
+                  <td>
+                    <div>{{ r.owner }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ r.owner_email }}</div>
+                  </td>
+                  <td>
+                    {% if r.rating %}
+                    <span style="color:#f9a825;">★</span> {{ r.rating|floatformat:1 }}
+                    {% else %}
+                    <span style="color:var(--text-muted);">—</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ r.orders }}</td>
+                  <td>{{ r.menu_items }}</td>
+                  <td>
+                    {% if r.is_open %}
+                    <span class="status-badge status-delivered">Open</span>
+                    {% else %}
+                    <span class="status-badge status-cancelled">Closed</span>
+                    {% endif %}
+                  </td>
+                  <td style="font-size:12px;color:var(--text-muted);">{{ r.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center text-muted py-4">No restaurants registered yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% elif section == 'orders' %}
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="db-header-title" style="margin-bottom:4px;">Platform Orders 📋</h2>
+            <p class="text-secondary mb-0">Every order placed across the FoodCourt platform.</p>
+          </div>
+          <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Overview
+          </a>
+        </div>
+
+        <!-- Platform stats -->
+        <div class="db-stats-row" style="margin-top:18px;">
+          <div class="db-stat-card">
+            <div class="db-stat-num">₦{{ platform_stats.total_revenue|money }}</div>
+            <div class="db-stat-label">Total Made</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.delivered_orders }}</div>
+            <div class="db-stat-label">Delivered Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ orders|length }}</div>
+            <div class="db-stat-label">Showing</div>
+          </div>
+        </div>
+
+        <!-- Status filter -->
+        <div class="d-flex gap-2 flex-wrap my-4">
+          <a href="/admin-dashboard/orders/" class="status-badge status-confirmed" style="padding:7px 14px;text-decoration:none;{% if not order_status_filter %}box-shadow:0 0 0 2px #1565c0;{% endif %}">All</a>
+          <a href="/admin-dashboard/orders/?status=pending" class="status-badge status-pending" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'pending' %}box-shadow:0 0 0 2px #e65100;{% endif %}">Pending</a>
+          <a href="/admin-dashboard/orders/?status=confirmed" class="status-badge status-confirmed" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'confirmed' %}box-shadow:0 0 0 2px #1565c0;{% endif %}">Confirmed</a>
+          <a href="/admin-dashboard/orders/?status=preparing" class="status-badge status-preparing" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'preparing' %}box-shadow:0 0 0 2px #f57f17;{% endif %}">Preparing</a>
+          <a href="/admin-dashboard/orders/?status=ready" class="status-badge status-ready" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'ready' %}box-shadow:0 0 0 2px #2e7d32;{% endif %}">Ready</a>
+          <a href="/admin-dashboard/orders/?status=out_for_delivery" class="status-badge status-out_for_delivery" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'out_for_delivery' %}box-shadow:0 0 0 2px #7b1fa2;{% endif %}">Out for Delivery</a>
+          <a href="/admin-dashboard/orders/?status=delivered" class="status-badge status-delivered" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'delivered' %}box-shadow:0 0 0 2px #1b5e20;{% endif %}">Delivered</a>
+          <a href="/admin-dashboard/orders/?status=cancelled" class="status-badge status-cancelled" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'cancelled' %}box-shadow:0 0 0 2px #c62828;{% endif %}">Cancelled</a>
+        </div>
+
+        <!-- Orders table -->
+        <div class="db-card">
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead>
+                <tr><th>Order</th><th>Customer</th><th>Restaurant</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr>
+              </thead>
+              <tbody>
+                {% for o in orders %}
+                <tr>
+                  <td><strong>{{ o.order_id }}</strong></td>
+                  <td>{{ o.user.get_full_name|default:o.user.email }}</td>
+                  <td>{{ o.restaurant.name|default:'—' }}</td>
+                  <td>{{ o.items.count }}</td>
+                  <td>₦{{ o.total|money }}</td>
+                  <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                  <td style="font-size:12px;color:var(--text-muted);">{{ o.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No orders found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% elif section == 'payments' %}
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="db-header-title" style="margin-bottom:4px;">Payment Transactions</h2>
+            <p class="text-secondary mb-0">All Paystack transactions across the platform.</p>
+          </div>
+          <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Overview
+          </a>
+        </div>
+
+        <!-- Search -->
+        <form method="get" action="/admin-dashboard/payments/" class="my-3 d-flex gap-2 flex-wrap">
+          <input type="text" name="q" value="{{ payment_query }}" placeholder="Search by reference or order ID..." class="form-control" style="max-width:360px;">
+          <button class="btn btn-outline-primary btn-sm" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+          {% if payment_query or payment_status_filter %}<a href="/admin-dashboard/payments/" class="btn btn-outline-secondary btn-sm">Clear</a>{% endif %}
+        </form>
+
+        <!-- Status filter -->
+        <div class="d-flex gap-2 flex-wrap my-4">
+          <a href="/admin-dashboard/payments/" class="status-badge status-confirmed" style="padding:7px 14px;text-decoration:none;{% if not payment_status_filter %}box-shadow:0 0 0 2px #1565c0;{% endif %}">All</a>
+          <a href="/admin-dashboard/payments/?status=pending" class="status-badge status-pending" style="padding:7px 14px;text-decoration:none;{% if payment_status_filter == 'pending' %}box-shadow:0 0 0 2px #e65100;{% endif %}">Pending</a>
+          <a href="/admin-dashboard/payments/?status=successful" class="status-badge status-delivered" style="padding:7px 14px;text-decoration:none;{% if payment_status_filter == 'successful' %}box-shadow:0 0 0 2px #1b5e20;{% endif %}">Successful</a>
+          <a href="/admin-dashboard/payments/?status=failed" class="status-badge status-cancelled" style="padding:7px 14px;text-decoration:none;{% if payment_status_filter == 'failed' %}box-shadow:0 0 0 2px #c62828;{% endif %}">Failed</a>
+          <a href="/admin-dashboard/payments/?status=cancelled" class="status-badge status-cancelled" style="padding:7px 14px;text-decoration:none;{% if payment_status_filter == 'cancelled' %}box-shadow:0 0 0 2px #6c757d;{% endif %}">Cancelled</a>
+          <a href="/admin-dashboard/payments/?status=refunded" class="status-badge status-ready" style="padding:7px 14px;text-decoration:none;{% if payment_status_filter == 'refunded' %}box-shadow:0 0 0 2px #6a1b9a;{% endif %}">Refunded</a>
+        </div>
+
+        <!-- Transactions table -->
+        <div class="db-card">
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead>
+                <tr><th>Reference</th><th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid At</th></tr>
+              </thead>
+              <tbody>
+                {% for p in payments %}
+                <tr>
+                  <td><strong>{{ p.transaction_reference }}</strong><div style="font-size:11px;color:var(--text-muted);">{{ p.paystack_reference }}</div></td>
+                  <td>{{ p.order.order_id }}</td>
+                  <td>{{ p.customer.email }}</td>
+                  <td>{{ p.amount|money }} {{ p.currency }}</td>
+                  <td>{{ p.get_payment_method_display }}</td>
+                  <td><span class="status-badge status-{% if p.status == 'successful' %}delivered{% elif p.status == 'pending' %}pending{% elif p.status == 'refunded' %}ready{% else %}cancelled{% endif %}">{{ p.get_status_display }}</span></td>
+                  <td style="font-size:12px;color:var(--text-muted);">{{ p.paid_at|default:"-"|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No transactions found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% elif no_restaurant %}
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="db-header-title" style="margin-bottom:4px;">Platform Overview 🌐</h2>
+            <p class="text-secondary mb-0">Welcome back, {{ request.user.first_name|default:request.user.username }}! Here's what's happening on FoodCourt.</p>
+          </div>
+        </div>
+
+        <!-- Platform stats -->
+        <div class="db-stats-row" style="margin-top:18px;">
+          <div class="db-stat-card">
+            <div class="db-stat-num">₦{{ platform_stats.total_revenue|money }}</div>
+            <div class="db-stat-label">Total Made</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.delivered_orders }}</div>
+            <div class="db-stat-label">Delivered Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
+            <div class="db-stat-label">Restaurants Registered</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
+            <div class="db-stat-label">Approved Riders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.pending_riders }}</div>
+            <div class="db-stat-label">Riders Awaiting Approval</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.new_riders }}</div>
+            <div class="db-stat-label">New Rider Applications</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-label">Total Users</div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <h4 style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:14px;margin-top:28px;">Quick Actions</h4>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4 col-sm-6">
+            <a href="/admin-dashboard/orders/" class="admin-quick-link">
+              <div class="ql-icon" style="background:var(--green-subtle,#e8f5e9);color:#1b5e20;"><i class="fa-solid fa-list-check"></i></div>
+              <div><div class="ql-title">View Orders</div><div class="ql-sub">{{ platform_stats.orders }} placed</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/admin-dashboard/restaurants/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-store"></i></div>
+              <div><div class="ql-title">View Restaurants</div><div class="ql-sub">{{ platform_stats.restaurants }} registered</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/admin-dashboard/riders/" class="admin-quick-link">
+              <div class="ql-icon" style="background:var(--green-subtle,#e8f5e9);color:#1b5e20;"><i class="fa-solid fa-people-carry-box"></i></div>
+              <div><div class="ql-title">Manage Riders</div><div class="ql-sub">{{ platform_stats.pending_riders }} pending approvals</div></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Recent platform orders -->
+        <div class="db-card">
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text-primary);">📋 Recent Orders</h4>
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead><tr><th>Order</th><th>Customer</th><th>Restaurant</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>
+                {% for o in platform_orders %}
+                <tr>
+                  <td><strong>{{ o.order_id }}</strong></td>
+                  <td>{{ o.user.get_full_name|default:o.user.email }}</td>
+                  <td>{{ o.restaurant.name }}</td>
+                  <td>₦{{ o.total|money }}</td>
+                  <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                  <td style="font-size:12px;color:var(--text-muted)">{{ o.created_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No orders yet</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% if pending_approvals %}
+        <!-- Rider approvals -->
+        <div class="db-card mt-4">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h4 style="font-size:15px;font-weight:700;margin:0;color:var(--text-primary);">🛵 Rider Approvals</h4>
+            <a href="/admin-dashboard/riders/?status=verified" style="font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;">View all →</a>
+          </div>
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead><tr><th>Rider</th><th>Contact</th><th>Vehicle</th><th>Applied</th><th>Actions</th></tr></thead>
+              <tbody>
+                {% for app in pending_approvals %}
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div style="width:34px;height:34px;border-radius:50%;background:var(--primary-subtle);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ app.first_name|first }}{{ app.last_name|first }}</div>
+                      <div>
+                        <div style="font-weight:700;">{{ app.first_name }} {{ app.last_name }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ app.vehicle_type }} · {{ app.vehicle_plate }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div>{{ app.email }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ app.phone }}</div>
+                  </td>
+                  <td>{{ app.vehicle_brand }} {{ app.vehicle_model }}</td>
+                  <td style="font-size:12px;color:var(--text-muted);">{{ app.created_at|date:"M d, Y" }}</td>
+                  <td>
+                    <div style="display:flex;gap:6px;">
+                      <form method="POST" action="{% url 'approve_rider' app.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;font-weight:700;border:none;border-radius:8px;padding:6px 12px;"><i class="fa-solid fa-check me-1"></i>Approve</button>
+                      </form>
+                      <form method="POST" action="{% url 'reject_rider' app.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm" style="background:#ffebee;color:#c62828;font-weight:700;border:none;border-radius:8px;padding:6px 12px;"><i class="fa-solid fa-xmark me-1"></i>Reject</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+
+        <h2 class="db-header-title">Admin Overview 👋</h2>
+        <p class="text-secondary mb-4">Welcome back, {{ request.user.first_name }}! Here's what's happening at <strong>{{ restaurant.name }}</strong>.</p>
+
+        <!-- Stat cards -->
+        <div class="db-stats-row">
+          <div class="db-stat-card">
+            <div class="db-stat-num">₦{{ stats.today_revenue|money }}</div>
+            <div class="db-stat-label">Today's Revenue</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ stats.total_orders }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ stats.pending_orders }}</div>
+            <div class="db-stat-label">Pending Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ stats.completed_orders }}</div>
+            <div class="db-stat-label">Completed Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ stats.customers }}</div>
+            <div class="db-stat-label">Customers</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ stats.menu_items }}</div>
+            <div class="db-stat-label">Menu Items</div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <h4 style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:14px;">Quick Actions</h4>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4 col-sm-6">
+            <a href="/restaurant-admin/orders/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-list-check"></i></div>
+              <div><div class="ql-title">Manage Orders</div><div class="ql-sub">{{ stats.pending_orders }} pending to handle</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/restaurant-admin/menu/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-utensils"></i></div>
+              <div><div class="ql-title">Edit Menu</div><div class="ql-sub">{{ stats.menu_items }} menu items</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/restaurant-admin/inventory/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div><div class="ql-title">Manage Inventory</div><div class="ql-sub">{{ stats.low_stock }} items low on stock</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/restaurant-admin/coupons/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-ticket"></i></div>
+              <div><div class="ql-title">Coupons</div><div class="ql-sub">Create &amp; manage discounts</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/restaurant-admin/reviews/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-star"></i></div>
+              <div><div class="ql-title">Reviews</div><div class="ql-sub">{{ stats.review_count }} customer reviews</div></div>
+            </a>
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <a href="/restaurant-admin/settings/" class="admin-quick-link">
+              <div class="ql-icon"><i class="fa-solid fa-sliders"></i></div>
+              <div><div class="ql-title">Settings</div><div class="ql-sub">Restaurant profile &amp; hours</div></div>
+            </a>
+          </div>
+          {% if request.user.is_staff or request.user.is_superuser %}
+          <div class="col-md-4 col-sm-6">
+            <a href="/admin-dashboard/riders/" class="admin-quick-link">
+              <div class="ql-icon" style="background:var(--green-subtle,#e8f5e9);color:#1b5e20;"><i class="fa-solid fa-people-carry-box"></i></div>
+              <div><div class="ql-title">Manage Riders</div><div class="ql-sub">{{ platform_stats.pending_riders }} pending approvals</div></div>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Recent orders -->
+        <div class="db-card">
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text-primary);">📋 Recent Orders</h4>
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>
+                {% for o in orders|slice:":8" %}
+                <tr>
+                  <td><strong>{{ o.order_id }}</strong></td>
+                  <td>{{ o.user.get_full_name|default:o.user.email }}</td>
+                  <td>{{ o.items.count }}</td>
+                  <td>₦{{ o.total|money }}</td>
+                  <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                  <td style="font-size:12px;color:var(--text-muted)">{{ o.created_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No orders yet</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {% if request.user.is_staff or request.user.is_superuser %}
+        {% if pending_approvals %}
+        <!-- Rider approvals -->
+        <div class="db-card mt-4">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <h4 style="font-size:15px;font-weight:700;margin:0;color:var(--text-primary);">🛵 Rider Approvals</h4>
+            <a href="/admin-dashboard/riders/?status=verified" style="font-size:13px;font-weight:600;color:var(--primary);text-decoration:none;">View all →</a>
+          </div>
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead><tr><th>Rider</th><th>Contact</th><th>Vehicle</th><th>Applied</th><th>Actions</th></tr></thead>
+              <tbody>
+                {% for app in pending_approvals %}
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div style="width:34px;height:34px;border-radius:50%;background:var(--primary-subtle);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ app.first_name|first }}{{ app.last_name|first }}</div>
+                      <div>
+                        <div style="font-weight:700;">{{ app.first_name }} {{ app.last_name }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ app.vehicle_type }} · {{ app.vehicle_plate }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div>{{ app.email }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ app.phone }}</div>
+                  </td>
+                  <td>{{ app.vehicle_brand }} {{ app.vehicle_model }}</td>
+                  <td style="font-size:12px;color:var(--text-muted);">{{ app.created_at|date:"M d, Y" }}</td>
+                  <td>
+                    <div style="display:flex;gap:6px;">
+                      <form method="POST" action="{% url 'approve_rider' app.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;font-weight:700;border:none;border-radius:8px;padding:6px 12px;"><i class="fa-solid fa-check me-1"></i>Approve</button>
+                      </form>
+                      <form method="POST" action="{% url 'reject_rider' app.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm" style="background:#ffebee;color:#c62828;font-weight:700;border:none;border-radius:8px;padding:6px 12px;"><i class="fa-solid fa-xmark me-1"></i>Reject</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

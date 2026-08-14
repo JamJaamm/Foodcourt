@@ -1,8 +1,21 @@
 'use strict';
 
-let currentAddressId = 1;
+let currentAddressId = null;
 let currentPaymentMethod = 'card';
 let appliedPromo = null;
+
+function readJsonData(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.textContent.trim()) return null;
+  try { return JSON.parse(el.textContent); } catch (e) { return null; }
+}
+
+function getUserAddresses() {
+  return readJsonData('db-user-addresses')
+    || window.FOODCOURT_USER_ADDRESSES
+    || (window.FOODCOURT_DATA && window.FOODCOURT_DATA.addresses)
+    || [];
+}
 
 function getCookie(name) {
   let cookieValue = null;
@@ -142,6 +155,10 @@ function updateCheckoutTotals() {
 /* ══════════════════════════════════════════════
    PROMO CODE ACTIONS
    ══════════════════════════════════════════════ */
+function getDbCoupons() {
+  return readJsonData('db-promo-data') || [];
+}
+
 window.applyPromoCode = function() {
   const input = document.getElementById('promo-code-input');
   const msgEl = document.getElementById('promo-feedback-message');
@@ -156,6 +173,42 @@ window.applyPromoCode = function() {
     return;
   }
 
+  const subtotal = window.CartManager.getTotal();
+
+  // 1) Real coupons created in the restaurant dashboard
+  const dbPromo = getDbCoupons().find(c => c.code === code);
+  if (dbPromo) {
+    if (dbPromo.expiresAt && new Date(dbPromo.expiresAt).getTime() < Date.now()) {
+      appliedPromo = null;
+      msgEl.textContent = `Promo code "${code}" has expired.`;
+      msgEl.classList.add('error');
+      updateCheckoutTotals();
+      return;
+    }
+    if (dbPromo.maxUses > 0 && dbPromo.timesUsed >= dbPromo.maxUses) {
+      appliedPromo = null;
+      msgEl.textContent = `Promo code "${code}" has reached its usage limit.`;
+      msgEl.classList.add('error');
+      updateCheckoutTotals();
+      return;
+    }
+    if (dbPromo.minOrder > 0 && subtotal < dbPromo.minOrder) {
+      appliedPromo = null;
+      msgEl.textContent = `Promo code "${code}" requires a minimum order of ${window.formatPrice(dbPromo.minOrder)}.`;
+      msgEl.classList.add('error');
+      updateCheckoutTotals();
+      return;
+    }
+
+    appliedPromo = { code: code, type: dbPromo.type, value: dbPromo.value, label: dbPromo.label };
+    msgEl.textContent = `Promo code "${code}" applied successfully! (${dbPromo.label})`;
+    msgEl.classList.add('success');
+    updateCheckoutTotals();
+    Toast.show('Promo applied! 🎟️', 'success');
+    return;
+  }
+
+  // 2) Fall back to the built-in demo codes
   const promo = window.FOODCOURT_DATA.promoCodes[code];
 
   if (promo) {
@@ -179,10 +232,19 @@ function renderSavedAddresses() {
   const container = document.getElementById('saved-addresses-container');
   if (!container) return;
 
-  const list = window.FOODCOURT_USER_ADDRESSES || (window.FOODCOURT_DATA && window.FOODCOURT_DATA.addresses) || [];
+  const list = getUserAddresses();
+  if (list.length > 0 && currentAddressId === null) {
+    currentAddressId = list[0].id;
+  }
   container.innerHTML = list.map(addr => {
     const isActive = addr.id === currentAddressId;
     const icon = addr.label && addr.label.toLowerCase().includes('work') ? 'fa-building' : 'fa-house';
+    const parts = [];
+    if (addr.street) parts.push(addr.street);
+    if (addr.landmark) parts.push(`Near ${addr.landmark}`);
+    if (addr.city) parts.push(addr.city);
+    if (addr.state) parts.push(addr.state);
+    const detailLine = parts.join(', ') || addr.address || '';
     return `
       <div class="address-option-card ${isActive ? 'active' : ''}" 
            onclick="selectAddressCard(${addr.id})"
@@ -190,7 +252,8 @@ function renderSavedAddresses() {
         <input type="radio" name="saved-address-radio" class="address-option-radio" ${isActive ? 'checked' : ''}>
         <div>
           <strong style="color:var(--text-primary)"><i class="fa-solid ${icon} me-1"></i> ${addr.label}</strong>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${addr.address}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.5;">${detailLine}</div>
+          ${addr.phone ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><i class="fa-solid fa-phone me-1"></i>${addr.phone}</div>` : ''}
         </div>
       </div>
     `;
@@ -207,10 +270,76 @@ window.selectAddressCard = function(id) {
     const radio = card.querySelector('.address-option-radio');
     if (radio) radio.checked = isTarget;
   });
+};
 
-  // Clear manual input if they click saved
-  const manual = document.getElementById('delivery-address-manual');
-  if (manual) manual.value = '';
+/* ══════════════════════════════════════════════
+   NEW DELIVERY ADDRESS (INLINE FORM)
+   ══════════════════════════════════════════════ */
+window.toggleNewAddressForm = function() {
+  const card = document.getElementById('new-address-form-card');
+  if (!card) {
+    console.error('new-address-form-card element not found');
+    return;
+  }
+  if (!window.FOODCOURT_USER || !window.FOODCOURT_USER.isAuthenticated) {
+    Toast.show('Please sign in to add a delivery address', 'error');
+    setTimeout(() => window.location.href = '/login/', 1500);
+    return;
+  }
+  card.classList.toggle('d-none');
+};
+
+window.saveNewAddressFromCart = function() {
+  const street = document.getElementById('naddr-street').value.trim();
+  if (!street) { Toast.show('Street address is required', 'error'); return; }
+  const label = document.getElementById('naddr-label').value.trim() || 'Delivery';
+
+  const data = {
+    action: 'create',
+    label: label,
+    street: street,
+    landmark: document.getElementById('naddr-landmark').value.trim(),
+    city: document.getElementById('naddr-city').value.trim(),
+    state: document.getElementById('naddr-state').value.trim(),
+    country: document.getElementById('naddr-country').value.trim(),
+    phone: document.getElementById('naddr-phone').value.trim(),
+  };
+
+  const btn = document.getElementById('naddr-save-btn');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Saving...';
+
+  let ok = false;
+
+  fetch('/api/addresses/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      currentAddressId = res.id;
+      return fetch('/api/addresses/')
+        .then(r => r.json())
+        .then(listData => {
+          window.FOODCOURT_USER_ADDRESSES = listData.addresses || [];
+          renderSavedAddresses();
+          ok = true;
+        });
+    }
+    Toast.show(res.error || 'Failed to save address', 'error');
+  })
+  .catch(() => Toast.show('Failed to save address', 'error'))
+  .finally(() => {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+    if (ok) {
+      toggleNewAddressForm();
+      Toast.show('Address saved!', 'success');
+    }
+  });
 };
 
 /* ══════════════════════════════════════════════
@@ -303,33 +432,21 @@ window.submitOrder = function() {
     return;
   }
 
-  const manualAddressInput = document.getElementById('delivery-address-manual');
   let finalAddress = '';
   if (currentAddressId !== null) {
-    const addressList = window.FOODCOURT_USER_ADDRESSES || (window.FOODCOURT_DATA && window.FOODCOURT_DATA.addresses) || [];
+    const addressList = getUserAddresses();
     const saved = addressList.find(a => a.id === currentAddressId);
-    finalAddress = saved ? saved.address : '';
-  } else {
-    finalAddress = manualAddressInput ? manualAddressInput.value.trim() : '';
+    finalAddress = saved ? (saved.address || [saved.street, saved.city, saved.state, saved.country].filter(Boolean).join(', ')) : '';
   }
 
   if (!finalAddress) {
-    Toast.show('Please select a saved address or enter a delivery address.', 'error');
+    Toast.show('Please select a saved address or enter a different delivery address.', 'error');
     return;
   }
 
-  if (currentPaymentMethod === 'card') {
-    const ccNum = document.getElementById('cc-number').value.trim();
-    const ccExp = document.getElementById('cc-expiry').value.trim();
-    const ccCvv = document.getElementById('cc-cvv').value.trim();
-    if (ccNum.length < 15 || ccExp.length < 5 || ccCvv.length < 3) {
-      Toast.show('Please enter valid credit card details.', 'error');
-      document.getElementById('payment-card-details').classList.add('animate-wiggle');
-      setTimeout(() => {
-        document.getElementById('payment-card-details').classList.remove('animate-wiggle');
-      }, 500);
-      return;
-    }
+  if (currentPaymentMethod === 'card' || currentPaymentMethod === 'wallet') {
+    // Card details are collected securely by Paystack on their hosted page —
+    // we never read or store them here.
   }
 
   const firstItem = cart[0];
@@ -368,7 +485,8 @@ window.submitOrder = function() {
     delivery_fee: deliveryFee,
     discount: discount,
     total: grandTotal,
-    restaurant_name: restaurantName
+    restaurant_name: restaurantName,
+    restaurant_id: firstItem.restaurantId || null
   };
 
   const csrfToken = getCookie('csrftoken');
@@ -392,10 +510,21 @@ window.submitOrder = function() {
     localStorage.setItem('foodcourt_active_order_address', finalAddress);
     localStorage.setItem('foodcourt_active_order_total', window.formatPrice(grandTotal));
 
-    window.CartManager.clear();
-
     orderBtn.disabled = false;
     orderBtn.innerHTML = originalText;
+
+    if (data.payment_url) {
+      // Online payment — keep the cart untouched and send the customer to
+      // Paystack. The cart is cleared on the payment result page only once
+      // Paystack confirms the charge was successful.
+      Toast.show('Redirecting to secure payment...', 'info');
+      window.location.href = data.payment_url;
+      return;
+    }
+
+    // Cash on delivery — order confirmed immediately, so clear the cart now.
+    window.CartManager.clear();
+    renderCartItems();
 
     document.getElementById('success-order-id').textContent = data.order_id;
     const overlay = document.getElementById('checkout-success-overlay');

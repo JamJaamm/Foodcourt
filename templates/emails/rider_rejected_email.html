@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+    .container { max-width: 560px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #0c0c16, #171738); padding: 32px; text-align: center; }
+    .header h1 { color: #fff; margin: 0; font-size: 24px; font-weight: 800; }
+    .header span { color: #FF6B35; }
+    .badge { display: inline-block; background: #FF6B35; color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-top: 12px; }
+    .body { padding: 32px; }
+    .body p { color: #555; line-height: 1.6; font-size: 15px; }
+    .footer { text-align: center; padding: 24px 32px; border-top: 1px solid #eee; font-size: 12px; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🛵 Food<span>Court</span></h1>
+      <div class="badge">Application Update</div>
+    </div>
+    <div class="body">
+      <h2>An update on your rider application</h2>
+      <p>Hi {{ name }},</p>
+      <p>Thank you for your interest in joining FoodCourt Riders. After careful review, we're sorry to say your rider application was <strong>not approved</strong> at this time.</p>
+      <p>This doesn't have to be the end of the road. If you'd like to apply again in the future or have questions about this decision, feel free to contact our rider support team.</p>
+      <p>We appreciate your time and wish you all the best.</p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2026 FoodCourt Inc. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

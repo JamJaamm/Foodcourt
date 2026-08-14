@@ -400,6 +400,6 @@ window.FOODCOURT_DATA = {
     'SAVE10':   { type: 'percent', value: 10, label: '10% off your order' },
     'FIRST20':  { type: 'percent', value: 20, label: '20% off for new users' },
     'FREESHIP': { type: 'delivery', value: 0,  label: 'Free delivery' },
-    'TASTY5':   { type: 'fixed',   value: 5,   label: '$5 off your order' },
+    'TASTY5':   { type: 'fixed',   value: 5,   label: '₦5 off your order' },
   },
 };

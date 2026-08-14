@@ -5,34 +5,70 @@
 
 let currentRestaurant = null;
 let currentMenu = [];
+let currentReviews = [];
+
+const DEFAULT_FOOD_IMG = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80';
+
+function readJsonData(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.textContent.trim()) return null;
+  try { return JSON.parse(el.textContent); } catch (e) { return null; }
+}
+
+function getCookie(name) {
+  let value = null;
+  if (document.cookie && document.cookie !== '') {
+    document.cookie.split(';').forEach(c => {
+      c = c.trim();
+      if (c.substring(0, name.length + 1) === (name + '=')) value = decodeURIComponent(c.substring(name.length + 1));
+    });
+  }
+  return value;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log("Restaurant Detail page loaded. Current Cart:", window.CartManager.getCart());
   // Parse Restaurant ID from pathname: e.g. /restaurant/1/
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   let restaurantId = Number(pathParts[pathParts.length - 1]);
-  
+
   if (isNaN(restaurantId) || !window.FOODCOURT_DATA) {
     restaurantId = 1; // Default fallback to The Burger Lab
   }
 
-  // Load data
-  currentRestaurant = window.FOODCOURT_DATA.restaurants.find(r => r.id === restaurantId);
-  
-  // Fallback if ID doesn't exist
-  if (!currentRestaurant) {
-    currentRestaurant = window.FOODCOURT_DATA.restaurants[0];
-    restaurantId = currentRestaurant.id;
+  // Prefer real DB data injected by the Django view
+  const dbRestaurant = readJsonData('db-restaurant-data');
+  const dbMenu = readJsonData('db-menu-data');
+  const dbReviews = readJsonData('db-reviews-data');
+
+  if (dbRestaurant) {
+    currentRestaurant = dbRestaurant;
+  } else {
+    currentRestaurant = window.FOODCOURT_DATA.restaurants.find(r => r.id === restaurantId);
+
+    // Fallback if ID doesn't exist
+    if (!currentRestaurant) {
+      currentRestaurant = window.FOODCOURT_DATA.restaurants[0];
+      restaurantId = currentRestaurant.id;
+    }
   }
 
-  // Get menu items (fallback to Burger Lab menu if empty)
-  currentMenu = window.FOODCOURT_DATA.menuItems[restaurantId] || window.FOODCOURT_DATA.menuItems[1];
+  // Get menu items (DB first, then static mock)
+  if (dbMenu) {
+    currentMenu = dbMenu;
+  } else {
+    currentMenu = window.FOODCOURT_DATA.menuItems[restaurantId] || window.FOODCOURT_DATA.menuItems[1];
+  }
+
+  currentReviews = dbReviews || (window.FOODCOURT_DATA ? window.FOODCOURT_DATA.testimonials : []);
 
   // Render operations
   renderRestaurantInfo();
   renderMenuTabs();
   renderMenuItems();
   renderReviews();
+  renderReviewSummary();
+  setupReviewForm();
   
   // Cart operations
   renderCartSidebar();
@@ -93,7 +129,17 @@ function renderMenuTabs() {
    ══════════════════════════════════════════════ */
 function renderMenuItems() {
   const container = document.getElementById('menu-container');
-  if (!container || !currentMenu) return;
+  if (!container) return;
+
+  if (!currentMenu || currentMenu.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-5">
+        <div style="font-size:48px;margin-bottom:12px;">🍽️</div>
+        <h4 class="fw-semibold">No menu items yet</h4>
+        <p class="text-muted" style="max-width:360px;margin:0 auto;">This restaurant hasn't added any menu items yet. Check back soon!</p>
+      </div>`;
+    return;
+  }
 
   // Group menu items by category
   const grouped = {};
@@ -115,11 +161,12 @@ function renderMenuItems() {
     items.forEach(item => {
       const cartItem = cart.find(ci => ci.id === item.id);
       const qtyInCart = cartItem ? cartItem.qty : 0;
+      const imgSrc = item.image || DEFAULT_FOOD_IMG;
 
       html += `
         <div class="col">
           <div class="fc-food-card reveal">
-            <img src="${item.image}" alt="${item.name}" class="fd-img" loading="lazy">
+            <img src="${imgSrc}" alt="${item.name}" class="fd-img" loading="lazy" onerror="this.src='${DEFAULT_FOOD_IMG}'">
             <div class="fd-body">
               <div>
                 <div class="fd-header">
@@ -175,10 +222,14 @@ function renderMenuItems() {
    ══════════════════════════════════════════════ */
 function renderReviews() {
   const container = document.getElementById('reviews-comments-list');
-  if (!container || !window.FOODCOURT_DATA) return;
+  if (!container) return;
 
-  const reviews = window.FOODCOURT_DATA.testimonials;
-  container.innerHTML = reviews.map(t => `
+  if (!currentReviews || currentReviews.length === 0) {
+    container.innerHTML = '<p class="text-muted text-center py-4">No reviews yet. Be the first to review this restaurant!</p>';
+    return;
+  }
+
+  container.innerHTML = currentReviews.map(t => `
     <div class="rd-review-card reveal">
       <div class="rd-review-header">
         <div class="rd-review-user">
@@ -193,9 +244,117 @@ function renderReviews() {
         </div>
       </div>
       <p class="rd-review-text">"${t.text}"</p>
+      ${t.reply ? `
+      <div class="rd-review-reply">
+        <div class="rd-review-reply-head">
+          <i class="fa-solid fa-store me-1 text-primary"></i><strong>Restaurant response</strong>
+        </div>
+        <p class="rd-review-reply-text">"${t.reply}"</p>
+      </div>` : ''}
     </div>
   `).join('');
 }
+
+/* ══════════════════════════════════════════════
+   SUBMIT REVIEW (STAR RATING) LOGIC
+   ══════════════════════════════════════════════ */
+let selectedReviewRating = 0;
+
+const RATING_LABELS = {
+  0: 'Tap a star to rate',
+  1: 'Poor',
+  2: 'Fair',
+  3: 'Good',
+  4: 'Very Good',
+  5: 'Excellent'
+};
+
+function updateReviewLabel(val) {
+  const labelEl = document.getElementById('rd-star-labels');
+  if (!labelEl) return;
+  labelEl.textContent = val > 0 ? `${RATING_LABELS[val]} (${val}/5)` : RATING_LABELS[0];
+}
+
+function setupReviewForm() {
+  const commentEl = document.getElementById('review-comment');
+  const counterEl = document.getElementById('rd-review-counter');
+  if (commentEl && counterEl) {
+    commentEl.addEventListener('input', () => {
+      counterEl.textContent = `${commentEl.value.length}/500`;
+    });
+  }
+}
+
+window.setReviewRating = function(val) {
+  selectedReviewRating = val;
+  document.getElementById('review-rating').value = val;
+  document.querySelectorAll('#rd-star-picker .rd-star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.val, 10) <= val);
+  });
+  updateReviewLabel(val);
+};
+
+function resetReviewForm() {
+  selectedReviewRating = 0;
+  const ratingEl = document.getElementById('review-rating');
+  if (ratingEl) ratingEl.value = 0;
+  document.querySelectorAll('#rd-star-picker .rd-star').forEach(s => s.classList.remove('active'));
+  const commentEl = document.getElementById('review-comment');
+  if (commentEl) commentEl.value = '';
+  const counterEl = document.getElementById('rd-review-counter');
+  if (counterEl) counterEl.textContent = '0/500';
+  updateReviewLabel(0);
+}
+
+function renderReviewSummary() {
+  const el = document.getElementById('reviews-summary-avg');
+  if (el && currentRestaurant) el.textContent = currentRestaurant.rating.toFixed(1);
+}
+
+window.submitReview = function(e) {
+  e.preventDefault();
+  if (selectedReviewRating < 1) {
+    window.Toast.show('Please select a star rating first', 'error');
+    return;
+  }
+  if (!currentRestaurant) return;
+
+  const comment = (document.getElementById('review-comment').value || '').trim();
+  const form = document.getElementById('rd-review-form-card').querySelector('form');
+  const btn = form.querySelector('button[type="submit"]');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Submitting...';
+
+  fetch(`/restaurant/${currentRestaurant.id}/review/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({ rating: selectedReviewRating, comment })
+  })
+  .then(r => r.json().then(d => ({ ok: r.ok, d })))
+  .then(({ ok, d }) => {
+    if (ok && d.success) {
+      currentRestaurant.rating = d.rating;
+      currentRestaurant.reviewCount = d.reviewCount;
+      currentReviews = d.reviews;
+      renderRestaurantInfo();
+      renderReviewSummary();
+      renderReviews();
+      resetReviewForm();
+      window.Toast.show('Review submitted! Thanks for your feedback.', 'success');
+    } else {
+      window.Toast.show(d.error || 'Failed to submit review', 'error');
+    }
+  })
+  .catch(() => window.Toast.show('Failed to submit review', 'error'))
+  .finally(() => {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  });
+};
 
 /* ══════════════════════════════════════════════
    CART SIDEBAR SYNC LOGIC
@@ -258,7 +417,8 @@ window.addItemToCart = function(itemId) {
     id: menuItem.id,
     name: menuItem.name,
     price: menuItem.price,
-    image: menuItem.image
+    image: menuItem.image,
+    restaurantId: currentRestaurant.id
   });
 
   // Toggle button and input

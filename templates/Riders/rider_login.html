@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Log in to your FoodCourt rider account — track deliveries, earnings, and your schedule.">
+  <title>Rider Login — FoodCourt</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome 6.5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Core + Rider CSS -->
+  <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/pages/rider.css' %}">
+  <link rel="shortcut icon" href="{% static 'images/7541708.png' %}" type="image/x-icon">
+</head>
+<body>
+
+<div class="rdr-auth">
+  <!-- Left visual panel -->
+  <div class="rdr-auth-visual">
+    <a href="/riders/" class="brand">
+      <div class="rdr-brand-icon"><i class="fa-solid fa-motorcycle"></i></div>
+      <div>
+        <div class="rdr-brand-name" style="color:#fff;">Food<span style="color:var(--rdr-orange)">Court</span></div>
+        <div class="rdr-brand-tag" style="color:var(--rdr-green);">Rider Hub</div>
+      </div>
+    </a>
+
+    <h1>Welcome back to the <span class="gr">rider network</span></h1>
+    <p>Sign in to go online, accept nearby deliveries, and track your earnings in real time.</p>
+
+    <img class="rdr-auth-panel-img"
+         src="https://images.unsplash.com/photo-1519003722824-194d4455a60c?w=900&q=80"
+         alt="Rider on a motorcycle delivering food"
+         onerror="this.style.display='none'">
+
+    <div class="rdr-auth-badges">
+      <div class="rdr-auth-badge"><i class="fa-solid fa-bolt"></i> Go online in one tap</div>
+      <div class="rdr-auth-badge"><i class="fa-solid fa-sack-dollar"></i> Real-time earnings</div>
+      <div class="rdr-auth-badge"><i class="fa-solid fa-headset"></i> 24/7 support</div>
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="rdr-auth-form">
+    <div class="rdr-auth-card">
+      <a href="/riders/" class="back"><i class="fa-solid fa-arrow-left"></i> Back to rider hub</a>
+
+      <h2>Rider Login</h2>
+      <p class="sub">Enter your credentials to access your rider dashboard.</p>
+
+      <div class="rdr-auth-error{% if error %} show{% endif %}" id="rdrLoginError">{% if error %}{{ error }}{% endif %}</div>
+
+      <form id="rdrLoginForm" method="POST" novalidate>
+        {% csrf_token %}
+        <div class="rdr-field">
+          <label class="rdr-label" for="rdrLoginEmail">Email Address</label>
+          <input type="email" class="rdr-input" id="rdrLoginEmail" name="email" placeholder="you@example.com" autocomplete="email" value="{{ email_val }}" required>
+        </div>
+
+        <div class="rdr-field">
+          <label class="rdr-label" for="rdrLoginPw">Password</label>
+          <div class="rdr-pw-wrap">
+            <input type="password" class="rdr-input" id="rdrLoginPw" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="rdr-pw-toggle" data-pw-toggle="rdrLoginPw" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--rdr-body);cursor:pointer;">
+            <input type="checkbox" id="rdrRemember" style="width:16px;height:16px;accent-color:var(--rdr-green);"> Remember me
+          </label>
+          <a href="#" style="font-size:13.5px;font-weight:600;color:var(--rdr-orange);">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="rdr-btn rdr-btn-primary" style="width:100%;">
+          <i class="fa-solid fa-right-to-bracket"></i> Sign In
+        </button>
+      </form>
+
+      <p class="rdr-auth-foot">
+        Don't have a rider account?
+        <a href="/riders/#register" style="font-weight:700;color:var(--rdr-green-dark);" onclick="window.openRiderRegister(); return false;">Become a Rider</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/rider.js' %}?v=4"></script>
+</body>
+</html>

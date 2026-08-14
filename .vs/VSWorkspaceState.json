@@ -1,6 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\templates"
   ],
+  "SelectedNode": "\\templates\\dashboard.html",
   "PreviewInSolutionExplorer": false
 }

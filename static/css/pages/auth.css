@@ -101,6 +101,19 @@
   margin-bottom: var(--space-6);
 }
 
+.auth-success-icon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto var(--space-5);
+  border-radius: 50%;
+  background: var(--success-subtle);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+
 .auth-title {
   font-family: var(--font-display);
   font-weight: var(--font-bold);
@@ -173,7 +186,7 @@
 
 .auth-input {
   width: 100%;
-  padding: 14px 16px 14px 44px;
+  padding: 14px 44px 14px 44px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--bg-card);

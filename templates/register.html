@@ -69,7 +69,7 @@
         <!-- Phone Input -->
         <div class="auth-form-group">
           <i class="fa-solid fa-phone auth-input-icon"></i>
-          <input type="text" class="auth-input" name="phone" id="reg-phone" placeholder="Phone Number" value="{{ form_data.phone|default:'' }}">
+          <input type="number" class="auth-input" name="phone" id="reg-phone" placeholder="Phone Number" value="{{ form_data.phone|default:'' }}">
         </div>
 
         <!-- Password Input with strength meter -->
@@ -131,6 +131,9 @@
       <!-- Toggle auth card page links -->
       <div class="text-center mt-4 text-secondary" style="font-size:13px;">
         Already have an account? <a href="/login/" class="text-primary fw-bold text-decoration-none">Sign In</a>
+      </div>
+      <div class="text-center mt-2 text-secondary" style="font-size:12px;">
+        Own a restaurant? <a href="/restaurant/register/" class="text-primary fw-semibold text-decoration-none">Register it on FoodCourt</a>
       </div>
 
     </div>

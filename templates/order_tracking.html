@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load money_tags %}
 
 {% block title %}FoodCourt — Track Your Order{% endblock %}
 
@@ -9,157 +10,346 @@
 
 {% block content %}
 
-<section class="tracking-layout">
-  <div class="container">
-    
-    <!-- Title card -->
-    <div class="tracking-card">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+{% if order_data %}
+<script>window.FOODCOURT_ORDER_DATA = {{ order_data|safe }};</script>
+{% endif %}
+
+<section class="track-layout">
+  <div class="container" style="max-width:var(--container-max);">
+
+    <!-- ═══════════════════════════════════════
+         STATUS BANNER (context-aware)
+         ═══════════════════════════════════════ -->
+    <div class="track-status-banner" id="track-status-banner">
+      <div class="track-status-icon" id="track-status-icon"><i class="fa-solid fa-clock"></i></div>
+      <div class="track-status-text">
+        <div class="track-status-msg" id="track-status-msg">Loading your order status...</div>
+        <div class="track-status-sub" id="track-status-sub">Please wait while we fetch the latest update.</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ORDER SUMMARY HEADER
+         ═══════════════════════════════════════ -->
+    <div class="track-card">
+      <div class="track-order-header">
         <div>
-          <span style="font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:0.05em;">Live Order Tracker</span>
-          <h2 style="font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--text-primary);margin-top:2px;" id="track-order-id">Order #FC-2026-8472</h2>
+          <span class="track-order-label">Live Order Tracker</span>
+          <h2 class="track-order-id" id="track-order-id">Order #----</h2>
         </div>
         <div class="text-md-end">
-          <div style="font-size:13px;color:var(--text-secondary);">Estimated Delivery Time</div>
-          <div style="font-size:16px;font-weight:700;color:var(--text-primary);" id="track-eta-time">--:--</div>
+          <div id="track-status-badge-wrap"></div>
+        </div>
+      </div>
+
+      <div class="track-order-meta">
+        <div class="track-meta-item">
+          <span class="track-meta-label">Restaurant</span>
+          <span class="track-meta-value" id="track-restaurant">--</span>
+        </div>
+        <div class="track-meta-item">
+          <span class="track-meta-label">Order Date</span>
+          <span class="track-meta-value" id="track-date">--</span>
+        </div>
+        <div class="track-meta-item">
+          <span class="track-meta-label">Est. Delivery</span>
+          <span class="track-meta-value" id="track-eta-time">--:--</span>
+        </div>
+        <div class="track-meta-item">
+          <span class="track-meta-label">Total</span>
+          <span class="track-meta-value" id="track-total">₦0.00</span>
+        </div>
+        <div class="track-meta-item">
+          <span class="track-meta-label">Payment</span>
+          <span class="track-meta-value" id="track-payment">--</span>
         </div>
       </div>
     </div>
 
-    <!-- Progress Tracker Steps Card -->
-    <div class="tracking-card">
+    <!-- ═══════════════════════════════════════
+         4-STEP PROGRESS TRACKER
+         ═══════════════════════════════════════ -->
+    <div class="track-card" id="track-progress-card">
       <div class="progress-steps-row">
         <div class="progress-line-bg"></div>
         <div class="progress-line-fill" id="track-progress-fill"></div>
 
-        <!-- Step 1 -->
-        <div class="progress-step-node complete" id="step-node-1">
-          <div class="progress-step-circle"><i class="fa-solid fa-check"></i></div>
-          <div class="progress-step-label">Order Confirmed</div>
+        <div class="progress-step-node" id="step-node-1">
+          <div class="progress-step-circle"><i class="fa-solid fa-receipt"></i></div>
+          <div class="progress-step-label">Confirmed</div>
         </div>
-
-        <!-- Step 2 -->
-        <div class="progress-step-node complete" id="step-node-2">
-          <div class="progress-step-circle"><i class="fa-solid fa-check"></i></div>
-          <div class="progress-step-label">🍳 Preparing</div>
+        <div class="progress-step-node" id="step-node-2">
+          <div class="progress-step-circle"><i class="fa-solid fa-fire-burner"></i></div>
+          <div class="progress-step-label">Preparing</div>
         </div>
-
-        <!-- Step 3 -->
-        <div class="progress-step-node active" id="step-node-3">
+        <div class="progress-step-node" id="step-node-3">
           <div class="progress-step-circle"><i class="fa-solid fa-motorcycle"></i></div>
-          <div class="progress-step-label">🛵 On the Way</div>
+          <div class="progress-step-label">On the Way</div>
         </div>
-
-        <!-- Step 4 -->
         <div class="progress-step-node" id="step-node-4">
           <div class="progress-step-circle"><i class="fa-solid fa-house-chimney"></i></div>
-          <div class="progress-step-label">🏠 Delivered</div>
+          <div class="progress-step-label">Delivered</div>
         </div>
       </div>
     </div>
 
-    <!-- Main Grid -->
+    <!-- ═══════════════════════════════════════
+         MAIN GRID
+         ═══════════════════════════════════════ -->
     <div class="row g-4">
-      
-      <!-- Left Column: Map and Status Logs -->
+
+      <!-- LEFT COLUMN -->
       <div class="col-lg-8">
-        
-        <!-- Live Map card -->
+
+        <!-- Live Map -->
         <div class="map-placeholder-card mb-4" id="tracking-map">
-          <!-- Roads -->
           <div class="map-road r1"></div>
           <div class="map-road r2"></div>
           <div class="map-road r3"></div>
           <div class="map-road r4"></div>
-
-          <!-- Pins -->
-          <div class="map-pin restaurant" title="The Burger Lab">🏪</div>
-          <div class="map-pin home" title="Your House">📍</div>
-
-          <!-- Driver scooter -->
-          <div class="map-driver-marker" id="driver-scooter">🛵</div>
+          <div class="map-pin restaurant" title="Restaurant">🏪</div>
+          <div class="map-pin home" title="Your Location">📍</div>
+          <div class="map-driver-marker" id="driver-scooter" style="display:none;">🛵</div>
         </div>
 
-        <!-- Status Timeline Card -->
-        <div class="tracking-card">
-          <h3 class="tracking-card-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i>Live Updates Feed</h3>
-          
-          <div class="timeline-list" id="tracking-timeline">
-            <!-- Appended from JS -->
+        <!-- 10-Step Vertical Timeline -->
+        <div class="track-card">
+          <h3 class="track-card-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i>Order Timeline</h3>
+          <div class="track-timeline" id="track-timeline">
+            <!-- Rendered by JS -->
           </div>
         </div>
 
-      </div>
-
-      <!-- Right Column: ETA Timer, Driver Info, Summary -->
-      <div class="col-lg-4">
-        
-        <!-- Countdown ETA Timer -->
-        <div class="tracking-card text-center py-5">
-          <div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Arriving In</div>
-          <div class="eta-number my-3" id="countdown-timer">12:00</div>
-          <div style="font-size:12px;color:var(--text-muted);" id="countdown-subtext">Our rider is heading to your destination.</div>
+        <!-- Notifications -->
+        <div class="track-card">
+          <h3 class="track-card-title"><i class="fa-solid fa-bell text-primary"></i>Notifications</h3>
+          <div class="track-notify-list" id="track-notifications">
+            <!-- Rendered by JS -->
+          </div>
         </div>
 
-        <!-- Driver details -->
-        <div class="tracking-card">
-          <h3 class="tracking-card-title"><i class="fa-solid fa-user-ninja text-primary"></i>Your Courier</h3>
-          
-          <div class="d-flex align-items-center gap-3">
-            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="Driver Profile" class="driver-avatar" id="driver-avatar">
-            <div class="flex-grow-1">
-              <div class="driver-name" id="driver-name">Marcus Johnson</div>
-              <div class="driver-meta" id="driver-vehicle">Honda CB500 · NY-2847</div>
-              <div style="font-size:11px;color:var(--warning);margin-top:2px;">
-                <i class="fa-solid fa-star"></i> 4.9 <span style="color:var(--text-muted)">(1.2k trips)</span>
+        <!-- Support Actions -->
+        <div class="track-card">
+          <h3 class="track-card-title"><i class="fa-solid fa-life-ring text-primary"></i>Need Help?</h3>
+          <div class="track-support-grid" id="track-support-grid">
+            <a href="#" class="track-support-btn" id="btn-call-rider" onclick="handleCallRider(); return false;">
+              <i class="fa-solid fa-phone"></i> Call Rider
+            </a>
+            <a href="#" class="track-support-btn" id="btn-contact-restaurant" onclick="handleContactRestaurant(); return false;">
+              <i class="fa-solid fa-store"></i> Contact Restaurant
+            </a>
+            <a href="#" class="track-support-btn" id="btn-report-issue" onclick="handleReportIssue(); return false;">
+              <i class="fa-solid fa-flag"></i> Report an Issue
+            </a>
+            <button class="track-support-btn btn-danger" id="btn-cancel-order" onclick="handleCancelOrder()">
+              <i class="fa-solid fa-xmark"></i> Cancel Order
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="col-lg-4">
+
+        <!-- Past Orders -->
+        <div class="track-card">
+          <h3 class="track-card-title"><i class="fa-solid fa-clock-rotate-left text-primary"></i>Past Orders</h3>
+          <div class="track-past-list">
+            {% for o in past_orders %}
+            <button type="button" class="track-past-item {% if o.order_id == tracking_order_id %}current{% endif %}" onclick="openPastOrderModal('{{ o.order_id }}')">
+              <div class="track-past-top">
+                <span class="track-past-id">#{{ o.order_id }}</span>
+                <span class="track-status-badge {% if o.status == 'delivered' %}badge-delivered{% elif o.status == 'cancelled' %}badge-cancelled{% elif o.status == 'pending' %}badge-pending{% elif o.status == 'confirmed' %}badge-confirmed{% elif o.status == 'preparing' %}badge-preparing{% elif o.status == 'ready' %}badge-ready{% elif o.status == 'out_for_delivery' %}badge-delivery{% else %}badge-confirmed{% endif %}">{{ o.get_status_display }}</span>
+              </div>
+              <div class="track-past-rest">{{ o.restaurant_name }}</div>
+              <div class="track-past-meta">
+                <span><i class="fa-regular fa-calendar"></i> {{ o.created_at|date:"M j, Y" }}</span>
+                <span class="track-past-total">₦{{ o.total|money }}</span>
+              </div>
+            </button>
+            {% empty %}
+            <div class="track-past-empty">
+              <i class="fa-solid fa-inbox" style="font-size:22px;margin-bottom:8px;display:block;"></i>
+              No past orders yet.
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Countdown ETA -->
+        <div class="track-card track-eta-card">
+          <div style="font-size:13px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em;">Arriving In</div>
+          <div class="eta-number my-3" id="countdown-timer">--:--</div>
+          <div class="eta-subtext" id="countdown-subtext">Waiting for order confirmation...</div>
+
+          <div class="track-eta-progress" id="track-eta-progress" style="display:none;">
+            <div class="track-eta-bar-bg">
+              <div class="track-eta-bar-fill" id="track-eta-bar-fill"></div>
+            </div>
+            <div class="track-eta-bar-labels">
+              <span id="track-eta-start">Order Placed</span>
+              <span id="track-eta-end">Delivered</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rider Info -->
+        <div class="track-card track-rider-card" id="track-rider-card">
+          <h3 class="track-card-title"><i class="fa-solid fa-user-ninja text-primary"></i>Your Courier</h3>
+
+          <!-- Searching state -->
+          <div class="track-searching-rider" id="track-rider-searching">
+            <div class="searching-icon"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+            <div style="font-weight:var(--font-semibold);color:var(--text-primary);margin-bottom:4px;">
+              Searching for an available rider<span class="searching-dots"></span>
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--text-muted);">We're matching you with the best rider nearby.</div>
+          </div>
+
+          <!-- Rider details (hidden until rider assigned) -->
+          <div id="track-rider-details" style="display:none;">
+            <div class="d-flex align-items-center gap-3">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80" alt="Rider" class="driver-avatar" id="driver-avatar">
+              <div class="flex-grow-1">
+                <div class="driver-name" id="driver-name">--</div>
+                <div class="driver-meta" id="driver-vehicle">--</div>
+                <div style="font-size:11px;color:var(--warning);margin-top:2px;" id="driver-rating-wrap">
+                  <i class="fa-solid fa-star"></i> <span id="driver-rating">0</span>
+                  <span style="color:var(--text-muted)">(<span id="driver-trips">0</span> trips)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 mt-4">
+              <div class="col-6">
+                <a href="tel:" class="fc-btn fc-btn-outline w-100 text-center" style="font-size:13px;font-weight:600;" id="driver-call" onclick="handleCallRider(); return false;">
+                  <i class="fa-solid fa-phone me-1"></i> Call Rider
+                </a>
+              </div>
+              <div class="col-6">
+                <button class="fc-btn fc-btn-primary w-100" style="font-size:13px;font-weight:600;" onclick="Toast.show('Chat feature coming soon!', 'info')">
+                  <i class="fa-solid fa-comments me-1"></i> Message
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="row g-2 mt-4">
-            <div class="col-6">
-              <a href="tel:+15550192" class="fc-btn fc-btn-outline w-100 text-center" style="font-size:13px;font-weight:600;" id="driver-call">
-                <i class="fa-solid fa-phone me-1"></i> Call Rider
-              </a>
+        <!-- Delivery OTP -->
+        <div class="track-card" id="otp-card" style="display:none;">
+          <h3 class="track-card-title"><i class="fa-solid fa-key text-primary"></i>Delivery Code</h3>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Share this code with your rider upon delivery.</div>
+          <div class="track-otp-code" id="delivery-otp">------</div>
+          <div class="track-otp-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Do not share this code until your rider has arrived.</span>
+          </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="track-card">
+          <h3 class="track-card-title"><i class="fa-solid fa-bag-shopping text-primary"></i>Order Items</h3>
+          <div id="track-order-items">
+            <!-- Rendered by JS -->
+          </div>
+          <div style="margin-top:var(--space-4);">
+            <div class="track-price-row">
+              <span>Subtotal</span>
+              <span id="track-subtotal">₦0.00</span>
             </div>
-            <div class="col-6">
-              <button class="fc-btn fc-btn-primary w-100" style="font-size:13px;font-weight:600;" onclick="Toast.show('Chat feature coming soon!', 'info')">
-                <i class="fa-solid fa-comments me-1"></i> Message
-              </button>
+            <div class="track-price-row">
+              <span>Delivery Fee</span>
+              <span id="track-delivery-fee">₦0.00</span>
+            </div>
+            <div class="track-price-row" id="track-discount-row" style="display:none;">
+              <span>Discount</span>
+              <span class="discount-value" id="track-discount">-₦0.00</span>
+            </div>
+            <div class="track-price-row" id="track-tax-row" style="display:none;">
+              <span>Taxes</span>
+              <span id="track-taxes">₦0.00</span>
+            </div>
+            <div class="track-price-row grand-total">
+              <span>Total</span>
+              <span id="track-grand-total">₦0.00</span>
+            </div>
+          </div>
+
+          <div class="track-address-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Delivery Address</div>
+              <div class="track-address-text" id="track-address">--</div>
             </div>
           </div>
         </div>
 
-        <!-- Order Summary breakdown -->
-        <div class="tracking-card">
-          <h3 class="tracking-card-title"><i class="fa-solid fa-list-ul text-primary"></i>Order Summary</h3>
-          
-          <div id="order-tracking-items">
-            <!-- Dynamic rows of items -->
+        <!-- Rate Rider (shown after delivery) -->
+        <div class="track-card" id="rate-rider-card" style="display:none;">
+          <h3 class="track-card-title"><i class="fa-solid fa-star text-primary"></i>Rate Your Rider</h3>
+          <div class="track-rate-label">How was <strong id="rate-rider-name">your rider</strong>'s delivery?</div>
+          <div class="track-rate-stars" id="rate-stars">
+            <i class="fa-regular fa-star" data-star="1"></i>
+            <i class="fa-regular fa-star" data-star="2"></i>
+            <i class="fa-regular fa-star" data-star="3"></i>
+            <i class="fa-regular fa-star" data-star="4"></i>
+            <i class="fa-regular fa-star" data-star="5"></i>
           </div>
-
-          <hr style="border-color:var(--border);">
-
-          <div class="d-flex justify-content-between align-items-center font-semibold text-secondary" style="font-size:13px;">
-            <span>Delivery Address</span>
-            <span style="font-weight:400;max-width:180px;text-align:right;" id="track-address-label">...</span>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center font-bold text-primary mt-3" style="font-size:15px;">
-            <span>Paid Amount</span>
-            <span id="track-amount-paid">$0.00</span>
-          </div>
+          <input type="hidden" id="rider-rating-value" value="0">
+          <textarea id="rider-review-comment" class="form-control mb-3" rows="2" placeholder="Leave a review (optional)" style="font-size:13px;"></textarea>
+          <button class="fc-btn fc-btn-primary w-100" style="font-size:13px;font-weight:700;" onclick="submitRiderReview()">
+            <i class="fa-solid fa-paper-plane me-1"></i> Submit Review
+          </button>
         </div>
 
+      </div><!-- /col-lg-4 -->
+    </div><!-- /row -->
+
+    <!-- ═══════════════════════════════════════
+         DELIVERY COMPLETION (replaces progress)
+         ═══════════════════════════════════════ -->
+    <div class="track-card track-completion-card" id="track-completion" style="display:none;">
+      <div class="track-completion-icon"><i class="fa-solid fa-check"></i></div>
+      <div class="track-completion-title">Your order has been delivered successfully!</div>
+      <div class="track-completion-sub">Thank you for ordering with FoodCourt. We hope you enjoy your meal!</div>
+      <div class="track-completion-actions">
+        <a href="/dashboard/" class="fc-btn fc-btn-primary">
+          <i class="fa-solid fa-rotate"></i> Reorder
+        </a>
+        <button class="fc-btn fc-btn-outline" onclick="downloadReceipt()">
+          <i class="fa-solid fa-download"></i> Download Receipt
+        </button>
       </div>
+    </div>
 
+    <!-- No Order State -->
+    <div class="track-card text-center py-5" id="track-empty-state" style="display:none;">
+      <div style="font-size:64px;margin-bottom:var(--space-4);">📦</div>
+      <h3 style="font-family:var(--font-display);font-weight:800;color:var(--text-primary);margin-bottom:var(--space-2);">No Active Order Found</h3>
+      <p style="color:var(--text-secondary);margin-bottom:var(--space-6);">Enter an order ID to track your delivery, or browse our restaurants to place a new order.</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="/restaurants/" class="fc-btn fc-btn-primary"><i class="fa-solid fa-store me-1"></i> Browse Restaurants</a>
+        <a href="/dashboard/" class="fc-btn fc-btn-outline"><i class="fa-solid fa-clock-rotate-left me-1"></i> Order History</a>
+      </div>
     </div>
 
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════
+     PAST ORDER DETAILS MODAL
+     ═══════════════════════════════════════ -->
+<div class="track-modal-overlay" id="past-order-modal" style="display:none;">
+  <div class="track-modal" role="dialog" aria-modal="true" aria-labelledby="past-order-modal-title">
+    <button type="button" class="track-modal-close" onclick="closePastOrderModal()" aria-label="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div id="past-order-modal-content"></div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/tracking.js' %}"></script>
+<script src="{% static 'js/tracking.js' %}?v=7"></script>
 {% endblock %}

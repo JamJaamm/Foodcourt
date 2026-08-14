@@ -249,7 +249,7 @@ function renderStars(rating) {
   return html;
 }
 
-function formatPrice(p) { return '$' + Number(p).toFixed(2); }
+function formatPrice(p) { return '₦' + Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function renderRestaurantCard(r) {
   const isFav = Favorites.isFavorite(r.id);
@@ -321,6 +321,13 @@ document.addEventListener('DOMContentLoaded', () => {
   ThemeManager.init();
   Navbar.init();
   ScrollReveal.init();
+
+  // Clear the cart when the user signs out
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('a[href*="/logout/"]')) {
+      CartManager.clear();
+    }
+  }, true);
 
   // Active nav link highlighting
   const path = window.location.pathname;

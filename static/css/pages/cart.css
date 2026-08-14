@@ -228,6 +228,14 @@
   margin-top: var(--space-3);
 }
 
+/* Inline New Address Form */
+.new-address-inline {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  padding: var(--space-5);
+}
+
 /* Success Modal Overlay */
 .success-overlay {
   position: fixed;

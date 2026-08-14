@@ -75,7 +75,7 @@ function renderCategories() {
    ══════════════════════════════════════════════ */
 function renderFeaturedRestaurants() {
   const container = document.getElementById('featured-restaurants');
-  if (!container || !window.FOODCOURT_DATA) return;
+  if (!container) return;
 
   // Show skeleton loader
   window.Skeleton.show(container, 6);
@@ -83,11 +83,16 @@ function renderFeaturedRestaurants() {
   // Simulate server fetch delay
   setTimeout(() => {
     window.Skeleton.hide(container);
-    
-    // Get top 6 featured open restaurants
-    const featured = window.FOODCOURT_DATA.restaurants
-      .filter(r => r.isFeatured)
-      .slice(0, 6);
+
+    const dbEl = document.getElementById('db-restaurants-data');
+    let featured = [];
+    if (dbEl && dbEl.textContent && dbEl.textContent.trim() !== '[]') {
+      // Real restaurants created by owners
+      featured = JSON.parse(dbEl.textContent).slice(0, 6);
+    } else if (window.FOODCOURT_DATA) {
+      // Fallback to mock only when there are no real restaurants
+      featured = window.FOODCOURT_DATA.restaurants.filter(r => r.isFeatured).slice(0, 6);
+    }
 
     if (featured.length === 0) {
       container.innerHTML = `<div class="col-12 text-center text-muted">No featured restaurants found.</div>`;

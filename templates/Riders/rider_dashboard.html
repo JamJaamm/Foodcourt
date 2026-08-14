@@ -1,0 +1,929 @@
+{% load static %}
+{% load money_tags %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Your FoodCourt rider dashboard — accept deliveries, track active orders, and see your earnings.">
+  <title>Rider Dashboard — FoodCourt</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/pages/rider.css' %}">
+  <link rel="shortcut icon" href="{% static 'images/7541708.png' %}" type="image/x-icon">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     MOBILE TOP BAR
+═══════════════════════════════════════════ -->
+<div class="rdr-mobile-bar" id="rdrMobileBar">
+  <button class="rdr-mobile-toggle" id="rdrMobileToggle" aria-label="Open menu">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <a href="{% url 'rider_dashboard' %}" class="rdr-mobile-brand">
+    <div class="rdr-brand-icon"><i class="fa-solid fa-motorcycle"></i></div>
+    <span class="rdr-brand-name">Food<span style="color:var(--rdr-orange)">Court</span></span>
+  </a>
+  <button class="rdr-theme-toggle rdr-mobile-theme" id="rdrMobileTheme" aria-label="Toggle theme">
+    <i class="fa-solid fa-moon"></i>
+  </button>
+</div>
+
+<!-- Mobile drawer -->
+<div class="rdr-drawer" id="rdrDrawer">
+  <div class="rdr-drawer-backdrop" onclick="window.closeRiderDrawer()"></div>
+  <div class="rdr-drawer-panel">
+      <div class="rdr-drawer-profile">
+        <div class="rdr-drawer-avatar">{% if rider.avatar_image %}<img src="{{ rider.avatar_image.url }}" alt="{{ rider.first_name }}">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+      <div>
+        <div class="rdr-drawer-name">{{ rider.first_name }} {{ rider.last_name }}</div>
+        <div class="rdr-drawer-vehicle">{{ rider.vehicle_type }}</div>
+      </div>
+    </div>
+    <hr style="border-color:var(--rdr-line);margin:12px 0;">
+    <button class="rdr-drawer-link" data-tab="overview" onclick="window.switchTab('overview');window.closeRiderDrawer();">
+      <i class="fa-solid fa-gauge-high"></i> Overview
+    </button>
+    <button class="rdr-drawer-link" data-tab="deliveries" onclick="window.switchTab('deliveries');window.closeRiderDrawer();">
+      <i class="fa-solid fa-boxes-stacked"></i> Deliveries
+    </button>
+    <button class="rdr-drawer-link" data-tab="earnings" onclick="window.switchTab('earnings');window.closeRiderDrawer();">
+      <i class="fa-solid fa-sack-dollar"></i> Earnings
+    </button>
+    <button class="rdr-drawer-link" data-tab="profile" onclick="window.switchTab('profile');window.closeRiderDrawer();">
+      <i class="fa-solid fa-id-card"></i> Profile
+    </button>
+    <hr style="border-color:var(--rdr-line);margin:12px 0;">
+    <button class="rdr-drawer-link rdr-drawer-theme" onclick="window.toggleTheme();window.closeRiderDrawer();">
+      <i class="fa-solid fa-circle-half-stroke"></i> Toggle Theme
+    </button>
+    <a href="{% url 'riders' %}" class="rdr-drawer-link" style="text-decoration:none;">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Rider Hub
+    </a>
+    <form method="POST" action="{% url 'rider_logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="rdr-drawer-link" style="color:var(--rdr-orange);">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LAYOUT: SIDEBAR + MAIN
+═══════════════════════════════════════════ -->
+<div class="rdr-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="rdr-sidebar" id="rdrSidebar">
+    <div class="rdr-sidebar-inner">
+
+      <a href="{% url 'rider_dashboard' %}" class="rdr-sidebar-brand">
+        <div class="rdr-brand-icon"><i class="fa-solid fa-motorcycle"></i></div>
+        <div>
+          <div class="rdr-brand-name">Food<span style="color:var(--rdr-orange)">Court</span></div>
+          <div class="rdr-brand-tag">Rider Hub</div>
+        </div>
+      </a>
+
+      <div class="rdr-sidebar-profile">
+        <div class="rdr-sidebar-avatar">{% if rider.avatar_image %}<img src="{{ rider.avatar_image.url }}" alt="{{ rider.first_name }}">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+        <div class="rdr-sidebar-info">
+          <div class="rdr-sidebar-name">{{ rider.first_name }} {{ rider.last_name }}</div>
+          <div class="rdr-sidebar-vehicle">{{ rider.vehicle_type }} · {{ rider.city }}</div>
+          <div class="rdr-sidebar-status">
+            {% if rider.is_online %}
+              <span class="rdr-online-pill"><span class="pulse-dot"></span> Online</span>
+            {% else %}
+              <span class="rdr-online-pill off"><span class="pulse-dot"></span> Offline</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <nav class="rdr-sidebar-nav">
+        <button class="rdr-sidebar-btn active" data-tab="overview">
+          <i class="fa-solid fa-gauge-high"></i> Overview
+        </button>
+        <button class="rdr-sidebar-btn" data-tab="deliveries">
+          <i class="fa-solid fa-boxes-stacked"></i> Deliveries
+        </button>
+        <button class="rdr-sidebar-btn" data-tab="earnings">
+          <i class="fa-solid fa-sack-dollar"></i> Earnings
+        </button>
+        <button class="rdr-sidebar-btn" data-tab="profile">
+          <i class="fa-solid fa-id-card"></i> Profile
+        </button>
+      </nav>
+
+      <div class="rdr-sidebar-footer">
+        <button class="rdr-theme-toggle" id="rdrThemeToggle" aria-label="Toggle theme">
+          <i class="fa-solid fa-circle-half-stroke"></i> <span class="rdr-theme-label">Dark Mode</span>
+        </button>
+        <a href="{% url 'riders' %}" class="rdr-sidebar-link" style="text-decoration:none;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Rider Hub
+        </a>
+        <form method="POST" action="{% url 'rider_logout' %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="rdr-sidebar-link rdr-sidebar-logout">
+            <i class="fa-solid fa-right-from-bracket"></i> Log Out
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="rdr-main">
+
+    {% if messages %}
+    <div class="rdr-messages">
+      {% for message in messages %}
+        <div class="rdr-message {{ message.tags }}">
+          <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+          {{ message }}
+          <button type="button" class="rdr-message-close" aria-label="Dismiss" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ OVERVIEW TAB ══════════════ -->
+    <div class="rdr-tab-panel active" data-panel="overview">
+
+      <div class="rdr-tab-head">
+        <div>
+          <h1 class="rdr-tab-title">Welcome back, <span class="rdr-gradient-text">{{ rider.first_name }}</span></h1>
+          <p class="rdr-tab-sub">{{ rider.vehicle_type }} · {{ rider.city }}, {{ rider.state }}
+            {% if rider.is_online %}
+              · <span class="rdr-online-pill"><span class="pulse-dot"></span> Online{% if not rider.is_available %} &amp; on a delivery{% endif %}</span>
+            {% else %}
+              · <span class="rdr-online-pill off"><span class="pulse-dot"></span> Offline</span>
+            {% endif %}
+          </p>
+        </div>
+        <div class="rdr-tab-cta">
+          {% if rider.is_online %}
+          <form method="POST" action="{% url 'rider_toggle_online' %}" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="offline">
+            <button type="submit" class="rdr-btn rdr-btn-offline rdr-btn-sm"><i class="fa-solid fa-power-off me-1"></i> Go Offline</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{% url 'rider_toggle_online' %}" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="online">
+            <button type="submit" class="rdr-btn rdr-btn-green rdr-btn-sm"><i class="fa-solid fa-power-off me-1"></i> Go Online</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="rdr-dash-stats">
+        <div class="rdr-dash-stat">
+          <div class="ic g"><i class="fa-solid fa-motorcycle"></i></div>
+          <div class="val">{{ rider_stats.active }}</div>
+          <div class="lbl">Active deliveries</div>
+        </div>
+        <div class="rdr-dash-stat">
+          <div class="ic o"><i class="fa-solid fa-boxes-stacked"></i></div>
+          <div class="val">{{ rider_stats.available }}</div>
+          <div class="lbl">Available orders</div>
+        </div>
+        <div class="rdr-dash-stat">
+          <div class="ic g"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="val">{{ rider_stats.delivered }}</div>
+          <div class="lbl">Deliveries completed</div>
+        </div>
+        <div class="rdr-dash-stat">
+          <div class="ic o"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="val cur">₦{{ rider_stats.earned|money }}</div>
+          <div class="lbl">Total earned</div>
+        </div>
+      </div>
+
+      <!-- Active Delivery -->
+      <div class="rdr-panel" style="margin-top:28px;">
+        <div class="rdr-panel-head">
+          <h3><i class="fa-solid fa-motorcycle" style="color:var(--rdr-orange);"></i> Active Delivery</h3>
+        </div>
+        {% if active_delivery %}
+          {% with d=active_delivery o=active_delivery.order %}
+          <div class="rdr-active-item">
+            <div class="rdr-active-info">
+              <div class="rdr-order-top">
+                <span class="rdr-order-id">#{{ o.order_id }}</span>
+                <span class="rdr-order-badge ready">{{ d.status_label }}</span>
+              </div>
+              <div class="rdr-order-rest">{{ o.restaurant_name }}</div>
+              <div class="rdr-order-meta">
+                <span><i class="fa-solid fa-location-dot"></i> {{ o.delivery_address }}</span>
+                <span><i class="fa-solid fa-phone"></i> {{ o.user.get_full_name|default:o.user.email }}</span>
+                <span><i class="fa-solid fa-clock"></i> {{ o.created_at|date:"M j, g:i A" }}</span>
+              </div>
+              {% if d.status_logs %}
+              <div class="rdr-delivery-log">
+                {% for log in d.status_logs.all %}
+                <div class="rdr-log-entry">
+                  <i class="fa-solid fa-circle"></i> {{ log.label }}{% if log.note %} — {{ log.note }}{% endif %}
+                  <span>{{ log.created_at|date:"g:i A" }}</span>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="rdr-active-side">
+              <div class="rdr-order-total">₦{{ o.total|money }}</div>
+              <div class="rdr-earn-badge">Earn ₦{{ d.payout|money }}</div>
+
+              {% if d.status == 'assigned' %}
+              <form method="POST" action="{% url 'rider_delivery_status' d.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="arrived_at_restaurant">
+                <button type="submit" class="rdr-btn rdr-btn-primary rdr-btn-sm w-100"><i class="fa-solid fa-store me-1"></i> Arrived at Restaurant</button>
+              </form>
+              {% elif d.status == 'arrived_at_restaurant' %}
+              <form method="POST" action="{% url 'rider_delivery_status' d.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="picked_up">
+                <button type="submit" class="rdr-btn rdr-btn-primary rdr-btn-sm w-100"><i class="fa-solid fa-boxes-stacked me-1"></i> Picked Up Order</button>
+              </form>
+              {% elif d.status == 'picked_up' %}
+              <form method="POST" action="{% url 'rider_delivery_status' d.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="on_the_way">
+                <button type="submit" class="rdr-btn rdr-btn-primary rdr-btn-sm w-100"><i class="fa-solid fa-route me-1"></i> On The Way</button>
+              </form>
+              {% elif d.status == 'on_the_way' %}
+              <form method="POST" action="{% url 'rider_delivery_status' d.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="arrived">
+                <button type="submit" class="rdr-btn rdr-btn-primary rdr-btn-sm w-100"><i class="fa-solid fa-location-dot me-1"></i> Arrived at Destination</button>
+              </form>
+              {% elif d.status == 'arrived' %}
+              <form method="POST" action="{% url 'rider_complete_delivery' d.id %}" class="w-100">
+                {% csrf_token %}
+                <label class="rdr-otp-label">Enter customer delivery OTP</label>
+                <input type="text" name="otp" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required
+                       placeholder="6-digit OTP" class="rdr-otp-input">
+                <button type="submit" class="rdr-btn rdr-btn-green rdr-btn-sm w-100"><i class="fa-solid fa-circle-check me-1"></i> Complete Delivery</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+          {% endwith %}
+        {% else %}
+          <div class="rdr-empty small">
+            <div class="rdr-empty-ic"><i class="fa-solid fa-motorcycle"></i></div>
+            <p>No active deliveries. Accept an order to get started.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="rdr-panel" style="margin-top:20px;">
+        <div class="rdr-panel-head">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--rdr-green-dark);"></i> Recent Activity</h3>
+        </div>
+        {% if delivery_history %}
+          <div class="rdr-history-list">
+            {% for d in delivery_history|slice:":5" %}
+            <div class="rdr-history-item">
+              <span class="rdr-history-ic"><i class="fa-solid {% if d.status == 'delivered' %}fa-circle-check{% else %}fa-ban{% endif %}"></i></span>
+              <div class="rdr-history-info">
+                <div class="rdr-order-top">
+                  <span class="rdr-order-id">#{{ d.order.order_id }}</span>
+                  <span class="rdr-order-badge {% if d.status == 'delivered' %}done{% else %}cancelled{% endif %}">{{ d.status_label }}</span>
+                </div>
+                <div class="rdr-order-rest">{{ d.order.restaurant_name }}</div>
+                <div class="rdr-order-meta"><span><i class="fa-solid fa-clock"></i> {{ d.order.created_at|date:"M j, g:i A" }}</span></div>
+              </div>
+              <div class="rdr-order-total">{% if d.status == 'delivered' %}+₦{{ d.payout|money }}{% else %}₦0.00{% endif %}</div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rdr-empty small">
+            <div class="rdr-empty-ic"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <p>No completed deliveries yet.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- ══════════════ DELIVERIES TAB ══════════════ -->
+    <div class="rdr-tab-panel" data-panel="deliveries">
+
+      <div class="rdr-tab-head">
+        <div>
+          <h1 class="rdr-tab-title">Delivery Requests</h1>
+          <p class="rdr-tab-sub">Orders ready for pickup near you.</p>
+        </div>
+      </div>
+
+      <div class="rdr-orders">
+        {% if not rider.is_online %}
+          <div class="rdr-empty">
+            <div class="rdr-empty-ic"><i class="fa-solid fa-power-off"></i></div>
+            <h3>You're offline</h3>
+            <p>Go online to start receiving delivery requests from restaurants near you.</p>
+            <form method="POST" action="{% url 'rider_toggle_online' %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="online">
+              <button type="submit" class="rdr-btn rdr-btn-green"><i class="fa-solid fa-power-off me-1"></i> Go Online</button>
+            </form>
+          </div>
+        {% elif available_requests %}
+          {% for d in available_requests %}
+          <div class="rdr-order-card">
+            <div class="rdr-order-info">
+              <div class="rdr-order-top">
+                <span class="rdr-order-id">#{{ d.order.order_id }}</span>
+                <span class="rdr-order-badge ready">Ready for pickup</span>
+              </div>
+              <div class="rdr-order-rest">{{ d.order.restaurant_name }}</div>
+              <div class="rdr-order-meta">
+                <span><i class="fa-solid fa-location-dot"></i> {{ d.order.delivery_address }}</span>
+                <span><i class="fa-solid fa-utensils"></i> {{ d.order.items.count }} item{{ d.order.items.count|pluralize }}</span>
+                <span><i class="fa-solid fa-money-bill-wave"></i> {{ d.order.payment_method }}</span>
+                <span><i class="fa-solid fa-sack-dollar"></i> Earn ₦{{ d.payout|default:d.order.delivery_fee|money }}</span>
+              </div>
+            </div>
+            <div class="rdr-order-side">
+              <div class="rdr-order-total">₦{{ d.order.total|money }}</div>
+              <div style="display:flex;gap:8px;">
+                <form method="POST" action="{% url 'rider_decline_delivery' d.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="rdr-btn rdr-btn-ghost rdr-btn-sm"><i class="fa-solid fa-xmark me-1"></i> Decline</button>
+                </form>
+                <form method="POST" action="{% url 'rider_accept_delivery' d.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="rdr-btn rdr-btn-green rdr-btn-sm"><i class="fa-solid fa-hand-pointer me-1"></i> Accept</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="rdr-empty">
+            <div class="rdr-empty-ic"><i class="fa-solid fa-inbox"></i></div>
+            <h3>No deliveries available right now</h3>
+            <p>Check back soon — new orders appear here as restaurants mark them ready for pickup.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Past Deliveries -->
+      <div class="rdr-panel" style="margin-top:32px;">
+        <div class="rdr-panel-head">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--rdr-green-dark);"></i> Past Deliveries</h3>
+        </div>
+        {% if delivery_history %}
+          <div class="rdr-history-list">
+            {% for d in delivery_history %}
+            <div class="rdr-history-item">
+              <span class="rdr-history-ic"><i class="fa-solid {% if d.status == 'delivered' %}fa-circle-check{% else %}fa-ban{% endif %}"></i></span>
+              <div class="rdr-history-info">
+                <div class="rdr-order-top">
+                  <span class="rdr-order-id">#{{ d.order.order_id }}</span>
+                  <span class="rdr-order-badge {% if d.status == 'delivered' %}done{% else %}cancelled{% endif %}">{{ d.status_label }}</span>
+                </div>
+                <div class="rdr-order-rest">{{ d.order.restaurant_name }}</div>
+                <div class="rdr-order-meta">
+                  <span><i class="fa-solid fa-location-dot"></i> {{ d.order.delivery_address }}</span>
+                  <span><i class="fa-solid fa-clock"></i> {{ d.order.created_at|date:"M j, g:i A" }}</span>
+                </div>
+              </div>
+              <div class="rdr-order-total">{% if d.status == 'delivered' %}+₦{{ d.payout|money }}{% else %}₦0.00{% endif %}</div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rdr-empty small">
+            <div class="rdr-empty-ic"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <p>No past deliveries yet. Completed and cancelled deliveries will appear here.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- ══════════════ EARNINGS TAB ══════════════ -->
+    <div class="rdr-tab-panel" data-panel="earnings">
+
+      <div class="rdr-tab-head">
+        <div>
+          <h1 class="rdr-tab-title">Earnings &amp; History</h1>
+          <p class="rdr-tab-sub">Track your delivery performance and payouts.</p>
+        </div>
+      </div>
+
+      <div class="rdr-dash-stats">
+        <div class="rdr-dash-stat">
+          <div class="ic o"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="val cur">₦{{ rider_stats.earned|money }}</div>
+          <div class="lbl">Total earned</div>
+        </div>
+        <div class="rdr-dash-stat">
+          <div class="ic g"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="val">{{ rider_stats.delivered }}</div>
+          <div class="lbl">Completed</div>
+        </div>
+        <div class="rdr-dash-stat">
+          <div class="ic g"><i class="fa-solid fa-motorcycle"></i></div>
+          <div class="val">{{ rider_stats.active }}</div>
+          <div class="lbl">Active now</div>
+        </div>
+        <div class="rdr-dash-stat">
+          <div class="ic o"><i class="fa-solid fa-boxes-stacked"></i></div>
+          <div class="val">{{ rider_stats.available }}</div>
+          <div class="lbl">Available</div>
+        </div>
+      </div>
+
+      <div class="rdr-panel" style="margin-top:28px;">
+        <div class="rdr-panel-head">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--rdr-green-dark);"></i> Delivery History</h3>
+        </div>
+        {% if delivery_history %}
+          <div class="rdr-history-list">
+            {% for d in delivery_history %}
+            <div class="rdr-history-item">
+              <span class="rdr-history-ic"><i class="fa-solid {% if d.status == 'delivered' %}fa-circle-check{% else %}fa-ban{% endif %}"></i></span>
+              <div class="rdr-history-info">
+                <div class="rdr-order-top">
+                  <span class="rdr-order-id">#{{ d.order.order_id }}</span>
+                  <span class="rdr-order-badge {% if d.status == 'delivered' %}done{% else %}cancelled{% endif %}">{{ d.status_label }}</span>
+                </div>
+                <div class="rdr-order-rest">{{ d.order.restaurant_name }}</div>
+                <div class="rdr-order-meta"><span><i class="fa-solid fa-clock"></i> {{ d.order.created_at|date:"M j, g:i A" }}</span></div>
+              </div>
+              <div class="rdr-order-total">{% if d.status == 'delivered' %}+₦{{ d.payout|money }}{% else %}₦0.00{% endif %}</div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rdr-empty small">
+            <div class="rdr-empty-ic"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <p>No completed deliveries yet. Your earnings will show here.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- ══════════════ PROFILE TAB ══════════════ -->
+    <div class="rdr-tab-panel" data-panel="profile">
+
+      <div class="rdr-tab-head">
+        <div>
+          <h1 class="rdr-tab-title">My Profile</h1>
+          <p class="rdr-tab-sub">Your rider account details.</p>
+        </div>
+        <div class="rdr-tab-cta">
+          <button type="button" class="rdr-btn rdr-btn-primary rdr-btn-sm" id="rdrEditProfileBtn"><i class="fa-solid fa-pen me-1"></i> Edit Profile</button>
+        </div>
+      </div>
+
+      <div class="rdr-profile-card">
+        <div class="rdr-avatar-pick">
+          <div class="rdr-avatar-preview rdr-avatar-large">{% if rider.avatar_image %}<img src="{{ rider.avatar_image.url }}" alt="{{ rider.first_name }}">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+          <div>
+            <div class="rdr-profile-name">{{ rider.first_name }} {{ rider.last_name }}</div>
+            <div class="rdr-profile-meta">{{ rider.vehicle_type }} · {{ rider.city }}, {{ rider.state }}</div>
+            <div class="rdr-sidebar-status">
+              {% if rider.is_online %}
+                <span class="rdr-online-pill"><span class="pulse-dot"></span> Online</span>
+              {% else %}
+                <span class="rdr-online-pill off"><span class="pulse-dot"></span> Offline</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rdr-panel" style="margin-top:20px;">
+        <div class="rdr-panel-head">
+          <h3><i class="fa-solid fa-id-card" style="color:var(--rdr-green-dark);"></i> Rider Information</h3>
+        </div>
+        <div class="rdr-profile-grid">
+          <div><div class="k">Full name</div><div class="v">{{ rider.first_name }} {{ rider.last_name }}</div></div>
+          <div><div class="k">Email</div><div class="v">{{ rider.email }}</div></div>
+          <div><div class="k">Phone</div><div class="v">{{ rider.phone }}</div></div>
+          <div><div class="k">Date of birth</div><div class="v">{{ rider.dob }}</div></div>
+          <div><div class="k">Address</div><div class="v">{{ rider.address }}</div></div>
+          <div><div class="k">City / State</div><div class="v">{{ rider.city }}, {{ rider.state }} {{ rider.country }}</div></div>
+          <div><div class="k">Vehicle</div><div class="v">{{ rider.vehicle_type }} · {{ rider.vehicle_brand }} {{ rider.vehicle_model }} ({{ rider.vehicle_color }})</div></div>
+          <div><div class="k">Plate number</div><div class="v">{{ rider.vehicle_plate }}</div></div>
+          <div><div class="k">Bank account</div><div class="v">{{ rider.bank_name }} · {{ rider.account_name }} ({{ rider.account_number }})</div></div>
+          <div><div class="k">Status</div><div class="v"><span class="rdr-order-badge done">Approved</span></div></div>
+        </div>
+      </div>
+
+      <!-- Edit profile form (hidden, toggled by the Edit Profile button) -->
+      <div class="rdr-panel" id="rdrEditProfilePanel" style="margin-top:20px;display:none;">
+        <div class="rdr-panel-head">
+          <h3><i class="fa-solid fa-pen" style="color:var(--rdr-orange);"></i> Edit Profile</h3>
+        </div>
+        <form method="POST" action="{% url 'rider_profile_update' %}" enctype="multipart/form-data" id="rdrEditProfileForm">
+          {% csrf_token %}
+
+          <div class="rdr-field">
+            <div class="rdr-avatar-pick">
+              <div class="rdr-avatar-preview" id="rdrEditAvatarPreview">{% if rider.avatar_image %}<img src="{{ rider.avatar_image.url }}" alt="">{% else %}<i class="fa-solid fa-user"></i>{% endif %}</div>
+              <div>
+                <label class="rdr-label">Profile Picture</label>
+                <label class="rdr-dropzone" style="padding:14px 18px;">
+                  <input type="file" id="rdrEditAvatarFile" name="avatar_file" accept="image/*">
+                  <span style="display:inline;"><i class="fa-solid fa-camera me-1" style="color:var(--rdr-green-dark)"></i> <strong>Change photo</strong></span>
+                </label>
+                <span class="rdr-bank-hint">JPG or PNG, max 5MB.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">First Name <span class="req">*</span></label>
+              <input type="text" class="rdr-input" name="first_name" value="{{ rider.first_name }}" required>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Last Name <span class="req">*</span></label>
+              <input type="text" class="rdr-input" name="last_name" value="{{ rider.last_name }}" required>
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Email</label>
+              <input type="email" class="rdr-input" value="{{ rider.email }}" readonly>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Phone Number</label>
+              <input type="tel" class="rdr-input" name="phone" value="{{ rider.phone }}">
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Date of Birth</label>
+              <input type="date" class="rdr-input" name="dob" value="{{ rider.dob|date:'Y-m-d' }}">
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Gender</label>
+              <select class="rdr-select" name="gender">
+                <option value="">Prefer not to say</option>
+                <option value="male" {% if rider.gender == 'male' %}selected{% endif %}>Male</option>
+                <option value="female" {% if rider.gender == 'female' %}selected{% endif %}>Female</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Address</label>
+            <input type="text" class="rdr-input" name="address" value="{{ rider.address }}">
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">City</label>
+              <input type="text" class="rdr-input" name="city" value="{{ rider.city }}">
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">State</label>
+              <input type="text" class="rdr-input" name="state" value="{{ rider.state }}">
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Country</label>
+              <input type="text" class="rdr-input" name="country" value="{{ rider.country }}">
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Postal Code</label>
+              <input type="text" class="rdr-input" name="postal_code" value="{{ rider.postal_code }}">
+            </div>
+          </div>
+
+          <hr style="border-color:var(--rdr-line);margin:20px 0;">
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Type</label>
+              <select class="rdr-select" name="vehicle_type">
+                <option value="">Select vehicle type</option>
+                <option value="Motorcycle" {% if rider.vehicle_type == 'Motorcycle' %}selected{% endif %}>Motorcycle</option>
+                <option value="Bicycle" {% if rider.vehicle_type == 'Bicycle' %}selected{% endif %}>Bicycle</option>
+                <option value="Scooter" {% if rider.vehicle_type == 'Scooter' %}selected{% endif %}>Scooter</option>
+                <option value="Car" {% if rider.vehicle_type == 'Car' %}selected{% endif %}>Car</option>
+              </select>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Brand</label>
+              <input type="text" class="rdr-input" name="vehicle_brand" value="{{ rider.vehicle_brand }}">
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Model</label>
+              <input type="text" class="rdr-input" name="vehicle_model" value="{{ rider.vehicle_model }}">
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Color</label>
+              <input type="text" class="rdr-input" name="vehicle_color" value="{{ rider.vehicle_color }}">
+            </div>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Plate Number</label>
+            <input type="text" class="rdr-input" name="vehicle_plate" value="{{ rider.vehicle_plate }}">
+          </div>
+
+          <hr style="border-color:var(--rdr-line);margin:20px 0;">
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Bank Name <span class="req">*</span></label>
+              <select class="rdr-select" id="rdrEditBankName" name="bank_name">
+                <option value="" selected disabled>Loading banks…</option>
+              </select>
+              <span class="rdr-field-error" data-error-for="rdrEditBankName">Please select your bank.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Account Number <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrEditAcctNo" name="account_number" value="{{ rider.account_number }}" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" autocomplete="off">
+              <span class="rdr-bank-hint" id="rdrEditBankHint"></span>
+            </div>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Account Name <span class="req">*</span></label>
+            <input type="text" class="rdr-input" id="rdrEditAcctName" name="account_name" value="{{ rider.account_name }}" readonly>
+            <span class="rdr-field-error" data-error-for="rdrEditAcctName">Account name could not be verified — check your account number and bank.</span>
+          </div>
+
+          <div class="rdr-edit-actions">
+            <button type="button" class="rdr-btn rdr-btn-ghost" id="rdrCancelEditBtn"><i class="fa-solid fa-xmark me-1"></i> Cancel</button>
+            <button type="submit" class="rdr-btn rdr-btn-green"><i class="fa-solid fa-floppy-disk me-1"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Sidebar Tab Switching ── */
+  const sidebarBtns = document.querySelectorAll('.rdr-sidebar-btn');
+  const panels = document.querySelectorAll('.rdr-tab-panel');
+
+  window.switchTab = function (name) {
+    sidebarBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    panels.forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+    document.querySelector('.rdr-main').scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  sidebarBtns.forEach(btn => {
+    btn.addEventListener('click', () => window.switchTab(btn.dataset.tab));
+  });
+
+  /* ── Mobile Drawer ── */
+  const mobileToggle = document.getElementById('rdrMobileToggle');
+  if (mobileToggle) mobileToggle.addEventListener('click', () => window.openRiderDrawer());
+
+  window.openRiderDrawer = () => {
+    const drawer = document.getElementById('rdrDrawer');
+    if (drawer) drawer.classList.add('open');
+  };
+
+  window.closeRiderDrawer = () => {
+    const drawer = document.getElementById('rdrDrawer');
+    if (drawer) drawer.classList.remove('open');
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') window.closeRiderDrawer();
+  });
+
+  /* ── Light / Dark Theme ── */
+  const html = document.documentElement;
+  const themeToggle = document.getElementById('rdrThemeToggle');
+  const mobileTheme = document.getElementById('rdrMobileTheme');
+  const themeLabel = document.querySelector('.rdr-theme-label');
+
+  function applyTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('rdr-theme', theme);
+    const isDark = theme === 'dark';
+    if (themeLabel) themeLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+    document.querySelectorAll('.rdr-theme-toggle i').forEach(i => {
+      i.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-circle-half-stroke';
+    });
+  }
+
+  const saved = localStorage.getItem('rdr-theme');
+  applyTheme(saved || 'light');
+
+  function toggleTheme() {
+    applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  window.toggleTheme = toggleTheme;
+  if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+  if (mobileTheme) mobileTheme.addEventListener('click', toggleTheme);
+
+  /* ── Scroll Reveal ── */
+  const reveals = document.querySelectorAll('[data-rdr-reveal]');
+  if (reveals.length && 'IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('rdr-in'); obs.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => obs.observe(el));
+  } else {
+    reveals.forEach(el => el.classList.add('rdr-in'));
+  }
+
+  /* ── Live Polling ── */
+  let last = { online: null, active: null, available: -1 };
+  function poll() {
+    fetch('/riders/dashboard/api/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.json())
+      .then(d => {
+        const activeId = d.active ? d.active.id : null;
+        if (last.online === null) { last.online = d.is_online; last.active = activeId; last.available = d.available.length; return; }
+        const changed = d.is_online !== last.online || activeId !== last.active || d.available.length !== last.available;
+        last.online = d.is_online; last.active = activeId; last.available = d.available.length;
+        if (changed) window.location.reload();
+      })
+      .catch(() => {});
+  }
+  setInterval(poll, 15000);
+
+  /* ── Edit Profile Toggle ── */
+  const editProfileBtn = document.getElementById('rdrEditProfileBtn');
+  const editProfilePanel = document.getElementById('rdrEditProfilePanel');
+  const cancelEditBtn = document.getElementById('rdrCancelEditBtn');
+  const editAvatarFile = document.getElementById('rdrEditAvatarFile');
+  const editAvatarPreview = document.getElementById('rdrEditAvatarPreview');
+
+  if (editProfileBtn && editProfilePanel) {
+    editProfileBtn.addEventListener('click', () => {
+      const show = editProfilePanel.style.display === 'none';
+      editProfilePanel.style.display = show ? 'block' : 'none';
+      editProfileBtn.innerHTML = show
+        ? '<i class="fa-solid fa-xmark me-1"></i> Cancel Edit'
+        : '<i class="fa-solid fa-pen me-1"></i> Edit Profile';
+      if (show) {
+        editProfilePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        editBankLoad();
+      }
+    });
+    if (cancelEditBtn) {
+      cancelEditBtn.addEventListener('click', () => {
+        editProfilePanel.style.display = 'none';
+        if (editProfileBtn) editProfileBtn.innerHTML = '<i class="fa-solid fa-pen me-1"></i> Edit Profile';
+      });
+    }
+    if (editAvatarFile && editAvatarPreview) {
+      editAvatarFile.addEventListener('change', () => {
+        const file = editAvatarFile.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          editAvatarPreview.innerHTML = '<img src="' + e.target.result + '" alt="">';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }
+
+  /* ── Edit Profile Bank Verification (Paystack, like registration) ── */
+  const editBankSelect = document.getElementById('rdrEditBankName');
+  const editAcctNo = document.getElementById('rdrEditAcctNo');
+  const editAcctName = document.getElementById('rdrEditAcctName');
+  const editBankHint = document.getElementById('rdrEditBankHint');
+  const RIDER_CURRENT_BANK = "{{ rider.bank_name|escapejs }}";
+  const RDR_DIGITS_RE = /^\d{10}$/;
+  let editBankResolveTimer = null;
+
+  function getCsrf() {
+    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return el ? el.value : '';
+  }
+
+  function editBankSetHint(text, type) {
+    if (!editBankHint) return;
+    editBankHint.textContent = text || '';
+    editBankHint.className = 'rdr-bank-hint' + (type ? ' ' + type : '');
+  }
+
+  function editBankResolve() {
+    const bank = editBankSelect.selectedOptions[0];
+    const code = bank ? bank.getAttribute('data-code') : '';
+    const no = editAcctNo.value.trim();
+    if (!code || !RDR_DIGITS_RE.test(no)) return;
+
+    editAcctName.value = '';
+    editBankSetHint('Verifying account…', 'loading');
+
+    fetch('/riders/api/banks/resolve/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrf(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ bank_code: code, account_number: no })
+    })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && data.ok && data.account_name) {
+          editAcctName.value = data.account_name;
+          editBankSetHint('Account verified', 'success');
+        } else {
+          editAcctName.value = '';
+          editBankSetHint((data && data.error) || 'Account could not be verified.', 'error');
+        }
+      })
+      .catch(() => {
+        editAcctName.value = '';
+        editBankSetHint('Account could not be verified. Please try again.', 'error');
+      });
+  }
+
+  function editBankLoad() {
+    if (!editBankSelect || editBankSelect.dataset.loaded) return;
+    editBankSelect.innerHTML = '<option value="" selected disabled>Loading banks…</option>';
+
+    fetch('/riders/api/banks/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok || !data || !Array.isArray(data.banks)) {
+          editBankSelect.innerHTML = '<option value="" selected disabled>Could not load banks — tap to retry</option>';
+          return;
+        }
+        editBankSelect.dataset.loaded = '1';
+        editBankSelect.innerHTML = '<option value="" selected disabled>Select your bank</option>';
+        let matched = false;
+        data.banks.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b.name;
+          opt.textContent = b.name;
+          if (b.code) opt.setAttribute('data-code', b.code);
+          if (RIDER_CURRENT_BANK && b.name === RIDER_CURRENT_BANK) { opt.selected = true; matched = true; }
+          editBankSelect.appendChild(opt);
+        });
+        if (!matched && RIDER_CURRENT_BANK) {
+          const opt = document.createElement('option');
+          opt.value = RIDER_CURRENT_BANK;
+          opt.textContent = RIDER_CURRENT_BANK;
+          opt.selected = true;
+          editBankSelect.appendChild(opt);
+        }
+        if (editAcctNo.value.trim().length === 10) editBankResolve();
+      })
+      .catch(() => {
+        editBankSelect.innerHTML = '<option value="" selected disabled>Could not load banks — tap to retry</option>';
+      });
+  }
+
+  if (editBankSelect) {
+    editBankSelect.addEventListener('click', editBankLoad);
+    editBankSelect.addEventListener('change', () => {
+      editAcctName.value = '';
+      editBankSetHint('');
+      if (editAcctNo.value.trim().length === 10) editBankResolve();
+    });
+  }
+  if (editAcctNo) {
+    editAcctNo.addEventListener('input', () => {
+      editAcctName.value = '';
+      editBankSetHint('');
+      clearTimeout(editBankResolveTimer);
+      if (editAcctNo.value.trim().length === 10 && editBankSelect.value) {
+        editBankResolveTimer = setTimeout(editBankResolve, 600);
+      }
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

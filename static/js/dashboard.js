@@ -5,6 +5,12 @@
 
 let customAddresses = [];
 
+function readJsonData(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.textContent.trim()) return null;
+  try { return JSON.parse(el.textContent); } catch (e) { return null; }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const hash = window.location.hash.replace('#', '');
   if (hash) {
@@ -51,9 +57,7 @@ function renderPastOrders() {
   const fullContainer = document.getElementById('db-full-orders-list');
   if (!recentContainer || !fullContainer) return;
 
-  const realOrders = window.FOODCOURT_USER_ORDERS || [];
-  const mockOrders = (window.FOODCOURT_DATA && window.FOODCOURT_DATA.orders) || [];
-  const orders = realOrders.length > 0 ? realOrders : mockOrders;
+  const orders = readJsonData('db-user-orders') || window.FOODCOURT_USER_ORDERS || [];
 
   const getBadgeClass = (status) => {
     const s = status.toLowerCase();
@@ -74,6 +78,9 @@ function renderPastOrders() {
       
       <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
         <span class="fc-badge ${getBadgeClass(o.status)}" style="font-size:12px;">${o.status}</span>
+        <button class="fc-btn fc-btn-outline fc-btn-sm py-2" onclick="window.location.href='/tracking/${o.id}/'">
+          <i class="fa-solid fa-location-dot me-1"></i> Track
+        </button>
         <button class="fc-btn fc-btn-outline fc-btn-sm py-2" onclick="reorderItems(${JSON.stringify(o.items).replace(/"/g, '&quot;')})">
           <i class="fa-solid fa-rotate-right me-1"></i> Reorder
         </button>
@@ -81,8 +88,12 @@ function renderPastOrders() {
     </div>
   `;
 
-  recentContainer.innerHTML = orders.slice(0, 3).map((o, idx) => renderOrderHtml(o, idx)).join('');
+  recentContainer.innerHTML = orders.length > 0
+    ? orders.slice(0, 3).map((o, idx) => renderOrderHtml(o, idx)).join('')
+    : '<div class="text-center py-4 text-muted" style="font-size:13px;">No recent orders yet. <a href="/restaurants/" class="text-primary fw-bold">Start ordering!</a></div>';
   fullContainer.innerHTML = orders.length > 0 ? orders.map((o, idx) => renderOrderHtml(o, idx)).join('') : '<div class="text-center py-5 text-muted" style="font-size:14px;">No orders yet. <a href="/restaurants/" class="text-primary fw-bold">Start ordering!</a></div>';
+
+  if (window.ScrollReveal) window.ScrollReveal.init();
 }
 
 /* ══════════════════════════════════════════════
@@ -128,28 +139,44 @@ function getCookie(name) {
 }
 
 function loadAddresses() {
+  const inline = readJsonData('db-user-addresses');
+  if (inline) {
+    window.FOODCOURT_USER_ADDRESSES = inline;
+    renderAddresses();
+  }
   fetch('/api/addresses/')
     .then(r => r.json())
     .then(data => {
       window.FOODCOURT_USER_ADDRESSES = data.addresses || [];
       renderAddresses();
     })
-    .catch(() => {
-      if (window.FOODCOURT_DATA && window.FOODCOURT_DATA.addresses) {
-        window.FOODCOURT_USER_ADDRESSES = window.FOODCOURT_DATA.addresses;
-        renderAddresses();
-      }
-    });
+    .catch(() => {});
 }
 
 function renderAddresses() {
   const container = document.getElementById('db-addresses-list');
   if (!container) return;
 
-  const list = window.FOODCOURT_USER_ADDRESSES || (window.FOODCOURT_DATA && window.FOODCOURT_DATA.addresses) || [];
+  const list = window.FOODCOURT_USER_ADDRESSES || [];
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="col-12 text-center py-5 text-muted" style="font-size:14px;">
+        <div style="font-size:36px;margin-bottom:8px">🏠</div>
+        <p class="fw-semibold">No saved addresses yet</p>
+        <button class="fc-btn fc-btn-primary fc-btn-sm mt-2" onclick="toggleAddAddressForm()">Add New Address</button>
+      </div>
+    `;
+    if (window.ScrollReveal) window.ScrollReveal.init();
+    return;
+  }
 
   container.innerHTML = list.map(addr => {
     const icon = addr.label && addr.label.toLowerCase().includes('work') ? 'fa-building' : 'fa-house';
+    const landmarkHtml = addr.landmark ? `<div class="addr-detail-line"><i class="fa-solid fa-location-dot"></i><span>Near ${addr.landmark}</span></div>` : '';
+    const cityState = [addr.city, addr.state].filter(Boolean).join(', ');
+    const countryHtml = addr.country ? `<div class="addr-detail-line"><i class="fa-solid fa-globe"></i><span>${addr.country}</span></div>` : '';
+    const phoneHtml = addr.phone ? `<div class="addr-detail-line"><i class="fa-solid fa-phone"></i><span>${addr.phone}</span></div>` : '';
     return `
     <div class="db-address-card reveal" id="db-addr-${addr.id}">
       <div class="db-address-header">
@@ -158,7 +185,11 @@ function renderAddresses() {
           ${addr.is_default ? '<span class="fc-badge fc-badge-accent text-xxs scale-90" style="padding:1px 6px;">Default</span>' : ''}
         </span>
       </div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.5;">${addr.address}</div>
+      <div class="addr-detail-line"><i class="fa-solid fa-house"></i><span>${addr.street}</span></div>
+      ${landmarkHtml}
+      <div class="addr-detail-line"><i class="fa-solid fa-city"></i><span>${cityState || addr.city}</span></div>
+      ${countryHtml}
+      ${phoneHtml}
       
       <div class="db-address-actions">
         <button class="db-address-btn edit" onclick="editAddressCard(${addr.id})">
@@ -170,6 +201,8 @@ function renderAddresses() {
       </div>
     </div>
   `}).join('');
+
+  if (window.ScrollReveal) window.ScrollReveal.init();
 }
 
 window.toggleAddAddressForm = function() {
@@ -180,9 +213,17 @@ window.toggleAddAddressForm = function() {
 window.saveNewAddress = function(event) {
   event.preventDefault();
 
-  const labelVal = document.getElementById('new-addr-label').value.trim();
-  const textVal = document.getElementById('new-addr-text').value.trim();
-  if (!labelVal || !textVal) return;
+  const data = {
+    action: 'create',
+    label: document.getElementById('new-addr-label').value,
+    street: document.getElementById('new-addr-street').value.trim(),
+    landmark: document.getElementById('new-addr-landmark').value.trim(),
+    city: document.getElementById('new-addr-city').value.trim(),
+    state: document.getElementById('new-addr-state').value.trim(),
+    country: document.getElementById('new-addr-country').value.trim(),
+    phone: document.getElementById('new-addr-phone').value.trim(),
+  };
+  if (!data.label || !data.street) { Toast.show('Label and street address are required', 'error'); return; }
 
   const btn = event.target.querySelector('button[type="submit"]');
   const orig = btn.innerHTML;
@@ -193,18 +234,23 @@ window.saveNewAddress = function(event) {
   fetch('/api/addresses/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-    body: JSON.stringify({ action: 'create', label: labelVal, address: textVal })
+    body: JSON.stringify(data)
   })
   .then(r => r.json())
-  .then(data => {
-    if (data.success) {
+  .then(res => {
+    if (res.success) {
       document.getElementById('new-addr-label').value = '';
-      document.getElementById('new-addr-text').value = '';
+      document.getElementById('new-addr-street').value = '';
+      document.getElementById('new-addr-landmark').value = '';
+      document.getElementById('new-addr-city').value = '';
+      document.getElementById('new-addr-state').value = '';
+      document.getElementById('new-addr-country').value = 'United States';
+      document.getElementById('new-addr-phone').value = '';
       toggleAddAddressForm();
       loadAddresses();
       Toast.show('Address saved!', 'success');
     } else {
-      Toast.show(data.error || 'Failed to save', 'error');
+      Toast.show(res.error || 'Failed to save', 'error');
     }
   })
   .catch(() => Toast.show('Failed to save address', 'error'))
@@ -221,7 +267,12 @@ window.editAddressCard = function(id) {
 
   document.getElementById('edit-addr-id').value = addr.id;
   document.getElementById('edit-addr-label').value = addr.label;
-  document.getElementById('edit-addr-text').value = addr.address;
+  document.getElementById('edit-addr-street').value = addr.street || '';
+  document.getElementById('edit-addr-landmark').value = addr.landmark || '';
+  document.getElementById('edit-addr-city').value = addr.city || '';
+  document.getElementById('edit-addr-state').value = addr.state || '';
+  document.getElementById('edit-addr-country').value = addr.country || '';
+  document.getElementById('edit-addr-phone').value = addr.phone || '';
 
   const card = document.getElementById('edit-address-form-card');
   card.classList.remove('d-none');
@@ -237,9 +288,18 @@ window.saveEditAddress = function(event) {
   event.preventDefault();
 
   const id = document.getElementById('edit-addr-id').value;
-  const labelVal = document.getElementById('edit-addr-label').value.trim();
-  const textVal = document.getElementById('edit-addr-text').value.trim();
-  if (!labelVal || !textVal || !id) return;
+  const data = {
+    action: 'update',
+    id: parseInt(id),
+    label: document.getElementById('edit-addr-label').value,
+    street: document.getElementById('edit-addr-street').value.trim(),
+    landmark: document.getElementById('edit-addr-landmark').value.trim(),
+    city: document.getElementById('edit-addr-city').value.trim(),
+    state: document.getElementById('edit-addr-state').value.trim(),
+    country: document.getElementById('edit-addr-country').value.trim(),
+    phone: document.getElementById('edit-addr-phone').value.trim(),
+  };
+  if (!data.label || !data.street || !id) { Toast.show('Label and street address are required', 'error'); return; }
 
   const btn = event.target.querySelector('button[type="submit"]');
   const orig = btn.innerHTML;
@@ -250,16 +310,16 @@ window.saveEditAddress = function(event) {
   fetch('/api/addresses/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-    body: JSON.stringify({ action: 'update', id: parseInt(id), label: labelVal, address: textVal })
+    body: JSON.stringify(data)
   })
   .then(r => r.json())
-  .then(data => {
-    if (data.success) {
+  .then(res => {
+    if (res.success) {
       toggleEditAddressForm();
       loadAddresses();
       Toast.show('Address updated!', 'success');
     } else {
-      Toast.show(data.error || 'Failed to update', 'error');
+      Toast.show(res.error || 'Failed to update', 'error');
     }
   })
   .catch(() => Toast.show('Failed to update address', 'error'))
@@ -305,10 +365,19 @@ window.deleteAddressCard = function(id) {
    ══════════════════════════════════════════════ */
 function renderFavorites() {
   const container = document.getElementById('db-favorites-grid');
-  if (!container || !window.FOODCOURT_DATA) return;
+  if (!container) return;
 
   const favIds = window.Favorites ? window.Favorites.get() : [];
-  const list = window.FOODCOURT_DATA.restaurants.filter(r => favIds.includes(r.id));
+  const dbRestaurants = readJsonData('db-restaurants-data') || [];
+
+  let list = dbRestaurants.filter(r => favIds.includes(r.id));
+
+  // Fallback to mock restaurants (e.g. favorited on the mock-driven homepage)
+  if (list.length === 0 && window.FOODCOURT_DATA) {
+    const dbIds = new Set(dbRestaurants.map(r => r.id));
+    const mockOnly = window.FOODCOURT_DATA.restaurants.filter(r => !dbIds.has(r.id) && favIds.includes(r.id));
+    list = mockOnly;
+  }
 
   if (list.length === 0) {
     container.innerHTML = `
@@ -334,20 +403,72 @@ function renderFavorites() {
 }
 
 /* ══════════════════════════════════════════════
-   AVATAR LOADER MOCK
+   AVATAR UPLOAD
    ══════════════════════════════════════════════ */
+function syncAvatarImg(url) {
+  ['db-avatar-preview', 'db-settings-avatar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.onerror = null;
+    el.style.display = '';
+    el.src = url;
+    const fallback = document.getElementById(id === 'db-avatar-preview' ? 'db-avatar-fallback' : 'db-settings-avatar-fallback');
+    if (fallback) fallback.style.display = 'none';
+  });
+}
+
+function uploadAvatarFile(file) {
+  const csrfToken = getCookie('csrftoken');
+  const fd = new FormData();
+  fd.append('avatar_file', file);
+
+  return fetch('/api/profile/avatar/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    body: fd
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success && res.avatar) {
+      syncAvatarImg(res.avatar);
+      Toast.show('Profile picture updated!', 'success');
+      return true;
+    }
+    Toast.show(res.error || 'Failed to upload picture', 'error');
+    return false;
+  })
+  .catch(() => {
+    Toast.show('Failed to upload picture', 'error');
+    return false;
+  });
+}
+
 window.previewDashboardAvatar = function(input) {
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const avatarEl = document.getElementById('db-avatar-preview');
-      if (avatarEl) {
-        avatarEl.src = e.target.result;
-        Toast.show('Profile picture updated! 📸', 'success');
-      }
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const avatarEl = document.getElementById('db-avatar-preview');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if (avatarEl) avatarEl.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  uploadAvatarFile(file).finally(() => { input.value = ''; });
+};
+
+window.changeSettingsAvatar = function(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const avatarEl = document.getElementById('db-settings-avatar');
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if (avatarEl) avatarEl.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  uploadAvatarFile(file).finally(() => { input.value = ''; });
 };
 
 /* ══════════════════════════════════════════════

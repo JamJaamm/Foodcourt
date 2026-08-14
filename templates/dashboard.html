@@ -1,10 +1,35 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load money_tags %}
 
 {% block title %}FoodCourt — My Dashboard{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+<style>
+  .addr-form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .db-address-card .addr-detail-line {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .db-address-card .addr-detail-line i {
+    width: 14px;
+    color: var(--primary);
+    margin-top: 3px;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -21,11 +46,17 @@
           <!-- Profile header info -->
           <div class="db-profile-header">
             <div class="db-avatar-container">
-              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80" alt="Avatar" class="db-avatar" id="db-avatar-preview">
+              <img src="{{ user_avatar }}" alt="Avatar" class="db-avatar" id="db-avatar-preview"
+                   {% if not user_avatar %}style="display:none"{% endif %}
+                   onerror="this.style.display='none'; document.getElementById('db-avatar-fallback').style.display='flex';">
+              <div class="db-avatar" id="db-avatar-fallback"
+                   style="display:{% if user_avatar %}none{% else %}flex{% endif %};align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
+                <span style="font-family:var(--font-display);font-weight:var(--font-bold);font-size:30px;color:var(--primary);">{{ request.user.first_name|first|default:'F'|upper }}{{ request.user.last_name|first|default:''|upper }}</span>
+              </div>
               <button class="db-avatar-upload-btn" onclick="document.getElementById('db-avatar-file-input').click()" aria-label="Upload profile image">
                 <i class="fa-solid fa-camera"></i>
               </button>
-              <input type="file" id="db-avatar-file-input" style="display:none" onchange="previewDashboardAvatar(this)">
+              <input type="file" id="db-avatar-file-input" style="display:none" accept="image/*" onchange="previewDashboardAvatar(this)">
             </div>
             
             <div class="db-username" id="db-profile-name">{{ request.user.first_name }} {{ request.user.last_name }}</div>
@@ -71,7 +102,7 @@
               <div class="db-stat-label">Total Orders</div>
             </div>
             <div class="db-stat-card">
-              <div class="db-stat-num">${{ stats.total_spent }}</div>
+              <div class="db-stat-num">₦{{ stats.total_spent|money }}</div>
               <div class="db-stat-label">Total Spent</div>
             </div>
             <div class="db-stat-card">
@@ -115,19 +146,44 @@
 
           <!-- Add Address Form (toggled inline) -->
           <div class="db-card d-none" id="add-address-form-card">
-            <h3 class="db-card-title">Add New Address</h3>
+            <h3 class="db-card-title"><i class="fa-solid fa-plus-circle text-primary me-2"></i>Add New Address</h3>
             <form onsubmit="saveNewAddress(event)">
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <div class="form-floating-custom">
-                    <input type="text" id="new-addr-label" placeholder="Label (e.g. Home, Work)" required>
-                  </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                  <label class="addr-form-label">Address Label</label>
+                  <select id="new-addr-label" class="auth-input" required style="padding:12px 16px;">
+                    <option value="">Choose a label</option>
+                    <option value="Home">🏠 Home</option>
+                    <option value="Work">💼 Work</option>
+                    <option value="Other">📍 Other</option>
+                  </select>
                 </div>
-                <div class="col-md-8">
-                  <div class="form-floating-custom">
-                    <input type="text" id="new-addr-text" placeholder="Full Address" required>
-                  </div>
+                <div class="col-md-7">
+                  <label class="addr-form-label">Phone for Delivery</label>
+                  <input type="tel" id="new-addr-phone" class="auth-input" placeholder="+1 (555) 000-0000" style="padding:12px 16px;">
                 </div>
+              </div>
+              <div class="mb-3">
+                <label class="addr-form-label">Street Address</label>
+                <input type="text" id="new-addr-street" class="auth-input" placeholder="House number, street name" required style="padding:12px 16px;">
+              </div>
+              <div class="mb-3">
+                <label class="addr-form-label">Nearest Landmark</label>
+                <input type="text" id="new-addr-landmark" class="auth-input" placeholder="E.g. Near Central Park, Opposite City Mall" style="padding:12px 16px;">
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="addr-form-label">City</label>
+                  <input type="text" id="new-addr-city" class="auth-input" placeholder="City" required style="padding:12px 16px;">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">State</label>
+                  <input type="text" id="new-addr-state" class="auth-input" placeholder="State / Province" style="padding:12px 16px;">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="addr-form-label">Country</label>
+                <input type="text" id="new-addr-country" class="auth-input" placeholder="Country" value="United States" style="padding:12px 16px;">
               </div>
               <div class="d-flex justify-content-end gap-2 mt-4">
                 <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="toggleAddAddressForm()">Cancel</button>
@@ -138,20 +194,44 @@
 
           <!-- Edit Address Form (toggled inline) -->
           <div class="db-card d-none" id="edit-address-form-card">
-            <h3 class="db-card-title">Edit Address</h3>
+            <h3 class="db-card-title"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>Edit Address</h3>
             <form onsubmit="saveEditAddress(event)">
               <input type="hidden" id="edit-addr-id">
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <div class="form-floating-custom">
-                    <input type="text" id="edit-addr-label" placeholder="Label (e.g. Home, Work)" required>
-                  </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                  <label class="addr-form-label">Address Label</label>
+                  <select id="edit-addr-label" class="auth-input" required style="padding:12px 16px;">
+                    <option value="Home">🏠 Home</option>
+                    <option value="Work">💼 Work</option>
+                    <option value="Other">📍 Other</option>
+                  </select>
                 </div>
-                <div class="col-md-8">
-                  <div class="form-floating-custom">
-                    <input type="text" id="edit-addr-text" placeholder="Full Address" required>
-                  </div>
+                <div class="col-md-7">
+                  <label class="addr-form-label">Phone for Delivery</label>
+                  <input type="tel" id="edit-addr-phone" class="auth-input" placeholder="+1 (555) 000-0000" style="padding:12px 16px;">
                 </div>
+              </div>
+              <div class="mb-3">
+                <label class="addr-form-label">Street Address</label>
+                <input type="text" id="edit-addr-street" class="auth-input" placeholder="House number, street name" required style="padding:12px 16px;">
+              </div>
+              <div class="mb-3">
+                <label class="addr-form-label">Nearest Landmark</label>
+                <input type="text" id="edit-addr-landmark" class="auth-input" placeholder="E.g. Near Central Park, Opposite City Mall" style="padding:12px 16px;">
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="addr-form-label">City</label>
+                  <input type="text" id="edit-addr-city" class="auth-input" placeholder="City" required style="padding:12px 16px;">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">State</label>
+                  <input type="text" id="edit-addr-state" class="auth-input" placeholder="State / Province" style="padding:12px 16px;">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="addr-form-label">Country</label>
+                <input type="text" id="edit-addr-country" class="auth-input" placeholder="Country" style="padding:12px 16px;">
               </div>
               <div class="d-flex justify-content-end gap-2 mt-4">
                 <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="toggleEditAddressForm()">Cancel</button>
@@ -176,9 +256,32 @@
         </div>
 
         <!-- ==================== PROFILE SETTINGS PANEL ==================== -->
-        <div class="db-tab-content" id="db-tab-settings">
+          <div class="db-tab-content" id="db-tab-settings">
           <h2 class="db-header-title">Account Settings</h2>
           
+          <!-- Profile Picture -->
+          <div class="db-card mb-4">
+            <h3 class="db-card-title"><i class="fa-solid fa-camera me-2 text-primary"></i>Profile Picture</h3>
+            <div class="d-flex align-items-center gap-4 flex-wrap">
+              <div class="db-avatar-container" style="margin:0;">
+                <img src="{{ user_avatar }}" alt="Avatar" class="db-avatar" id="db-settings-avatar"
+                     {% if not user_avatar %}style="display:none"{% endif %}
+                     onerror="this.style.display='none'; document.getElementById('db-settings-avatar-fallback').style.display='flex';">
+                <div class="db-avatar" id="db-settings-avatar-fallback"
+                     style="display:{% if user_avatar %}none{% else %}flex{% endif %};align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
+                  <span style="font-family:var(--font-display);font-weight:var(--font-bold);font-size:30px;color:var(--primary);">{{ request.user.first_name|first|default:'F'|upper }}{{ request.user.last_name|first|default:''|upper }}</span>
+                </div>
+              </div>
+              <div>
+                <button type="button" class="fc-btn fc-btn-primary" onclick="document.getElementById('db-settings-avatar-input').click()">
+                  <i class="fa-solid fa-camera me-1"></i> Change Picture
+                </button>
+                <div class="text-muted mt-2" style="font-size:12px;">JPG, PNG or WebP. Max 5MB.</div>
+              </div>
+              <input type="file" id="db-settings-avatar-input" style="display:none" accept="image/*" onchange="changeSettingsAvatar(this)">
+            </div>
+          </div>
+
           <!-- Settings Form -->
           <div class="db-card">
             <h3 class="db-card-title"><i class="fa-solid fa-user me-2 text-primary"></i>Personal Information</h3>
@@ -236,9 +339,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-window.FOODCOURT_USER_ORDERS = {{ user_orders|safe }};
-window.FOODCOURT_USER_ADDRESSES = {{ user_addresses|safe }};
-</script>
+{{ user_orders|json_script:"db-user-orders" }}
+{{ user_addresses|json_script:"db-user-addresses" }}
+{{ db_restaurants|json_script:"db-restaurants-data" }}
 <script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

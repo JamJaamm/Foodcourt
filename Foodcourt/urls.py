@@ -1,20 +1,71 @@
 from django.contrib import admin
-from django.urls import path
-from django.views.generic import TemplateView
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from Foodcourt import views
+from django.urls import path
+# from .consumers import NotificationConsumer
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
-    path('restaurants/', TemplateView.as_view(template_name='restaurants.html'), name='restaurants'),
-    path('restaurant/<int:pk>/', TemplateView.as_view(template_name='restaurant_detail.html'), name='restaurant_detail'),
+    path('payments/', include('payments.urls')),
+    path('', views.home_view, name='home'),
+    path('riders/', views.rider_view, name='riders'),
+    path('riders/api/banks/', views.rider_banks_api, name='rider_banks_api'),
+    path('riders/api/banks/resolve/', views.rider_bank_resolve_api, name='rider_bank_resolve_api'),
+    path('riders/register/', views.rider_register_view, name='rider_register'),
+    path('riders/verify/', views.rider_verify_view, name='rider_verify'),
+    path('riders/login/', views.rider_login_view, name='rider_login'),
+    path('riders/logout/', views.rider_logout_view, name='rider_logout'),
+    path('riders/dashboard/', views.rider_dashboard_view, name='rider_dashboard'),
+    path('riders/profile/update/', views.rider_profile_update_view, name='rider_profile_update'),
+    path('riders/dashboard/online/', views.rider_toggle_online_view, name='rider_toggle_online'),
+    path('riders/dashboard/api/', views.rider_deliveries_api, name='rider_deliveries_api'),
+    path('riders/dashboard/accept/<int:delivery_id>/', views.rider_accept_delivery_view, name='rider_accept_delivery'),
+    path('riders/dashboard/decline/<int:delivery_id>/', views.rider_decline_delivery_view, name='rider_decline_delivery'),
+    path('riders/dashboard/status/<int:delivery_id>/', views.rider_delivery_status_view, name='rider_delivery_status'),
+    path('riders/dashboard/delivered/<int:delivery_id>/', views.rider_complete_delivery_view, name='rider_complete_delivery'),
+    path('restaurants/', views.restaurants_view, name='restaurants'),
+    path('restaurant/<int:pk>/', views.restaurant_detail_view, name='restaurant_detail'),
+    path('restaurant/<int:pk>/review/', views.submit_review_view, name='restaurant_review'),
     path('cart/', views.cart_view, name='cart'),
     path('api/addresses/', views.address_api, name='address_api'),
-    path('tracking/', TemplateView.as_view(template_name='order_tracking.html'), name='tracking'),
+    path('api/profile/avatar/', views.profile_pics_api, name='profile_avatar_api'),
+    path('tracking/', views.tracking_view, name='tracking'),
+    path('tracking/<str:order_id>/', views.tracking_view, name='tracking_detail'),
+    path('api/notifications/', views.notifications_api, name='notifications_api'),
+    path('api/notifications/read/', views.notifications_read_api, name='notifications_read'),
+    path('api/delivery/<str:order_id>/', views.order_delivery_api, name='order_delivery_api'),
+    path('api/orders/<str:order_id>/rate-rider/', views.rate_rider_api, name='rate_rider_api'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
+    path('admin-dashboard/restaurants/', views.admin_dashboard_view, {'section': 'restaurants'}, name='admin_restaurants'),
+    path('admin-dashboard/orders/', views.admin_dashboard_view, {'section': 'orders'}, name='admin_orders'),
+    path('admin-dashboard/riders/', views.admin_dashboard_view, {'section': 'riders'}, name='admin_riders'),
+    path('admin-dashboard/payments/', views.admin_dashboard_view, {'section': 'payments'}, name='admin_payments'),
+    path('admin-dashboard/riders/<int:pk>/approve/', views.approve_rider_view, name='approve_rider'),
+    path('admin-dashboard/riders/<int:pk>/reject/', views.reject_rider_view, name='reject_rider'),
     path('login/', views.login_view, name='login'),
     path('register/', views.register_view, name='register'),
+    path('restaurant/register/', views.restaurant_register_view, name='restaurant_register'),
     path('verify/', views.verify_view, name='verify'),
+    path('forgot-password/', views.forgot_password_view, name='forgot_password'),
+    path('reset-password/done/', views.reset_password_done_view, name='reset_password_done'),
+    path('reset-password/<uidb64>/<token>/', views.reset_password_view, name='reset_password_confirm'),
     path('order/place/', views.place_order_view, name='place_order'),
     path('logout/', views.logout_view, name='logout'),
+    path('restaurant-admin/', views.restaurant_dashboard_view, name='restaurant_dashboard'),
+    path('restaurant-admin/orders/', views.restaurant_dashboard_view, {'section': 'orders'}, name='restaurant_orders'),
+    path('restaurant-admin/menu/', views.restaurant_dashboard_view, {'section': 'menu'}, name='restaurant_menu'),
+    path('restaurant-admin/categories/', views.restaurant_dashboard_view, {'section': 'categories'}, name='restaurant_categories'),
+    path('restaurant-admin/customers/', views.restaurant_dashboard_view, {'section': 'customers'}, name='restaurant_customers'),
+    path('restaurant-admin/reviews/', views.restaurant_dashboard_view, {'section': 'reviews'}, name='restaurant_reviews'),
+    path('restaurant-admin/inventory/', views.restaurant_dashboard_view, {'section': 'inventory'}, name='restaurant_inventory'),
+    path('restaurant-admin/coupons/', views.restaurant_dashboard_view, {'section': 'coupons'}, name='restaurant_coupons'),
+    path('restaurant-admin/payments/', views.restaurant_dashboard_view, {'section': 'payments'}, name='restaurant_payments'),
+    path('restaurant-admin/settings/', views.restaurant_dashboard_view, {'section': 'settings'}, name='restaurant_settings'),
+    path('restaurant-admin/api/', views.restaurant_api_view, name='restaurant_api'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

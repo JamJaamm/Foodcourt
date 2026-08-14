@@ -1,0 +1,784 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load money_tags %}
+
+{% block title %}{{ restaurant.name }} — Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+<style>
+.rd-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+.rd-header h2 { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--text-primary); margin: 0; }
+.rd-header p { color: var(--text-secondary); font-size: 13px; margin: 2px 0 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; transition: all 0.2s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stat-card .num { font-size: 26px; font-weight: 800; font-family: var(--font-display); color: var(--text-primary); }
+.stat-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.stat-card .icon { font-size: 22px; margin-bottom: 8px; }
+.rd-table-wrap { overflow-x: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.rd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rd-table th { text-align: left; padding: 14px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--bg-elevated); font-weight: 700; }
+.rd-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+.rd-table tr:last-child td { border-bottom: none; }
+.rd-table tr:hover td { background: var(--primary-subtle); }
+.status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; text-transform: capitalize; }
+.status-pending { background: #fff3e0; color: #e65100; }
+.status-confirmed { background: #e3f2fd; color: #1565c0; }
+.status-preparing { background: #fff8e1; color: #f57f17; }
+.status-ready { background: #e8f5e9; color: #2e7d32; }
+.status-out_for_delivery { background: #f3e5f5; color: #7b1fa2; }
+.status-delivered { background: #e8f5e9; color: #1b5e20; }
+.status-cancelled { background: #ffebee; color: #c62828; }
+.rd-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.rd-toolbar input, .rd-toolbar select { padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); font-size: 13px; outline: none; }
+.rd-toolbar input:focus, .rd-toolbar select:focus { border-color: var(--primary); }
+.rd-toolbar input { min-width: 200px; }
+.rd-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+.rd-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); }
+.rd-inline-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.rd-inline-form input, .rd-inline-form select, .rd-inline-form textarea { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); font-size: 13px; outline: none; }
+.rd-inline-form input:focus, .rd-inline-form select:focus { border-color: var(--primary); }
+.rd-inline-form textarea { resize: vertical; min-height: 60px; }
+.rd-inline-form label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px; }
+.empty-state-sm { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+.empty-state-sm .icon { font-size: 32px; margin-bottom: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="dashboard-layout">
+  <div class="container">
+
+    <div class="row g-4">
+
+      <!-- Left Column: Sidebar -->
+      <div class="col-lg-3">
+        <div class="db-sidebar">
+
+          <!-- Profile header info -->
+          <div class="db-profile-header">
+            <div class="db-avatar-container">
+              <div class="db-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
+                <i class="fa-solid fa-utensils" style="font-size:34px;color:var(--primary);"></i>
+              </div>
+            </div>
+            <div class="db-username">{{ restaurant.name }}</div>
+            <div class="db-email">Restaurant Admin Panel</div>
+          </div>
+
+          <!-- Sidebar menu -->
+          <div class="db-menu-list">
+            <a href="/restaurant-admin/" class="db-menu-btn {% if active_section == 'overview' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-gauge"></i> Dashboard
+            </a>
+            <a href="/restaurant-admin/orders/" class="db-menu-btn {% if active_section == 'orders' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-list"></i> Orders
+            </a>
+            <a href="/restaurant-admin/menu/" class="db-menu-btn {% if active_section == 'menu' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-utensils"></i> Menu
+            </a>
+            <a href="/restaurant-admin/categories/" class="db-menu-btn {% if active_section == 'categories' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-tags"></i> Categories
+            </a>
+            <a href="/restaurant-admin/customers/" class="db-menu-btn {% if active_section == 'customers' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-users"></i> Customers
+            </a>
+            <a href="/restaurant-admin/reviews/" class="db-menu-btn {% if active_section == 'reviews' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-star"></i> Reviews
+            </a>
+            <a href="/restaurant-admin/inventory/" class="db-menu-btn {% if active_section == 'inventory' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-boxes"></i> Inventory
+            </a>
+            <a href="/restaurant-admin/coupons/" class="db-menu-btn {% if active_section == 'coupons' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-ticket"></i> Coupons
+            </a>
+            <a href="/restaurant-admin/payments/" class="db-menu-btn {% if active_section == 'payments' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-credit-card"></i> Payments
+            </a>
+            <a href="/restaurant-admin/settings/" class="db-menu-btn {% if active_section == 'settings' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-sliders"></i> Settings
+            </a>
+            <a href="/admin-dashboard/" class="db-menu-btn mt-3" style="text-decoration:none;">
+              <i class="fa-solid fa-shield-halved"></i> Admin Overview
+            </a>
+            <a href="{% url 'logout' %}" class="db-menu-btn" style="color: var(--danger); text-decoration: none;">
+              <i class="fa-solid fa-right-from-bracket"></i> Log Out
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Column: Workspace -->
+      <div class="col-lg-9">
+
+        {% if no_restaurant %}
+        <div class="rd-card text-center py-5">
+          <div style="font-size:48px;margin-bottom:16px;">🏪</div>
+          <h3>No Restaurant Found</h3>
+          <p class="text-secondary">You don't have a restaurant profile yet. Contact the admin to get one set up.</p>
+        </div>
+        {% else %}
+
+        {% if active_section == 'overview' %}
+        <!-- ═══════════════ OVERVIEW ═══════════════ -->
+        <div class="rd-header"><div><h2>Dashboard Overview</h2><p>Welcome back, {{ request.user.first_name }}!</p></div></div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="icon">💰</div><div class="num">₦{{ stats.today_revenue|money }}</div><div class="label">Today's Revenue</div></div>
+          <div class="stat-card"><div class="icon">📦</div><div class="num">{{ stats.total_orders }}</div><div class="label">Total Orders</div></div>
+          <div class="stat-card"><div class="icon">⏳</div><div class="num">{{ stats.pending_orders }}</div><div class="label">Pending Orders</div></div>
+          <div class="stat-card"><div class="icon">✅</div><div class="num">{{ stats.completed_orders }}</div><div class="label">Completed Orders</div></div>
+          <div class="stat-card"><div class="icon">👥</div><div class="num">{{ stats.customers }}</div><div class="label">Customers</div></div>
+          <div class="stat-card"><div class="icon">🍽️</div><div class="num">{{ stats.menu_items }}</div><div class="label">Menu Items</div></div>
+        </div>
+        <div class="rd-card"><h4>📋 Recent Orders</h4>
+          <div class="rd-table-wrap">
+            <table class="rd-table">
+              <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>
+                {% for o in orders|slice:":10" %}
+                <tr>
+                  <td><strong>{{ o.order_id }}</strong></td>
+                  <td>{{ o.user.get_full_name|default:o.user.email }}</td>
+                  <td>{{ o.items.count }}</td>
+                  <td>₦{{ o.total|money }}</td>
+                  <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                  <td style="font-size:12px;color:var(--text-muted)">{{ o.created_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No orders yet</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'orders' %}
+        <!-- ═══════════════ ORDERS ═══════════════ -->
+        <div class="rd-header"><div><h2>Order Management</h2><p>Accept, prepare, and manage orders</p></div></div>
+        <div class="rd-toolbar">
+          <input type="text" id="order-search" placeholder="Search orders..." oninput="filterOrders(this.value)">
+          <select id="order-filter-status" onchange="filterOrders(document.getElementById('order-search').value)">
+            <option value="">All Status</option>{% for s in order_statuses %}<option value="{{ s }}">{{ s|title }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="rd-table-wrap">
+          <table class="rd-table" id="orders-table">
+            <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Rider / Delivery</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for o in orders %}
+              <tr class="order-row" data-status="{{ o.status }}" id="order-row-{{ o.id }}">
+                <td><strong>{{ o.order_id }}</strong></td>
+                <td>{{ o.user.get_full_name|default:o.user.email }}<br><small style="color:var(--text-muted)">{{ o.delivery_address|truncatechars:30 }}</small></td>
+                <td>{% for i in o.items.all %}{{ i.name }} x{{ i.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                <td><strong>₦{{ o.total|money }}</strong></td>
+                <td>{{ o.payment_method|title }}</td>
+                <td><span class="status-badge status-{{ o.status }}" id="status-badge-{{ o.id }}">{{ o.get_status_display }}</span></td>
+                <td id="delivery-cell-{{ o.id }}">
+                  {% with d=o.delivery %}
+                    {% if d %}
+                      {% if d.rider %}
+                        <div style="font-weight:700;font-size:13px;">{{ d.rider.get_full_name }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ d.rider.vehicle_type }} · {{ d.rider.vehicle_plate }}</div>
+                        <a href="tel:{{ d.rider.phone }}" style="font-size:11px;color:var(--primary);text-decoration:none;font-weight:600;"><i class="fa-solid fa-phone me-1"></i>{{ d.rider.phone }}</a>
+                      {% else %}
+                        <span class="status-badge status-pending">Searching for rider…</span>
+                      {% endif %}
+                      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">{{ d.status_label }}</div>
+                    {% else %}
+                      <span style="color:var(--text-muted);font-size:12px;">—</span>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+                <td>
+                  {% if o.status == 'pending' %}
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;font-weight:700;border:none;border-radius:8px;padding:5px 10px;font-size:11px;" onclick="acceptOrder({{ o.id }})"><i class="fa-solid fa-check me-1"></i>Accept</button>
+                    <button class="btn btn-sm" style="background:#ffebee;color:#c62828;font-weight:700;border:none;border-radius:8px;padding:5px 10px;font-size:11px;" onclick="rejectOrder({{ o.id }})"><i class="fa-solid fa-xmark me-1"></i>Reject</button>
+                  </div>
+                  {% endif %}
+                  <select class="form-select form-select-sm d-inline-block" style="width:auto;font-size:11px;padding:4px 8px;" onchange="updateOrderStatus({{ o.id }}, this.value)">
+                    <option value="">Update…</option>
+                    <option value="confirmed">✅ Confirm</option>
+                    <option value="preparing">👨‍🍳 Preparing</option>
+                    <option value="ready">📦 Ready for Pickup</option>
+                    <option value="delivered">✅ Delivered</option>
+                    <option value="cancelled">❌ Cancel</option>
+                  </select>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="text-center py-4 text-muted">No orders found</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if paginator.num_pages > 1 %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:13px;color:var(--text-muted);">Page {{ page_obj.number }} of {{ paginator.num_pages }} ({{ paginator.count }} orders)</div>
+          <div style="display:flex;gap:4px;">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" style="padding:4px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);text-decoration:none;background:var(--bg-card);">&laquo;</a>
+            <a href="?page={{ page_obj.previous_page_number }}" style="padding:4px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);text-decoration:none;background:var(--bg-card);">&lsaquo;</a>
+            {% endif %}
+            {% for p in paginator.page_range %}
+              {% if p == page_obj.number %}
+              <span style="padding:4px 10px;border:1px solid var(--primary);border-radius:8px;font-size:13px;font-weight:600;color:#fff;background:var(--primary);cursor:default;">{{ p }}</span>
+              {% elif p >= page_obj.number|add:'-3' and p <= page_obj.number|add:'3' %}
+              <a href="?page={{ p }}" style="padding:4px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);text-decoration:none;background:var(--bg-card);">{{ p }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" style="padding:4px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);text-decoration:none;background:var(--bg-card);">&rsaquo;</a>
+            <a href="?page={{ paginator.num_pages }}" style="padding:4px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-primary);text-decoration:none;background:var(--bg-card);">&raquo;</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {% if active_section == 'menu' %}
+        <!-- ═══════════════ MENU ═══════════════ -->
+        <div class="rd-header"><div><h2>Menu Management</h2><p>Add, edit, and manage menu items</p></div>
+          <button class="fc-btn fc-btn-primary fc-btn-sm" onclick="showMenuForm()"><i class="fa-solid fa-plus me-1"></i>Add Item</button>
+        </div>
+        <div class="rd-card d-none" id="menu-form-card">
+          <h4 id="menu-form-title">Add Menu Item</h4>
+          <form onsubmit="saveMenuItem(event)" class="rd-inline-form" style="grid-template-columns:1fr 1fr;">
+            <input type="hidden" id="menu-item-id">
+            <div><label>Name *</label><input type="text" id="menu-name" required></div>
+            <div><label>Price *</label><input type="number" step="0.01" id="menu-price" required></div>
+            <div><label>Discounted Price</label><input type="number" step="0.01" id="menu-dprice"></div>
+            <div><label>Category</label>
+              <select id="menu-category"><option value="">None</option>{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+            </div>
+            <div style="grid-column:span 2"><label>Description</label><textarea id="menu-desc" rows="2"></textarea></div>
+            <div style="grid-column:span 2"><label>Image</label>
+              <div style="display:flex;gap:12px;align-items:center;">
+                <img id="menu-image-preview" src="" alt="" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border);flex-shrink:0;display:none;" onerror="this.style.display='none'">
+                <input type="file" id="menu-image-file" accept="image/*" style="flex:1;" onchange="previewMenuImage(this)">
+              </div>
+            </div>
+            <div><label>Prep Time (min)</label><input type="number" id="menu-prep" value="10"></div>
+            <div><label>Calories</label><input type="number" id="menu-cal" value="0"></div>
+            <div style="display:flex;gap:16px;align-items:center;padding-top:18px;">
+              <label><input type="checkbox" id="menu-veg"> Vegetarian</label>
+              <label><input type="checkbox" id="menu-featured"> Featured</label>
+              <label><input type="checkbox" id="menu-available" checked> Available</label>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:18px;grid-column:span 2;">
+              <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="document.getElementById('menu-form-card').classList.add('d-none')">Cancel</button>
+              <button type="submit" class="fc-btn fc-btn-primary fc-btn-sm">Save Item</button>
+            </div>
+          </form>
+        </div>
+        <div class="rd-table-wrap">
+          <table class="rd-table">
+            <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Prep</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="menu-table-body">
+              {% for item in menu_items %}
+              <tr id="menu-row-{{ item.id }}">
+                <td><strong>{{ item.name }}</strong><br><small style="color:var(--text-muted)">{{ item.description|truncatechars:40 }}</small></td>
+                <td>{{ item.category.name|default:"—" }}</td>
+                <td>{% if item.discounted_price %}<span style="text-decoration:line-through;color:var(--text-muted)">₦{{ item.price|money }}</span> <strong>₦{{ item.discounted_price|money }}</strong>{% else %}₦{{ item.price|money }}{% endif %}</td>
+                <td>{{ item.prep_time }} min</td>
+                <td>{% if item.is_available %}<span class="status-badge status-delivered">Available</span>{% else %}<span class="status-badge status-cancelled">Unavailable</span>{% endif %}</td>
+                <td>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="editMenuItem({{ item.id }})"><i class="fa-solid fa-pen"></i></button>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="deleteMenuItem({{ item.id }})"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center py-4 text-muted">No menu items</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'categories' %}
+        <!-- ═══════════════ CATEGORIES ═══════════════ -->
+        <div class="rd-header"><div><h2>Categories</h2><p>Manage food categories</p></div>
+          <button class="fc-btn fc-btn-primary fc-btn-sm" onclick="showCategoryForm()"><i class="fa-solid fa-plus me-1"></i>Add Category</button>
+        </div>
+        <div class="rd-card d-none" id="cat-form-card">
+          <form onsubmit="saveCategory(event)" class="rd-inline-form" style="grid-template-columns:1fr 1fr auto;">
+            <input type="hidden" id="cat-id">
+            <div><label>Name *</label><input type="text" id="cat-name" required></div>
+            <div><label>Emoji</label><input type="text" id="cat-emoji" placeholder="🍕" maxlength="10"></div>
+            <div style="display:flex;align-items:end;gap:8px;">
+              <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="document.getElementById('cat-form-card').classList.add('d-none')">Cancel</button>
+              <button type="submit" class="fc-btn fc-btn-primary fc-btn-sm">Save</button>
+            </div>
+          </form>
+        </div>
+        <div class="rd-table-wrap">
+          <table class="rd-table">
+            <thead><tr><th>Emoji</th><th>Name</th><th>Items</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="cat-table-body">
+              {% for c in categories %}
+              <tr id="cat-row-{{ c.id }}">
+                <td style="font-size:20px;">{{ c.emoji }}</td>
+                <td><strong>{{ c.name }}</strong></td>
+                <td>{{ c.items.count }}</td>
+                <td>{% if c.is_available %}<span class="status-badge status-delivered">Active</span>{% else %}<span class="status-badge status-cancelled">Disabled</span>{% endif %}</td>
+                <td>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="editCategory({{ c.id }},'{{ c.name }}','{{ c.emoji }}')"><i class="fa-solid fa-pen"></i></button>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="deleteCategory({{ c.id }})"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center py-4 text-muted">No categories</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'customers' %}
+        <!-- ═══════════════ CUSTOMERS ═══════════════ -->
+        <div class="rd-header"><div><h2>Customers</h2><p>View and manage customer accounts</p></div></div>
+        <div class="rd-table-wrap">
+          <table class="rd-table">
+            <thead><tr><th>Customer</th><th>Email</th><th>Orders</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              {% for c in customers_list %}
+              <tr>
+                <td><strong>{{ c.get_full_name|default:c.email }}</strong></td>
+                <td>{{ c.email }}</td>
+                <td>{{ c.orders.count }}</td>
+                <td style="font-size:12px;color:var(--text-muted)">{{ c.date_joined|date:"M d, Y" }}</td>
+                <td>{% if c.is_active %}<span class="status-badge status-delivered">Active</span>{% else %}<span class="status-badge status-cancelled">Blocked</span>{% endif %}</td>
+                <td>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="toggleCustomer({{ c.id }},{{ c.is_active|lower }})">
+                    {% if c.is_active %}<i class="fa-solid fa-ban" style="color:var(--danger)"></i> Block{% else %}<i class="fa-solid fa-check" style="color:var(--success)"></i> Unblock{% endif %}
+                  </button>
+                </td>
+              </tr>
+              {% empty %}<tr><td colspan="6" class="text-center py-4 text-muted">No customers yet</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'reviews' %}
+        <!-- ═══════════════ REVIEWS ═══════════════ -->
+        <div class="rd-header"><div><h2>Customer Reviews</h2><p>Manage and respond to reviews</p></div></div>
+        {% for r in reviews %}
+        <div class="rd-card" id="review-card-{{ r.id }}">
+          <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;">
+            <div><strong>{{ r.user.get_full_name|default:r.user.email }}</strong> <span style="color:var(--warning);">{% for i in "12345"|make_list %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</span></div>
+            <small style="color:var(--text-muted)">{{ r.created_at|date:"M d, Y" }}</small>
+          </div>
+          <p style="margin:8px 0;font-size:13px;color:var(--text-secondary)">{{ r.comment }}</p>
+          {% if r.reply %}<div style="background:var(--bg-elevated);padding:12px;border-radius:var(--radius-md);font-size:13px;margin-top:8px;"><small style="color:var(--text-muted)">Your reply:</small><br>{{ r.reply }}</div>{% endif %}
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <input type="text" id="reply-input-{{ r.id }}" class="form-control form-control-sm" style="width:auto;flex:1;font-size:12px;" placeholder="Write a reply..." value="{{ r.reply }}">
+            <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="replyReview({{ r.id }})"><i class="fa-solid fa-reply"></i></button>
+            <button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="hideReview({{ r.id }})"><i class="fa-solid fa-eye-slash"></i></button>
+          </div>
+        </div>
+        {% empty %}<div class="rd-card text-center text-muted py-5"><div class="icon" style="font-size:32px;">⭐</div>No reviews yet</div>{% endfor %}
+        {% endif %}
+
+        {% if active_section == 'inventory' %}
+        <!-- ═══════════════ INVENTORY ═══════════════ -->
+        <div class="rd-header"><div><h2>Inventory Management</h2><p>Track ingredient stock levels</p></div></div>
+        {% for item in low_stock %}<div class="alert alert-danger py-2" style="font-size:13px;border-radius:var(--radius-md);">⚠️ <strong>{{ item.name }}</strong> is low on stock ({{ item.stock|floatformat:1 }} {{ item.unit }})</div>{% endfor %}
+        <div class="rd-table-wrap">
+          <table class="rd-table">
+            <thead><tr><th>Ingredient</th><th>Stock</th><th>Unit</th><th>Threshold</th><th>Status</th><th>Update</th></tr></thead>
+            <tbody>
+              {% for item in inventory %}
+              <tr>
+                <td><strong>{{ item.name }}</strong></td>
+                <td id="inv-stock-{{ item.id }}">{{ item.stock|floatformat:1 }}</td>
+                <td>{{ item.unit }}</td>
+                <td>{{ item.low_stock_threshold|floatformat:1 }}</td>
+                <td>{% if item.stock <= item.low_stock_threshold %}<span class="status-badge status-cancelled">Low Stock</span>{% else %}<span class="status-badge status-delivered">In Stock</span>{% endif %}</td>
+                <td><input type="number" step="0.1" id="inv-input-{{ item.id }}" class="form-control form-control-sm" style="width:80px;display:inline-block;font-size:12px;" placeholder="Stock"><button class="fc-btn fc-btn-ghost fc-btn-xs ms-1" onclick="updateInventory({{ item.id }})"><i class="fa-solid fa-sync"></i></button></td>
+              </tr>
+              {% empty %}<tr><td colspan="6" class="text-center py-4 text-muted">No inventory items</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'coupons' %}
+        <!-- ═══════════════ COUPONS ═══════════════ -->
+        <div class="rd-header"><div><h2>Coupon Management</h2><p>Create and manage discount coupons</p></div>
+          <button class="fc-btn fc-btn-primary fc-btn-sm" onclick="showCouponForm()"><i class="fa-solid fa-plus me-1"></i>Add Coupon</button>
+        </div>
+        <div class="rd-card d-none" id="coupon-form-card">
+          <form onsubmit="saveCoupon(event)" class="rd-inline-form">
+            <div><label>Code *</label><input type="text" id="cp-code" required></div>
+            <div><label>Type</label><select id="cp-type"><option value="percent">Percentage</option><option value="fixed">Fixed Amount</option></select></div>
+            <div><label>Value *</label><input type="number" step="0.01" id="cp-value" required></div>
+            <div><label>Min Order</label><input type="number" step="0.01" id="cp-min" value="0"></div>
+            <div><label>Max Uses</label><input type="number" id="cp-uses" value="0" placeholder="0 = unlimited"></div>
+            <div><label>Expires</label><input type="datetime-local" id="cp-expires"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;grid-column:span 2;">
+              <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="document.getElementById('coupon-form-card').classList.add('d-none')">Cancel</button>
+              <button type="submit" class="fc-btn fc-btn-primary fc-btn-sm">Create Coupon</button>
+            </div>
+          </form>
+        </div>
+        <div class="rd-table-wrap">
+          <table class="rd-table">
+            <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Min Order</th><th>Uses</th><th>Expires</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for cp in coupons %}
+              <tr>
+                <td><strong>{{ cp.code }}</strong></td>
+                <td>{{ cp.get_discount_type_display }}</td>
+                <td>{% if cp.discount_type == 'percent' %}{{ cp.discount_value }}%{% else %}₦{{ cp.discount_value|money }}{% endif %}</td>
+                <td>₦{{ cp.min_order|money }}</td>
+                <td>{{ cp.times_used }}{% if cp.max_uses > 0 %}/{{ cp.max_uses }}{% endif %}</td>
+                <td style="font-size:12px;">{% if cp.expires_at %}{{ cp.expires_at|date:"M d, Y" }}{% else %}—{% endif %}</td>
+                <td><button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="deleteCoupon({{ cp.id }})"><i class="fa-solid fa-trash"></i></button></td>
+              </tr>
+              {% empty %}<tr><td colspan="7" class="text-center py-4 text-muted">No coupons</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'payments' %}
+        <!-- ═══════════════ PAYMENTS ═══════════════ -->
+        <div class="rd-header"><div><h2>Payments</h2><p>Payment history and revenue summary</p></div></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-card"><div class="num">₦{{ stats.today_revenue|money }}</div><div class="label">Today's Revenue</div></div>
+          <div class="stat-card"><div class="num">{{ stats.completed_orders }}</div><div class="label">Paid Orders</div></div>
+          <div class="stat-card"><div class="num">{{ stats.pending_orders }}</div><div class="label">Pending Payments</div></div>
+        </div>
+        <div class="rd-table-wrap">
+          <table class="rd-table">
+            <thead><tr><th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for o in orders|slice:":30" %}
+              <tr>
+                <td><strong>{{ o.order_id }}</strong></td>
+                <td>{{ o.user.get_full_name|default:o.user.email }}</td>
+                <td>₦{{ o.total|money }}</td>
+                <td>{{ o.payment_method|title }}</td>
+                <td>{% if o.status == 'delivered' %}<span class="status-badge status-delivered">Paid</span>{% elif o.status == 'cancelled' %}<span class="status-badge status-cancelled">Refunded</span>{% else %}<span class="status-badge status-pending">Pending</span>{% endif %}</td>
+                <td style="font-size:12px;color:var(--text-muted)">{{ o.created_at|date:"M d, H:i" }}</td>
+              </tr>
+              {% empty %}<tr><td colspan="6" class="text-center py-4 text-muted">No payments</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if active_section == 'settings' %}
+        <!-- ═══════════════ SETTINGS ═══════════════ -->
+        <div class="rd-header"><div><h2>Restaurant Settings</h2><p>Manage your restaurant profile</p></div></div>
+        <div class="rd-card">
+          <form onsubmit="saveSettings(event)" class="rd-inline-form" style="grid-template-columns:1fr 1fr;">
+            <div style="grid-column:span 2"><label>Restaurant Name</label><input type="text" id="set-name" value="{{ restaurant.name }}"></div>
+            <div style="grid-column:span 2"><label>Description</label><textarea id="set-desc" rows="2">{{ restaurant.description }}</textarea></div>
+            <div><label>Cuisine</label><input type="text" id="set-cuisine" value="{{ restaurant.cuisine }}"></div>
+            <div><label>Phone</label><input type="text" id="set-phone" value="{{ restaurant.phone }}"></div>
+            <div style="grid-column:span 2"><label>Address</label><input type="text" id="set-address" value="{{ restaurant.address }}"></div>
+            <div><label>Delivery Fee (₦)</label><input type="number" step="0.01" id="set-dfee" value="{{ restaurant.delivery_fee }}"></div>
+            <div><label>Delivery Radius (km)</label><input type="number" step="0.1" id="set-dradius" value="{{ restaurant.delivery_radius }}"></div>
+            <div><label>Tax Rate (%)</label><input type="number" step="0.01" id="set-tax" value="{{ restaurant.tax_rate }}"></div>
+            <div><label>Min Order (₦)</label><input type="number" step="0.01" id="set-min" value="{{ restaurant.min_order }}"></div>
+            <div><label>Opening Time</label><input type="time" id="set-opens" value="{{ restaurant.opening_time|time:'H:i' }}"></div>
+            <div><label>Closing Time</label><input type="time" id="set-closes" value="{{ restaurant.closing_time|time:'H:i' }}"></div>
+            <div><label>Logo</label>
+              <div style="display:flex;gap:12px;align-items:center;">
+                <img id="set-logo-preview" src="{{ restaurant.logo }}" style="width:60px;height:60px;border-radius:12px;object-fit:cover;border:2px solid var(--border);flex-shrink:0;" onerror="this.style.display='none'">
+                <input type="file" id="set-logo-file" accept="image/*" style="flex:1;" onchange="previewLogoFile(this)">
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding-top:18px;">
+              <label><input type="checkbox" id="set-open" {% if restaurant.is_open %}checked{% endif %}> Restaurant Open</label>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:18px;grid-column:span 2;">
+              <button type="submit" class="fc-btn fc-btn-primary">Save Settings</button>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = getCookie('csrftoken');
+function getCookie(n){let v=null;if(document.cookie&&document.cookie!==''){document.cookie.split(';').forEach(c=>{c=c.trim();if(c.substring(0,n.length+1)===(n+'='))v=decodeURIComponent(c.substring(n.length+1))})}return v}
+
+// Toast helper
+function toast(msg, type='success') {
+  if (window.Toast) { window.Toast.show(msg, type); return; }
+  const el = document.getElementById('toast-container');
+  if (!el) return;
+  const t = document.createElement('div');
+  t.className = `toast-item toast-${type}`;
+  t.innerHTML = msg;
+  el.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ═══ ORDERS ═══
+function updateOrderStatus(id, status) {
+  if (!status) return;
+  fetch('/restaurant-admin/api/', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},
+    body: JSON.stringify({action:'update_order_status', order_id:id, status:status})
+  }).then(r=>r.json()).then(d=>{
+    if(d.success){document.getElementById('status-badge-'+id).textContent=status.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase());document.getElementById('status-badge-'+id).className='status-badge status-'+status;toast('Order updated');pollOrderDelivery(id);}
+    else toast(d.error,'error');
+  }).catch(()=>toast('Failed to update','error'));
+}
+
+function acceptOrder(id) {
+  fetch('/restaurant-admin/api/', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},
+    body: JSON.stringify({action:'accept_order', order_id:id})
+  }).then(r=>r.json()).then(d=>{
+    if(d.success){toast('Order accepted');setTimeout(()=>window.location.reload(),600);}
+    else toast(d.error,'error');
+  }).catch(()=>toast('Failed to accept','error'));
+}
+
+function rejectOrder(id) {
+  if(!confirm('Reject this order? The customer will be notified.')) return;
+  fetch('/restaurant-admin/api/', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},
+    body: JSON.stringify({action:'reject_order', order_id:id})
+  }).then(r=>r.json()).then(d=>{
+    if(d.success){toast('Order rejected');setTimeout(()=>window.location.reload(),600);}
+    else toast(d.error,'error');
+  }).catch(()=>toast('Failed to reject','error'));
+}
+
+function renderDeliveryCell(id, del) {
+  const cell = document.getElementById('delivery-cell-'+id);
+  if (!cell) return;
+  if (!del) { cell.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">—</span>'; return; }
+  let html = '';
+  if (del.rider) {
+    html += `<div style="font-weight:700;font-size:13px;">${del.rider.name}</div>
+             <div style="font-size:11px;color:var(--text-muted);">${del.rider.vehicle||''} · ${del.rider.vehicle_plate||''}</div>
+             <a href="tel:${del.rider.phone}" style="font-size:11px;color:var(--primary);text-decoration:none;font-weight:600;"><i class="fa-solid fa-phone me-1"></i>${del.rider.phone}</a>`;
+  } else if (del.status === 'searching') {
+    html = '<span class="status-badge status-pending">Searching for rider…</span>';
+  }
+  html += `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${del.status_label}</div>`;
+  cell.innerHTML = html;
+}
+
+function pollOrderDelivery(id) {
+  fetch('/restaurant-admin/api/?action=get_order_delivery', {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},
+    body: JSON.stringify({action:'get_order_delivery', order_id:id})
+  }).then(r=>r.json()).then(d=>{
+    if (d.success && d.delivery) {
+      renderDeliveryCell(id, d.delivery);
+      const badge = document.getElementById('status-badge-'+id);
+      if (badge && d.delivery.status === 'assigned' && badge.textContent.trim().toLowerCase() !== 'out for delivery') {
+        badge.textContent = 'Out for Delivery';
+        badge.className = 'status-badge status-out_for_delivery';
+      }
+      if (badge && d.delivery.status === 'delivered' && badge.textContent.trim().toLowerCase() !== 'delivered') {
+        badge.textContent = 'Delivered';
+        badge.className = 'status-badge status-delivered';
+      }
+    }
+  }).catch(()=>{});
+}
+
+// Live delivery monitoring for the current page's orders
+(function () {
+  const rows = document.querySelectorAll('.order-row');
+  const ids = Array.from(rows).map(r => r.id.replace('order-row-','')).filter(Boolean);
+  if (!ids.length) return;
+  function tick() { ids.forEach(id => pollOrderDelivery(id)); }
+  tick();
+  setInterval(tick, 8000);
+})();
+
+function filterOrders(q){
+  const status = document.getElementById('order-filter-status').value.toLowerCase();
+  document.querySelectorAll('.order-row').forEach(r=>{
+    const match = r.textContent.toLowerCase().includes(q.toLowerCase());
+    const matchStatus = !status || r.dataset.status === status;
+    r.style.display = match && matchStatus ? '' : 'none';
+  });
+}
+
+// ═══ MENU ═══
+let menuItems = {{ menu_items_json|safe }};
+function showMenuForm(data){
+  const f=document.getElementById('menu-form-card');f.classList.remove('d-none');
+  document.getElementById('menu-item-id').value=data?.id||'';
+  document.getElementById('menu-name').value=data?.name||'';
+  document.getElementById('menu-price').value=data?.price||'';
+  document.getElementById('menu-dprice').value=data?.discounted_price||'';
+  document.getElementById('menu-category').value=data?.category_id||'';
+  document.getElementById('menu-desc').value=data?.description||'';
+  document.getElementById('menu-prep').value=data?.prep_time||10;
+  document.getElementById('menu-cal').value=data?.calories||0;
+  document.getElementById('menu-veg').checked=data?.is_veg||false;
+  document.getElementById('menu-featured').checked=data?.is_featured||false;
+  document.getElementById('menu-available').checked=data?.is_available!==false;
+  document.getElementById('menu-form-title').textContent=data?'Edit Menu Item':'Add Menu Item';
+  const fileInput=document.getElementById('menu-image-file');
+  if(fileInput) fileInput.value='';
+  const preview=document.getElementById('menu-image-preview');
+  if(data?.image){preview.src=data.image;preview.style.display='block';}
+  else {preview.removeAttribute('src');preview.style.display='none';}
+  f.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function previewMenuImage(input){
+  const preview=document.getElementById('menu-image-preview');
+  if(input.files&&input.files[0]){preview.style.display='block';preview.src=URL.createObjectURL(input.files[0]);}
+}
+
+function saveMenuItem(e){
+  e.preventDefault();
+  const id=parseInt(document.getElementById('menu-item-id').value)||null;
+  const price=parseFloat(document.getElementById('menu-price').value);
+  const dprice=parseFloat(document.getElementById('menu-dprice').value);
+  const prep=parseInt(document.getElementById('menu-prep').value);
+  const cal=parseInt(document.getElementById('menu-cal').value);
+  const catId=parseInt(document.getElementById('menu-category').value)||null;
+  const formData=new FormData();
+  formData.append('action', id ? 'update_menu_item' : 'create_menu_item');
+  if(id) formData.append('id', id);
+  formData.append('name', document.getElementById('menu-name').value);
+  formData.append('description', document.getElementById('menu-desc').value);
+  formData.append('price', isNaN(price) ? '' : price);
+  formData.append('discounted_price', isNaN(dprice) ? '' : dprice);
+  formData.append('category_id', catId ? catId : '');
+  formData.append('prep_time', isNaN(prep) ? 10 : prep);
+  formData.append('calories', isNaN(cal) ? 0 : cal);
+  formData.append('is_veg', document.getElementById('menu-veg').checked ? '1' : '0');
+  formData.append('is_featured', document.getElementById('menu-featured').checked ? '1' : '0');
+  formData.append('is_available', document.getElementById('menu-available').checked ? '1' : '0');
+  const fileInput=document.getElementById('menu-image-file');
+  if(fileInput.files&&fileInput.files[0])formData.append('image_file',fileInput.files[0]);
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'X-CSRFToken':CSRF_TOKEN},body:formData})
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Menu item saved!');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')})
+  .catch(()=>toast('Failed to save','error'));
+}
+
+function editMenuItem(id){
+  fetch('/restaurant-admin/api/?action=get_menu_items').then(r=>r.json()).then(d=>{
+    const item = d.items?.find(i=>i.id===id);
+    if(item) showMenuForm(item); else toast('Item not found','error');
+  });
+}
+
+function deleteMenuItem(id){
+  if(!confirm('Delete this menu item?'))return;
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'delete_menu_item',id:id})})
+  .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('menu-row-'+id)?.remove();toast('Deleted')}else toast(d.error,'error')});
+}
+
+// ═══ CATEGORIES ═══
+function showCategoryForm(data){
+  const f=document.getElementById('cat-form-card');f.classList.remove('d-none');
+  document.getElementById('cat-id').value=data?.id||'';
+  document.getElementById('cat-name').value=data?.name||'';
+  document.getElementById('cat-emoji').value=data?.emoji||'';
+  f.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function saveCategory(e){
+  e.preventDefault();
+  const id=document.getElementById('cat-id').value;
+  const data={action: id?'update_category':'create_category', id:parseInt(id)||null, name:document.getElementById('cat-name').value, emoji:document.getElementById('cat-emoji').value};
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify(data)})
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Category saved!');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
+}
+
+function editCategory(id,name,emoji){showCategoryForm({id:id,name:name,emoji:emoji})}
+
+function deleteCategory(id){
+  if(!confirm('Delete this category?'))return;
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'delete_category',id:id})})
+  .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('cat-row-'+id)?.remove();toast('Deleted')}else toast(d.error,'error')});
+}
+
+// ═══ INVENTORY ═══
+function updateInventory(id){
+  const stock=parseFloat(document.getElementById('inv-input-'+id).value);
+  if(isNaN(stock))return;
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'update_inventory',id:id,stock:stock})})
+  .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('inv-stock-'+id).textContent=d.stock;toast('Stock updated')}else toast(d.error,'error')});
+}
+
+// ═══ REVIEWS ═══
+function replyReview(id){
+  const reply=document.getElementById('reply-input-'+id).value;
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'reply_review',id:id,reply:reply})})
+  .then(r=>r.json()).then(d=>{if(d.success)toast('Reply sent');else toast(d.error,'error')});
+}
+function hideReview(id){
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'hide_review',id:id})})
+  .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('review-card-'+id)?.remove();toast('Review hidden')}else toast(d.error,'error')});
+}
+
+// ═══ COUPONS ═══
+function showCouponForm(){document.getElementById('coupon-form-card').classList.remove('d-none')}
+function saveCoupon(e){
+  e.preventDefault();
+  const data={action:'create_coupon',code:document.getElementById('cp-code').value,discount_type:document.getElementById('cp-type').value,discount_value:parseFloat(document.getElementById('cp-value').value),min_order:parseFloat(document.getElementById('cp-min').value)||0,max_uses:parseInt(document.getElementById('cp-uses').value)||0,expires_at:document.getElementById('cp-expires').value||null};
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify(data)})
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Coupon created!');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
+}
+function deleteCoupon(id){
+  if(!confirm('Delete this coupon?'))return;
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'delete_coupon',id:id})})
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Deleted');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
+}
+
+// ═══ CUSTOMERS ═══
+function toggleCustomer(id,active){
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'customer_action',user_id:id,block:active?'true':'false'})})
+  .then(r=>r.json()).then(d=>{if(d.success){toast(active?'Customer blocked':'Customer unblocked');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
+}
+
+// ═══ SETTINGS ═══
+function previewLogoFile(input){
+  const preview=document.getElementById('set-logo-preview');
+  if(input.files&&input.files[0]){preview.style.display='block';preview.src=URL.createObjectURL(input.files[0])}
+}
+function saveSettings(e){
+  e.preventDefault();const btn=e.target.querySelector('button[type="submit"]');
+  const orig=btn.innerHTML;btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...';
+  const formData=new FormData();
+  formData.append('action','update_settings');
+  formData.append('name',document.getElementById('set-name').value);
+  formData.append('description',document.getElementById('set-desc').value);
+  formData.append('cuisine',document.getElementById('set-cuisine').value);
+  formData.append('phone',document.getElementById('set-phone').value);
+  formData.append('address',document.getElementById('set-address').value);
+  formData.append('delivery_fee',parseFloat(document.getElementById('set-dfee').value)||0);
+  formData.append('delivery_radius',parseFloat(document.getElementById('set-dradius').value)||0);
+  formData.append('tax_rate',parseFloat(document.getElementById('set-tax').value)||0);
+  formData.append('min_order',parseFloat(document.getElementById('set-min').value)||0);
+  formData.append('opening_time',document.getElementById('set-opens').value);
+  formData.append('closing_time',document.getElementById('set-closes').value);
+  formData.append('is_open',document.getElementById('set-open').checked ? '1' : '0');
+  const logoFile=document.getElementById('set-logo-file');
+  if(logoFile.files&&logoFile.files[0])formData.append('logo_file',logoFile.files[0]);
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'X-CSRFToken':CSRF_TOKEN},body:formData})
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Settings saved!');if(d.logo&&document.getElementById('set-logo-preview'))document.getElementById('set-logo-preview').src=d.logo}else toast(d.error,'error')}).catch(()=>toast('Failed to save','error'))
+  .finally(()=>{btn.disabled=false;btn.innerHTML=orig});
+}
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Register Your Restaurant{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="auth-container">
+
+  <!-- Left Split Panel: Brand details (desktop only) -->
+  <div class="auth-brand-panel">
+    <div style="font-size:48px;margin-bottom:20px;">🏪</div>
+    <h1 class="auth-brand-title">List your restaurant<br>on FoodCourt.</h1>
+    <p class="auth-brand-tagline">Reach thousands of hungry customers, manage your menu and orders from one dashboard, and grow your delivery sales.</p>
+
+    <div class="auth-feature-list">
+      <div class="auth-feature-item">
+        <div class="auth-feature-icon"><i class="fa-solid fa-check"></i></div>
+        <span>Own restaurant dashboard with live order management</span>
+      </div>
+      <div class="auth-feature-item">
+        <div class="auth-feature-icon"><i class="fa-solid fa-check"></i></div>
+        <span>Menu, categories, coupons, and inventory tools built in</span>
+      </div>
+      <div class="auth-feature-item">
+        <div class="auth-feature-icon"><i class="fa-solid fa-check"></i></div>
+        <span>Connected to FoodCourt riders for fast delivery</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Split Panel: Form Card -->
+  <div class="auth-form-panel">
+    <div class="auth-card reveal">
+
+      <div class="auth-header">
+        <h2 class="auth-title">Partner Sign Up</h2>
+        <p class="auth-subtitle">Create your account and register your restaurant</p>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-danger mb-4" style="border-radius: var(--radius-md); font-size: var(--text-sm);">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="POST" onsubmit="handleRegisterFormSubmit(event)">
+        {% csrf_token %}
+
+        <div class="d-flex align-items-center gap-2 mb-3" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--primary);">
+          <i class="fa-regular fa-user"></i> Your Account
+        </div>
+
+        <!-- Name row (2 columns) -->
+        <div class="row g-2 mb-3">
+          <div class="col-6" style="position:relative">
+            <i class="fa-regular fa-user auth-input-icon"></i>
+            <input type="text" class="auth-input" name="first_name" placeholder="First Name" value="{{ form_data.first_name|default:'' }}" required style="padding-left:40px;">
+          </div>
+          <div class="col-6" style="position:relative">
+            <input type="text" class="auth-input" name="last_name" placeholder="Last Name" value="{{ form_data.last_name|default:'' }}" required style="padding-left:16px;">
+          </div>
+        </div>
+
+        <!-- Email Input -->
+        <div class="auth-form-group">
+          <i class="fa-regular fa-envelope auth-input-icon"></i>
+          <input type="email" class="auth-input" name="email" placeholder="Email Address" value="{{ form_data.email|default:'' }}" required>
+        </div>
+
+        <!-- Phone Input -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-phone auth-input-icon"></i>
+          <input type="text" class="auth-input" name="phone" placeholder="Phone Number" value="{{ form_data.phone|default:'' }}" required>
+        </div>
+
+        <!-- Password Input -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" name="password" id="rp-password" placeholder="Password" oninput="checkPasswordStrength(this.value)" required>
+          <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('rp-password', this)" tabindex="-1">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" name="confirm_password" id="rp-confirm-password" placeholder="Confirm Password" required>
+          <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('rp-confirm-password', this)" tabindex="-1">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+
+        <hr>
+        <div class="d-flex align-items-center gap-2 mb-3" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--primary);">
+          <i class="fa-solid fa-store"></i> Your Restaurant
+        </div>
+
+        <!-- Restaurant Name -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-signature auth-input-icon"></i>
+          <input type="text" class="auth-input" name="restaurant_name" placeholder="Restaurant Name *" value="{{ form_data.restaurant_name|default:'' }}" required>
+        </div>
+
+        <!-- Cuisine -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-utensils auth-input-icon"></i>
+          <input type="text" class="auth-input" name="cuisine" placeholder="Cuisine (e.g. Italian, Burgers)" value="{{ form_data.cuisine|default:'' }}">
+        </div>
+
+        <!-- Address -->
+        <div class="auth-form-group">
+          <i class="fa-solid fa-location-dot auth-input-icon"></i>
+          <input type="text" class="auth-input" name="address" placeholder="Restaurant Address" value="{{ form_data.address|default:'' }}">
+        </div>
+
+        <!-- Restaurant phone / email -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="auth-form-group">
+              <i class="fa-solid fa-phone auth-input-icon"></i>
+              <input type="text" class="auth-input" name="restaurant_phone" placeholder="Restaurant Phone" value="{{ form_data.restaurant_phone|default:'' }}">
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="auth-form-group">
+              <i class="fa-regular fa-envelope auth-input-icon"></i>
+              <input type="email" class="auth-input" name="restaurant_email" placeholder="Restaurant Email" value="{{ form_data.restaurant_email|default:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms checkboxes -->
+        <div class="auth-form-footer justify-content-start mb-4">
+          <label class="d-flex align-items-center gap-2 text-secondary" style="cursor:pointer;line-height:1.4;">
+            <input type="checkbox" id="rp-terms" required>
+            <span>I agree to the <a href="#" class="text-primary fw-semibold text-decoration-none">Partner Terms</a> & <a href="#" class="text-primary fw-semibold text-decoration-none">Privacy Policy</a></span>
+          </label>
+        </div>
+
+        <!-- Submit CTA -->
+        <button type="submit" class="fc-btn fc-btn-primary fc-btn-lg w-100 py-3 mt-2" id="rp-submit-btn" style="font-weight:700;">
+          Register Restaurant
+        </button>
+      </form>
+
+      <!-- Toggle auth card page links -->
+      <div class="text-center mt-4 text-secondary" style="font-size:13px;">
+        Already a partner? <a href="/login/" class="text-primary fw-bold text-decoration-none">Sign In</a>
+      </div>
+      <div class="text-center mt-2 text-secondary" style="font-size:12px;">
+        Just want to order food? <a href="/register/" class="text-primary fw-semibold text-decoration-none">Create a customer account</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-regular fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-regular fa-eye';
+    }
+  }
+
+  function handleRegisterFormSubmit(event) {
+    const p1 = document.getElementById('rp-password').value;
+    const p2 = document.getElementById('rp-confirm-password').value;
+
+    if (p1 !== p2) {
+      event.preventDefault();
+      Toast.show('Passwords do not match!', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('rp-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Registering...`;
+  }
+</script>
+{% endblock %}

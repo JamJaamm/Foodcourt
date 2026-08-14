@@ -1,0 +1,830 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Become a FoodCourt rider — earn money delivering food on your own schedule. Fast payouts, flexible hours, easy registration.">
+  <title>Become a Rider — FoodCourt</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome 6.5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Core + Rider CSS -->
+  <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/pages/rider.css' %}?v=5">
+  <link rel="shortcut icon" href="{% static 'images/7541708.png' %}" type="image/x-icon">
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('rdr-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════ -->
+<nav class="rdr-nav" id="rdrNav">
+  <div class="rdr-container rdr-nav-inner">
+    <a href="#top" class="rdr-brand">
+      <div class="rdr-brand-icon"><i class="fa-solid fa-motorcycle"></i></div>
+      <div>
+        <div class="rdr-brand-name">Food<span style="color:var(--rdr-orange)">Court</span></div>
+        <div class="rdr-brand-tag">Rider Hub</div>
+      </div>
+    </a>
+
+    <ul class="rdr-nav-links">
+      <li><a href="#top">Home</a></li>
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#benefits">Benefits</a></li>
+      <li><a href="#requirements">Requirements</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+
+    <div class="rdr-nav-cta">
+      <button class="rdr-theme-btn" id="rdrThemeToggle" aria-label="Toggle theme">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+      </button>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'rider_dashboard' %}" class="rdr-btn rdr-btn-primary rdr-btn-sm"><i class="fa-solid fa-gauge-high me-1"></i> My Dashboard</a>
+      {% else %}
+        <a href="/riders/login/" class="rdr-nav-login">Login</a>
+        <button class="rdr-btn rdr-btn-primary rdr-btn-sm" onclick="window.openRiderRegister()">Become a Rider</button>
+      {% endif %}
+    </div>
+
+    <button class="rdr-nav-toggle" id="rdrNavToggle" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+  </div>
+</nav>
+
+<!-- Mobile drawer -->
+<div class="rdr-drawer" id="rdrDrawer">
+  <div class="rdr-drawer-backdrop" onclick="window.closeRiderDrawer()"></div>
+  <div class="rdr-drawer-panel">
+    <a href="#top" onclick="window.closeRiderDrawer()">Home</a>
+    <a href="#how" onclick="window.closeRiderDrawer()">How It Works</a>
+    <a href="#benefits" onclick="window.closeRiderDrawer()">Benefits</a>
+    <a href="#requirements" onclick="window.closeRiderDrawer()">Requirements</a>
+    <a href="#faq" onclick="window.closeRiderDrawer()">FAQ</a>
+    <hr style="border-color:var(--rdr-line);margin:12px 0;">
+    {% if request.user.is_authenticated %}
+    <a href="{% url 'rider_dashboard' %}" onclick="window.closeRiderDrawer()" style="color:var(--rdr-orange)"><i class="fa-solid fa-gauge-high me-2"></i>My Dashboard</a>
+    {% else %}
+    <a href="/riders/login/" onclick="window.closeRiderDrawer()"><i class="fa-solid fa-right-to-bracket me-2" style="color:var(--rdr-orange)"></i>Rider Login</a>
+    <a href="#register" onclick="window.closeRiderDrawer(); window.openRiderRegister();" style="color:var(--rdr-orange)"><i class="fa-solid fa-bolt me-2"></i>Become a Rider</a>
+    {% endif %}
+    <hr style="border-color:var(--rdr-line);margin:12px 0;">
+    <button class="rdr-drawer-link rdr-drawer-theme" id="rdrDrawerTheme" onclick="window.toggleTheme()">
+      <i class="fa-solid fa-circle-half-stroke"></i> Toggle Theme
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section class="rdr-hero" id="top">
+  <div class="rdr-container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6" data-rdr-reveal="left">
+        <div class="rdr-hero-eyebrow"><span class="pulse-dot"></span> We're hiring riders in 500+ cities</div>
+        <h1>Earn Money Delivering Food <span class="gr">On Your Own Schedule</span></h1>
+        <p class="rdr-hero-sub">
+          Join FoodCourt's rider network and earn flexible income by delivering orders from restaurants to hungry customers.
+          Set your own hours, work near home, and get paid weekly or daily.
+        </p>
+        <div class="rdr-hero-btns">
+          <button class="rdr-btn rdr-btn-primary rdr-btn-lg" onclick="window.openRiderRegister()">
+            <i class="fa-solid fa-bolt"></i> Become a Rider
+          </button>
+          <a href="/riders/login/" class="rdr-btn rdr-btn-ghost rdr-btn-lg"><i class="fa-solid fa-right-to-bracket"></i> Rider Login</a>
+        </div>
+        <div class="rdr-hero-stats">
+          <div class="rdr-hero-stat"><strong>2,400+</strong><span>Active riders</span></div>
+          <div class="rdr-hero-stat"><strong>15 min</strong><span>Avg. delivery</span></div>
+          <div class="rdr-hero-stat"><strong>4.8★</strong><span>Rider rating</span></div>
+        </div>
+      </div>
+
+      <div class="col-lg-6" data-rdr-reveal="right">
+        <div class="rdr-hero-visual">
+          <div class="visual-card">
+            <div class="visual-emoji">🛵</div>
+            <img class="hero-img"
+                 src="https://images.unsplash.com/photo-1591696331111-ef9586a5b17a?w=900&q=80"
+                 alt="Delivery rider carrying food on a motorcycle"
+                 onerror="this.style.display='none';document.querySelector('#rdrHeroEmoji').style.opacity='1';">
+          </div>
+          <div class="rdr-float-chip fc-1">
+            <div class="chip-ic g"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div><strong>₦12.50</strong><small>per delivery</small></div>
+          </div>
+          <div class="rdr-float-chip fc-2">
+            <div class="chip-ic o"><i class="fa-solid fa-circle-check"></i></div>
+            <div><strong>Fast payout</strong><small>weekly or daily</small></div>
+          </div>
+          <div class="rdr-float-chip fc-3">
+            <div class="chip-ic g"><i class="fa-solid fa-calendar-check"></i></div>
+            <div><strong>Flexible hours</strong><small>work any time</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     WHY BECOME A RIDER
+═══════════════════════════════════════════ -->
+<section class="rdr-section" id="benefits">
+  <div class="rdr-container">
+    <div class="rdr-center" data-rdr-reveal>
+      <div class="rdr-eyebrow">Why become a rider</div>
+      <h2 class="rdr-section-title">Deliver on your terms,<br>earn on your schedule</h2>
+      <p class="rdr-section-sub">Everything you need to start earning — designed around your life, not the other way around.</p>
+    </div>
+
+    <div class="rdr-grid rdr-grid-3" id="whyCards">
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-green"><i class="fa-solid fa-clock"></i></div>
+        <h3>Flexible Working Hours</h3>
+        <p>Log in and deliver whenever it suits you — mornings, nights, weekends, or just a few hours a week.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-orange"><i class="fa-solid fa-sack-dollar"></i></div>
+        <h3>Weekly or Daily Earnings</h3>
+        <p>Get paid weekly as standard, or cash out your earnings daily so your money works as fast as you do.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-green"><i class="fa-solid fa-bolt"></i></div>
+        <h3>Fast Payouts</h3>
+        <p>Secure direct deposits to your bank account with instant balance updates after every single delivery.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-ink"><i class="fa-solid fa-file-circle-check"></i></div>
+        <h3>Easy Registration</h3>
+        <p>Apply online in minutes. A simple 6-step form and you're one approval away from your first delivery.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-orange"><i class="fa-solid fa-arrows-spin"></i></div>
+        <h3>Multiple Delivery Requests</h3>
+        <p>Get notified about nearby orders in real time and accept as many — or as few — as you like.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-green"><i class="fa-solid fa-medal"></i></div>
+        <h3>Performance Rewards</h3>
+        <p>Unlock bonuses, peak-hour multipliers, and top-rider rewards for great service and high ratings.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════ -->
+<section class="rdr-section rdr-section-alt" id="how">
+  <div class="rdr-container">
+    <div class="rdr-center" data-rdr-reveal>
+      <div class="rdr-eyebrow">How it works</div>
+      <h2 class="rdr-section-title">Get on the road in 4 easy steps</h2>
+      <p class="rdr-section-sub">From sign-up to your first delivery — here's exactly how to get started.</p>
+    </div>
+
+    <div class="rdr-steps" id="howCards">
+      <div class="rdr-step" data-rdr-reveal>
+        <div class="rdr-step-num">1</div>
+        <div class="rdr-step-ic">📝</div>
+        <h3>Create an Account</h3>
+        <p>Fill out our quick online application with your personal and contact details.</p>
+      </div>
+      <div class="rdr-step" data-rdr-reveal>
+        <div class="rdr-step-num">2</div>
+        <div class="rdr-step-ic">📂</div>
+        <h3>Submit Your Documents</h3>
+        <p>Upload your ID, vehicle details, and bank account for verification and payouts.</p>
+      </div>
+      <div class="rdr-step" data-rdr-reveal>
+        <div class="rdr-step-num">3</div>
+        <div class="rdr-step-ic">✅</div>
+        <h3>Get Approved</h3>
+        <p>Our team reviews your application — most riders are approved within 24–48 hours.</p>
+      </div>
+      <div class="rdr-step" data-rdr-reveal>
+        <div class="rdr-step-num">4</div>
+        <div class="rdr-step-ic">🛵</div>
+        <h3>Start Delivering & Earn</h3>
+        <p>Go online, accept nearby orders, and start earning money on your own schedule.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     RIDER REQUIREMENTS
+═══════════════════════════════════════════ -->
+<section class="rdr-section" id="requirements">
+  <div class="rdr-container">
+    <div class="rdr-center" data-rdr-reveal>
+      <div class="rdr-eyebrow">Rider requirements</div>
+      <h2 class="rdr-section-title">What you'll need to get started</h2>
+      <p class="rdr-section-sub">Simple basics — if you have these, you're ready to apply.</p>
+    </div>
+
+    <div class="rdr-grid rdr-grid-4" id="reqCards">
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-ink"><i class="fa-solid fa-id-card"></i></div>
+        <h3>Valid Government ID</h3>
+        <p>A national ID, passport, or driver's license for identity verification.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-orange"><i class="fa-solid fa-id-badge"></i></div>
+        <h3>Driver's License</h3>
+        <p>A valid driver's license if you plan to deliver by car or motorcycle.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-green"><i class="fa-solid fa-car"></i></div>
+        <h3>A Vehicle</h3>
+        <p>Motorcycle, bicycle, scooter, or car — whatever works best for your area.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal>
+        <div class="rdr-card-ic rdr-ic-ink"><i class="fa-solid fa-mobile-screen"></i></div>
+        <h3>Smartphone</h3>
+        <p>An internet-connected smartphone to receive orders and navigate.</p>
+      </div>
+      <div class="rdr-card" data-rdr-reveal style="grid-column:span 2;">
+        <div class="rdr-card-ic rdr-ic-orange"><i class="fa-solid fa-building-columns"></i></div>
+        <h3>Bank Account</h3>
+        <p>A valid bank account in your name to receive your weekly or daily payouts.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     EARNINGS
+═══════════════════════════════════════════ -->
+<section class="rdr-section rdr-section-alt" id="earnings">
+  <div class="rdr-container">
+    <div class="rdr-center" data-rdr-reveal>
+      <div class="rdr-eyebrow">Earnings</div>
+      <h2 class="rdr-section-title">Your time, your money</h2>
+      <p class="rdr-section-sub">Average earnings across our rider network. Deliver more during peak hours to earn even more.</p>
+    </div>
+
+    <div class="rdr-grid rdr-grid-3" style="margin-top:52px;">
+      <div class="rdr-earn-stat primary" data-rdr-reveal>
+        <div class="val"><span class="cur">₦</span>12.50</div>
+        <h3>Average Per Delivery</h3>
+        <p>Base fare plus distance, time, and peak-hour boosts.</p>
+      </div>
+      <div class="rdr-earn-stat green" data-rdr-reveal>
+        <div class="val"><span class="cur">₦</span>875</div>
+        <h3>Weekly Earnings Estimate</h3>
+        <p>For riders delivering around 20 hours per week.</p>
+      </div>
+      <div class="rdr-earn-stat primary" data-rdr-reveal>
+        <div class="val"><span class="cur">₦</span>3,500</div>
+        <h3>Monthly Earnings Estimate</h3>
+        <p>Full-time riders in high-demand areas earn up to this.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     TESTIMONIALS
+═══════════════════════════════════════════ -->
+<section class="rdr-section" id="testimonials">
+  <div class="rdr-container">
+    <div class="rdr-center" data-rdr-reveal>
+      <div class="rdr-eyebrow">Rider stories</div>
+      <h2 class="rdr-section-title">Riders love delivering with us</h2>
+      <p class="rdr-section-sub">Hear it straight from the people on the road.</p>
+    </div>
+
+    <div class="rdr-grid rdr-grid-3" style="margin-top:48px;">
+      <div class="rdr-testi" data-rdr-reveal>
+        <div class="rdr-testi-stars">★★★★★</div>
+        <p class="rdr-testi-q">"I deliver after work and on weekends. The flexible hours let me earn an extra ₦400 a week without giving up my day job."</p>
+        <div class="rdr-testi-author">
+          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80" alt="David O.">
+          <div>
+            <div class="nm">David O.</div>
+            <div class="role">Rider for 1 year · Lagos</div>
+          </div>
+        </div>
+      </div>
+      <div class="rdr-testi" data-rdr-reveal>
+        <div class="rdr-testi-stars">★★★★★</div>
+        <p class="rdr-testi-q">"Fast payouts are real. I cash out daily when I need to, and the peak-hour bonuses make dinner shifts totally worth it."</p>
+        <div class="rdr-testi-author">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80" alt="Amara K.">
+          <div>
+            <div class="nm">Amara K.</div>
+            <div class="role">Rider for 8 months · Accra</div>
+          </div>
+        </div>
+      </div>
+      <div class="rdr-testi" data-rdr-reveal>
+        <div class="rdr-testi-stars">★★★★★</div>
+        <p class="rdr-testi-q">"Registration took 10 minutes and I was approved the next day. The app makes finding nearby orders effortless."</p>
+        <div class="rdr-testi-author">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80" alt="Samuel T.">
+          <div>
+            <div class="nm">Samuel T.</div>
+            <div class="role">Rider for 6 months · Nairobi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FAQ
+═══════════════════════════════════════════ -->
+<section class="rdr-section rdr-section-alt" id="faq">
+  <div class="rdr-container">
+    <div class="rdr-center" data-rdr-reveal>
+      <div class="rdr-eyebrow">FAQ</div>
+      <h2 class="rdr-section-title">Frequently asked questions</h2>
+      <p class="rdr-section-sub">Everything you need to know before hitting the road.</p>
+    </div>
+
+    <div class="rdr-faq-wrap" id="faqWrap">
+      <div class="rdr-accordion-item" data-rdr-reveal>
+        <button class="rdr-acc-head"><span><i class="fa-solid fa-circle-question q-ic"></i>How do I become a rider?</span><i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="rdr-acc-body"><div class="rdr-acc-body-inner">Click the "Become a Rider" button, complete the 6-step application form, and submit your documents. Our team reviews your application and approves most riders within 24–48 hours.</div></div>
+      </div>
+      <div class="rdr-accordion-item" data-rdr-reveal>
+        <button class="rdr-acc-head"><span><i class="fa-solid fa-circle-question q-ic"></i>How do I receive payments?</span><i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="rdr-acc-body"><div class="rdr-acc-body-inner">Your earnings are deposited directly to the bank account you provided during registration. Standard payouts run weekly, and eligible riders can cash out daily for a small fee.</div></div>
+      </div>
+      <div class="rdr-accordion-item" data-rdr-reveal>
+        <button class="rdr-acc-head"><span><i class="fa-solid fa-circle-question q-ic"></i>What documents are required?</span><i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="rdr-acc-body"><div class="rdr-acc-body-inner">You'll need a valid government-issued ID, your driver's license (if delivering by motorcycle or car), and your bank account details. Vehicle registration and proof of address are optional.</div></div>
+      </div>
+      <div class="rdr-accordion-item" data-rdr-reveal>
+        <button class="rdr-acc-head"><span><i class="fa-solid fa-circle-question q-ic"></i>Can I work part-time?</span><i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="rdr-acc-body"><div class="rdr-acc-body-inner">Absolutely. There are no minimum hours — you can deliver for one hour a week or full-time. You're in control of when you go online and when you take a break.</div></div>
+      </div>
+      <div class="rdr-accordion-item" data-rdr-reveal>
+        <button class="rdr-acc-head"><span><i class="fa-solid fa-circle-question q-ic"></i>How are deliveries assigned?</span><i class="fa-solid fa-chevron-down chev"></i></button>
+        <div class="rdr-acc-body"><div class="rdr-acc-body-inner">When you go online, we send you nearby order requests. You can accept or decline each one. Orders are offered based on distance, direction, and rider availability.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CTA BANNER
+═══════════════════════════════════════════ -->
+<section class="rdr-section" style="padding-top:40px;">
+  <div class="rdr-container">
+    <div class="rdr-cta" data-rdr-reveal>
+      <div>
+        <h2>Ready to start earning?</h2>
+        <p>Join thousands of riders making money on their own terms. Sign up today and complete your first delivery this week.</p>
+      </div>
+      <button class="rdr-btn rdr-btn-green rdr-btn-lg" onclick="window.openRiderRegister()"><i class="fa-solid fa-bolt"></i> Become a Rider</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<footer class="rdr-footer">
+  <div class="rdr-container">
+    <div>
+      <a href="#top" class="rdr-brand" style="margin-bottom:18px;">
+        <div class="rdr-brand-icon"><i class="fa-solid fa-motorcycle"></i></div>
+        <div>
+          <div class="rdr-brand-name" style="color:#fff;">Food<span style="color:var(--rdr-orange)">Court</span></div>
+          <div class="rdr-brand-tag">Rider Hub</div>
+        </div>
+      </a>
+      <p>Delivering happiness across 500+ cities. Whether you ride for us or order from us, FoodCourt keeps things fast, fresh, and flexible.</p>
+      <div class="rdr-footer-social">
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+        <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+      </div>
+    </div>
+
+    <div>
+      <h5>Company</h5>
+      <div style="display:flex;flex-direction:column;">
+        <a href="#top">About Us</a>
+        <a href="/restaurants/">Order Food</a>
+        <a href="/riders/login/">Rider Login</a>
+        <a href="#faq">Help Centre</a>
+      </div>
+    </div>
+
+    <div>
+      <h5>Legal</h5>
+      <div style="display:flex;flex-direction:column;">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms &amp; Conditions</a>
+        <a href="#">Cookie Policy</a>
+        <a href="#">Safety Guidelines</a>
+      </div>
+    </div>
+
+    <div>
+      <h5>Contact</h5>
+      <p><i class="fa-solid fa-location-dot me-2" style="color:var(--rdr-orange)"></i> 21 Marina Road, Victoria Island</p>
+      <p><i class="fa-solid fa-envelope me-2" style="color:var(--rdr-orange)"></i> riders@foodcourt.app</p>
+      <p><i class="fa-solid fa-phone me-2" style="color:var(--rdr-orange)"></i> +234 800 FOODCOURT</p>
+    </div>
+  </div>
+  <div class="rdr-footer-bottom">
+    <div class="rdr-container">
+      <span>© 2026 FoodCourt Inc. All rights reserved.</span>
+      <span>Made with <i class="fa-solid fa-heart" style="color:var(--rdr-orange)"></i> for riders</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     RIDER REGISTRATION MODAL (6 steps)
+═══════════════════════════════════════════ -->
+<div class="rdr-modal" id="rdrRegisterModal" aria-modal="true" role="dialog">
+  <div class="rdr-modal-backdrop" onclick="window.closeRiderRegister()"></div>
+  <div class="rdr-modal-card">
+    <button class="rdr-modal-close" onclick="window.closeRiderRegister()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+
+    <!-- Progress header -->
+    <div class="rdr-modal-head">
+      <h3 class="rdr-modal-title">Become a FoodCourt Rider</h3>
+      <p class="rdr-modal-sub">Complete the form below — it takes about 5 minutes.</p>
+      <div class="rdr-auth-error" id="rdrRegisterError"></div>
+    </div>
+    <div class="rdr-progress" id="rdrProgressWrap">
+      <div class="rdr-progress-bar"><div class="rdr-progress-fill" id="rdrProgressFill"></div></div>
+      <div class="rdr-progress-steps" id="rdrProgressSteps">
+        <span class="now">1 Personal</span>
+        <span>2 Address</span>
+        <span>3 Vehicle</span>
+        <span>4 Documents</span>
+        <span>5 Bank</span>
+        <span>6 Review</span>
+      </div>
+    </div>
+
+    <form id="rdrForm" novalidate>
+      {% csrf_token %}
+      <!-- Body -->
+      <div class="rdr-modal-body" id="rdrModalBody">
+
+        <!-- STEP 1: Personal -->
+        <div class="rdr-step-panel active" data-step="1">
+          <h4 class="rdr-step-title">Personal Information</h4>
+          <p class="rdr-step-hint">Tell us a little about yourself to get started.</p>
+
+          <div class="rdr-field">
+            <div class="rdr-avatar-pick">
+              <div class="rdr-avatar-preview" id="rdrAvatarPreview"><i class="fa-solid fa-user"></i></div>
+              <div>
+                <label class="rdr-label">Profile Picture <span class="req">*</span></label>
+                <label class="rdr-dropzone" style="padding:14px 18px;">
+                  <input type="file" id="rdrAvatarFile" accept="image/*">
+                  <span style="display:inline;"><i class="fa-solid fa-camera me-1" style="color:var(--rdr-green-dark)"></i> <strong>Upload photo</strong></span>
+                </label>
+                <span class="rdr-field-error" data-error-for="avatar">Please upload a profile picture.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">First Name <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrFname" placeholder="e.g. John" autocomplete="given-name">
+              <span class="rdr-field-error" data-error-for="rdrFname">First name is required.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Last Name <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrLname" placeholder="e.g. Doe" autocomplete="family-name">
+              <span class="rdr-field-error" data-error-for="rdrLname">Last name is required.</span>
+            </div>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Email Address <span class="req">*</span></label>
+            <input type="email" class="rdr-input" id="rdrEmail" placeholder="you@example.com" autocomplete="email">
+            <span class="rdr-field-error" data-error-for="rdrEmail">Enter a valid email address.</span>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Phone Number <span class="req">*</span></label>
+            <input type="tel" class="rdr-input" id="rdrPhone" placeholder="+234 800 123 4567" autocomplete="tel">
+            <span class="rdr-field-error" data-error-for="rdrPhone">Enter a valid phone number.</span>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Password <span class="req">*</span></label>
+              <div class="rdr-pw-wrap">
+                <input type="password" class="rdr-input" id="rdrPw" placeholder="Min. 8 characters" autocomplete="new-password">
+                <button type="button" class="rdr-pw-toggle" data-pw-toggle="rdrPw" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+              </div>
+              <span class="rdr-field-error" data-error-for="rdrPw">Password must be at least 8 characters.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Confirm Password <span class="req">*</span></label>
+              <div class="rdr-pw-wrap">
+                <input type="password" class="rdr-input" id="rdrPw2" placeholder="Repeat password" autocomplete="new-password">
+                <button type="button" class="rdr-pw-toggle" data-pw-toggle="rdrPw2" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+              </div>
+              <span class="rdr-field-error" data-error-for="rdrPw2">Passwords do not match.</span>
+            </div>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Date of Birth <span class="req">*</span></label>
+            <input type="date" class="rdr-input" id="rdrDob" autocomplete="bday">
+            <span class="rdr-field-error" data-error-for="rdrDob">Please enter your date of birth.</span>
+          </div>
+        </div>
+
+        <!-- STEP 2: Address -->
+        <div class="rdr-step-panel" data-step="2">
+          <h4 class="rdr-step-title">Your Address</h4>
+          <p class="rdr-step-hint">Where should we send your rider kit and documents?</p>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Home Address <span class="req">*</span></label>
+            <input type="text" class="rdr-input" id="rdrAddress" placeholder="Street address, apartment, etc." autocomplete="street-address">
+            <span class="rdr-field-error" data-error-for="rdrAddress">Home address is required.</span>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">City <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrCity" placeholder="e.g. Lagos" autocomplete="address-level2">
+              <span class="rdr-field-error" data-error-for="rdrCity">City is required.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">State <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrState" placeholder="e.g. Lagos State" autocomplete="address-level1">
+              <span class="rdr-field-error" data-error-for="rdrState">State is required.</span>
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Country <span class="req">*</span></label>
+              <select class="rdr-select" id="rdrCountry">
+                <option value="" selected disabled>Select country</option>
+                <option>Nigeria</option>
+                <option>Ghana</option>
+                <option>Kenya</option>
+                <option>South Africa</option>
+                <option>United Kingdom</option>
+                <option>United States</option>
+                <option>Other</option>
+              </select>
+              <span class="rdr-field-error" data-error-for="rdrCountry">Please select your country.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Postal Code</label>
+              <input type="text" class="rdr-input" id="rdrZip" placeholder="e.g. 100001" autocomplete="postal-code">
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Vehicle -->
+        <div class="rdr-step-panel" data-step="3">
+          <h4 class="rdr-step-title">Vehicle Information</h4>
+          <p class="rdr-step-hint">Let us know how you'll be delivering.</p>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Vehicle Type <span class="req">*</span></label>
+            <select class="rdr-select" id="rdrVehicleType">
+              <option value="" selected disabled>Select vehicle type</option>
+              <option>Motorcycle</option>
+              <option>Bicycle</option>
+              <option>Scooter</option>
+              <option>Car</option>
+            </select>
+            <span class="rdr-field-error" data-error-for="rdrVehicleType">Please select your vehicle type.</span>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Brand <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrBrand" placeholder="e.g. Bajaj, Honda, Toyota">
+              <span class="rdr-field-error" data-error-for="rdrBrand">Brand is required.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Model <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrModel" placeholder="e.g. Boxer 150">
+              <span class="rdr-field-error" data-error-for="rdrModel">Model is required.</span>
+            </div>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Color <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrColor" placeholder="e.g. Red">
+              <span class="rdr-field-error" data-error-for="rdrColor">Color is required.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Plate Number <span class="req">*</span></label>
+              <input type="text" class="rdr-input" id="rdrPlate" placeholder="e.g. KJA 123 AB">
+              <span class="rdr-field-error" data-error-for="rdrPlate">Plate number is required.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: Documents -->
+        <div class="rdr-step-panel" data-step="4">
+          <h4 class="rdr-step-title">Documents</h4>
+          <p class="rdr-step-hint">Upload clear photos of the following documents. (JPG, PNG, or PDF)</p>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Government ID <span class="req">*</span></label>
+            <label class="rdr-dropzone" data-dropzone="gov-id">
+              <input type="file" accept="image/*,application/pdf">
+              <div class="dz-ic"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <strong>Click to upload your government ID</strong>
+              <span>National ID, passport, or driver's license</span>
+            </label>
+            <span class="rdr-field-error" data-error-for="gov-id">Please upload your government ID.</span>
+          </div>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Driver's License <span class="req">*</span></label>
+            <label class="rdr-dropzone" data-dropzone="drivers-license">
+              <input type="file" accept="image/*,application/pdf">
+              <div class="dz-ic"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <strong>Click to upload your driver's license</strong>
+              <span>Required if delivering by motorcycle, scooter, or car</span>
+            </label>
+            <span class="rdr-field-error" data-error-for="drivers-license">Please upload your driver's license.</span>
+          </div>
+
+          <div class="rdr-row-2">
+            <div class="rdr-field">
+              <label class="rdr-label">Vehicle Registration <span>(optional)</span></label>
+              <label class="rdr-dropzone" data-dropzone="vehicle-reg">
+                <input type="file" accept="image/*,application/pdf">
+                <div class="dz-ic"><i class="fa-solid fa-file"></i></div>
+                <strong>Upload registration</strong>
+                <span>Optional</span>
+              </label>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">Proof of Address <span>(optional)</span></label>
+              <label class="rdr-dropzone" data-dropzone="proof-address">
+                <input type="file" accept="image/*,application/pdf">
+                <div class="dz-ic"><i class="fa-solid fa-file"></i></div>
+                <strong>Upload proof of address</strong>
+                <span>Utility bill, bank statement</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="rdr-upload-list" id="rdrUploadList"></div>
+        </div>
+
+        <!-- STEP 5: Bank -->
+        <div class="rdr-step-panel" data-step="5">
+          <h4 class="rdr-step-title">Bank Details</h4>
+          <p class="rdr-step-hint">We'll send your earnings to this account. Select your bank and enter your account number — the account name is verified automatically.</p>
+
+          <div class="rdr-field">
+            <label class="rdr-label">Bank Name <span class="req">*</span></label>
+            <select class="rdr-select" id="rdrBankName">
+              <option value="" selected disabled>Loading banks…</option>
+            </select>
+            <span class="rdr-field-error" data-error-for="rdrBankName">Please select your bank.</span>
+          </div>
+          <div class="rdr-field">
+            <label class="rdr-label">Account Number <span class="req">*</span></label>
+            <input type="text" class="rdr-input" id="rdrAcctNo" placeholder="10-digit account number" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" autocomplete="off">
+            <span class="rdr-field-error" data-error-for="rdrAcctNo">Enter a valid 10-digit account number.</span>
+            <span class="rdr-bank-hint" id="rdrBankHint"></span>
+          </div>
+          <div class="rdr-field">
+            <label class="rdr-label">Account Name <span class="req">*</span></label>
+            <input type="text" class="rdr-input" id="rdrAcctName" placeholder="Fetched automatically after verification" readonly>
+            <span class="rdr-field-error" data-error-for="rdrAcctName">Account name could not be verified — check your account number and bank.</span>
+          </div>
+        </div>
+
+        <!-- STEP 6: Review -->
+        <div class="rdr-step-panel" data-step="6">
+          <h4 class="rdr-step-title">Review &amp; Submit</h4>
+          <p class="rdr-step-hint">Please confirm everything looks correct before submitting.</p>
+
+          <div class="rdr-review">
+            <div class="rdr-review-block">
+              <h4>Personal</h4>
+              <div class="rdr-review-grid">
+                <div><div class="k">Full name</div><div class="v" data-summ="name">—</div></div>
+                <div><div class="k">Email</div><div class="v" data-summ="email">—</div></div>
+                <div><div class="k">Phone</div><div class="v" data-summ="phone">—</div></div>
+                <div><div class="k">Date of birth</div><div class="v" data-summ="dob">—</div></div>
+              </div>
+            </div>
+            <div class="rdr-review-block">
+              <h4>Address</h4>
+              <div class="rdr-review-grid">
+                <div><div class="k">Address</div><div class="v" data-summ="address">—</div></div>
+                <div><div class="k">City / State</div><div class="v" data-summ="city">—</div></div>
+                <div><div class="k">Country</div><div class="v" data-summ="country">—</div></div>
+                <div><div class="k">Postal code</div><div class="v" data-summ="zip">—</div></div>
+              </div>
+            </div>
+            <div class="rdr-review-block">
+              <h4>Vehicle</h4>
+              <div class="rdr-review-grid">
+                <div><div class="k">Type</div><div class="v" data-summ="vehicle">—</div></div>
+                <div><div class="k">Brand / Model</div><div class="v" data-summ="vehicleDetail">—</div></div>
+                <div><div class="k">Color</div><div class="v" data-summ="color">—</div></div>
+                <div><div class="k">Plate number</div><div class="v" data-summ="plate">—</div></div>
+              </div>
+            </div>
+            <div class="rdr-review-block">
+              <h4>Bank</h4>
+              <div class="rdr-review-grid">
+                <div><div class="k">Bank</div><div class="v" data-summ="bank">—</div></div>
+                <div><div class="k">Account name</div><div class="v" data-summ="acctName">—</div></div>
+                <div><div class="k">Account number</div><div class="v" data-summ="acctNo">—</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer actions -->
+      <div class="rdr-modal-foot">
+        <button type="button" class="rdr-btn rdr-btn-ghost" id="rdrPrevBtn" onclick="window.rdrStep('prev')"><i class="fa-solid fa-arrow-left me-1"></i> Previous</button>
+        <span class="side" id="rdrStepHint">Step 1 of 6</span>
+        <button type="button" class="rdr-btn rdr-btn-primary" id="rdrNextBtn" onclick="window.rdrStep('next')">Continue <i class="fa-solid fa-arrow-right ms-1"></i></button>
+      </div>
+    </form>
+
+    <!-- Success state -->
+    <div class="rdr-success" id="rdrSuccess">
+      <div class="rdr-success-ic"><i class="fa-solid fa-envelope-circle-check"></i></div>
+      <h3>Application Submitted!</h3>
+      <p>We've received your application and sent a <strong>verification code</strong> to your email. Enter the code to activate your rider account.</p>
+      <a href="/riders/verify/" class="rdr-btn rdr-btn-green" style="margin-bottom:12px;"><i class="fa-solid fa-shield-halved me-1"></i> Verify Email</a>
+      <br>
+      <button class="rdr-btn rdr-btn-ghost" onclick="window.closeRiderRegister()"><i class="fa-solid fa-check me-1"></i> Done</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/rider.js' %}?v=5"></script>
+<script>
+(function () {
+  'use strict';
+
+  var html = document.documentElement;
+  var themeToggle = document.getElementById('rdrThemeToggle');
+  var drawerTheme = document.getElementById('rdrDrawerTheme');
+
+  function applyTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    try { localStorage.setItem('rdr-theme', theme); } catch (e) {}
+    var isDark = theme === 'dark';
+    document.querySelectorAll('.rdr-theme-btn i, .rdr-drawer-theme i').forEach(function (i) {
+      i.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-circle-half-stroke';
+    });
+  }
+
+  function toggleTheme() {
+    applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  window.toggleTheme = toggleTheme;
+  if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+  if (drawerTheme) drawerTheme.addEventListener('click', toggleTheme);
+
+  applyTheme(html.getAttribute('data-theme') || 'light');
+})();
+</script>
+</body>
+</html>

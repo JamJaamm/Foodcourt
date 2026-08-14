@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load money_tags %}
+
+{% block title %}FoodCourt — Payment {% if payment.status == 'successful' %}Successful{% else %}Status{% endif %}{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container" style="max-width:640px;">
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4 p-md-5 text-center">
+
+        {% if payment.status == 'successful' %}
+        <div style="width:84px;height:84px;border-radius:50%;background:#e8f5e9;display:inline-flex;align-items:center;justify-content:center;font-size:36px;color:#2e7d32;">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h2 class="mt-3 mb-1" style="color:#1b5e20;">Payment Successful</h2>
+        <p class="text-secondary mb-4">Thank you, {{ request.user.first_name|default:request.user.username }}! Your payment has been received and your order is being processed.</p>
+        {% elif payment.status == 'failed' %}
+        <div style="width:84px;height:84px;border-radius:50%;background:#ffebee;display:inline-flex;align-items:center;justify-content:center;font-size:36px;color:#c62828;">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+        <h2 class="mt-3 mb-1" style="color:#b71c1c;">Payment Failed</h2>
+        <p class="text-secondary mb-4">We couldn't confirm your payment. You can try again below — your order is still saved.</p>
+        {% elif payment.status == 'cancelled' %}
+        <div style="width:84px;height:84px;border-radius:50%;background:#eceff1;display:inline-flex;align-items:center;justify-content:center;font-size:36px;color:#455a64;">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <h2 class="mt-3 mb-1" style="color:#37474f;">Payment Cancelled</h2>
+        <p class="text-secondary mb-4">You left the payment page before completing it. No money was charged.</p>
+        {% else %}
+        <div style="width:84px;height:84px;border-radius:50%;background:#fff3e0;display:inline-flex;align-items:center;justify-content:center;font-size:36px;color:#e65100;">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <h2 class="mt-3 mb-1" style="color:#e65100;">Payment Pending</h2>
+        <p class="text-secondary mb-4">We're confirming your payment. This can take a few seconds.</p>
+        {% endif %}
+
+        <div class="bg-light rounded-3 p-3 mb-4 text-start" style="max-width:420px;margin:0 auto;">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-secondary">Order</span>
+            <strong>{{ order.order_id }}</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-secondary">Restaurant</span>
+            <span>{{ order.restaurant_name }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-secondary">Amount</span>
+            <strong>{{ payment.amount|money }} {{ payment.currency }}</strong>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="text-secondary">Reference</span>
+            <span style="font-size:12px;">{{ payment.transaction_reference }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          {% if payment.status == 'successful' %}
+          <a href="{% url 'payments:payments_receipt' order.order_id %}" class="btn btn-primary">
+            <i class="fa-solid fa-file-invoice me-1"></i> View Receipt
+          </a>
+          <a href="{% url 'tracking_detail' order.order_id %}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-truck-fast me-1"></i> Track Order
+          </a>
+          {% else %}
+          <a href="{% url 'payments:payments_retry' order.order_id %}" class="btn btn-primary">
+            <i class="fa-solid fa-rotate-right me-1"></i> Try Payment Again
+          </a>
+          <a href="{% url 'tracking_detail' order.order_id %}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-truck-fast me-1"></i> Track Order
+          </a>
+          {% endif %}
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-house me-1"></i> My Dashboard
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  {% if payment.status == 'successful' %}
+  // Payment confirmed — the purchased items are no longer pending, so clear
+  // the client-side cart (it was kept until now in case payment failed).
+  if (window.CartManager) window.CartManager.clear();
+  {% endif %}
+});
+</script>
+{% endblock %}

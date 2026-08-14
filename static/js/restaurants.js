@@ -138,7 +138,15 @@ function loadFilteredRestaurants() {
   setTimeout(() => {
     window.Skeleton.hide(container);
 
-    let list = [...window.FOODCOURT_DATA.restaurants];
+    const dbEl = document.getElementById('db-restaurants-data');
+    let allRestaurants = [];
+    if (dbEl && dbEl.textContent && dbEl.textContent.trim() !== '[]') {
+      allRestaurants = JSON.parse(dbEl.textContent);
+    } else if (window.FOODCOURT_DATA) {
+      allRestaurants = window.FOODCOURT_DATA.restaurants;
+    }
+
+    let list = [...allRestaurants];
 
     // 1. Filter by category
     if (activeCategory !== 'all') {

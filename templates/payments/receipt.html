@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load money_tags %}
+
+{% block title %}FoodCourt — Receipt {{ order.order_id }}{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container" style="max-width:720px;">
+
+    <div class="card border-0 shadow-sm" id="receipt-card">
+      <div class="card-body p-4 p-md-5">
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 border-bottom pb-3 mb-4">
+          <div>
+            <div class="text-uppercase text-secondary" style="letter-spacing:2px;font-size:12px;">FoodCourt</div>
+            <h2 class="mb-0">Order Receipt</h2>
+          </div>
+          <div class="text-end">
+            <div class="text-secondary" style="font-size:13px;">{{ order.created_at|date:"F d, Y" }}</div>
+            <div class="text-secondary" style="font-size:13px;">{{ order.created_at|date:"H:i" }}</div>
+          </div>
+        </div>
+
+        {% if payment %}
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-3">
+            <div class="text-secondary" style="font-size:12px;">Order ID</div>
+            <strong>{{ order.order_id }}</strong>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-secondary" style="font-size:12px;">Status</div>
+            <strong class="{% if payment.status == 'successful' %}text-success{% elif payment.status == 'failed' %}text-danger{% else %}text-warning{% endif %}">{{ payment.get_status_display }}</strong>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-secondary" style="font-size:12px;">Paid With</div>
+            <strong>{{ payment.get_payment_method_display }}</strong>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-secondary" style="font-size:12px;">Reference</div>
+            <strong style="font-size:11px;">{{ payment.transaction_reference }}</strong>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="text-secondary mb-1" style="font-size:12px;text-transform:uppercase;letter-spacing:1px;">Items</div>
+        <table class="table table-sm align-middle mb-4">
+          <thead>
+            <tr>
+              <th class="text-secondary" style="font-weight:500;">Item</th>
+              <th class="text-secondary text-center" style="font-weight:500;">Qty</th>
+              <th class="text-secondary text-end" style="font-weight:500;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td class="text-center">{{ item.quantity }}</td>
+              <td class="text-end">{{ item.price|money }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="ms-auto" style="max-width:300px;">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-secondary">Subtotal</span><span>{{ order.subtotal|money }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-secondary">Delivery Fee</span><span>{{ order.delivery_fee|money }}</span>
+          </div>
+          {% if order.discount %}
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-secondary">Discount</span><span class="text-success">-{{ order.discount|money }}</span>
+          </div>
+          {% endif %}
+          <div class="d-flex justify-content-between border-top pt-2" style="font-size:16px;">
+            <strong>Total</strong><strong>{{ order.total|money }}</strong>
+          </div>
+        </div>
+
+        <div class="border-top pt-3 mt-4">
+          <div class="text-secondary mb-1" style="font-size:12px;">Delivery Address</div>
+          <p class="mb-0">{{ order.delivery_address }}</p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+      <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa-solid fa-print me-1"></i> Print Receipt
+      </button>
+      <a href="{% url 'tracking_detail' order.order_id %}" class="btn btn-outline-primary">
+        <i class="fa-solid fa-truck-fast me-1"></i> Track Order
+      </a>
+      <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-house me-1"></i> My Dashboard
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<style>
+  @media print {
+    header, footer, nav, .navbar, .d-print-none, .btn { display: none !important; }
+    body { background: #fff !important; }
+    #receipt-card { box-shadow: none !important; border: none !important; }
+  }
+</style>
+{% endblock %}
