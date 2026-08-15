@@ -12,9 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 import os.path
 from dotenv import load_dotenv
-import dj_database_url
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -108,20 +109,20 @@ CHANNEL_LAYERS = {
 
 if os.environ.get("RENDER"):
     DATABASES = {
-        "default": dj_database_url.config(
+        'default': dj_database_url.config(
             conn_max_age=600,
             ssl_require=True
         )
     }
 else:
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": "foodcourt",
-            "USER": "root",
-            "PASSWORD": "",
-            "HOST": "localhost",
-            "PORT": "3306",
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'foodcourt',
+            'USER': 'root',
+            'PASSWORD': '',
+            'HOST': '127.0.0.1',
+            'PORT': '3306',
         }
     }
 
