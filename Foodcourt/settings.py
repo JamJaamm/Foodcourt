@@ -196,7 +196,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ── Resend email ─────────────────────────────────────────────────────────
 # Using Resend (resend.com) as the transactional email provider.
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'FoodCourt <noreply@foodcourt.com>')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'FoodCourt <onboarding@resend.dev>')
 
 # Base URL used for building absolute links in emails (e.g. password reset).
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
