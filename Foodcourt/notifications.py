@@ -62,10 +62,7 @@ def _order_context(order):
 
 
 def send_order_confirmation_emails(order):
-    """Email the customer (order confirmation) and the restaurant (new order).
 
-    Safe to call more than once — sending is cheap and the templates are static.
-    """
     context = _order_context(order)
 
     send_email(
