@@ -21,11 +21,7 @@ def _site_url(path):
 
 
 def send_email(subject, template_name, context, recipient_list):
-    """Send an HTML email via Resend.
 
-    ``recipient_list`` is a plain list of email address strings.
-    Returns True on success, False on failure (logged to stdout).
-    """
     try:
         html = render_to_string(template_name, context)
         plain = strip_tags(html)
