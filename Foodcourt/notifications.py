@@ -5,8 +5,8 @@ order-confirmation emails without creating a circular import.
 """
 from decimal import Decimal, InvalidOperation
 
+import resend
 from django.conf import settings
-from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import strip_tags
@@ -18,10 +18,23 @@ def _site_url(path):
 
 
 def send_email(subject, template_name, context, recipient_list):
+    """Send an HTML email via Resend.
+
+    ``recipient_list`` is a plain list of email address strings.
+    Returns True on success, False on failure (logged to stdout).
+    """
     try:
         html = render_to_string(template_name, context)
         plain = strip_tags(html)
-        send_mail(subject, plain, settings.DEFAULT_FROM_EMAIL, recipient_list, html_message=html)
+
+        resend.api_key = getattr(settings, 'RESEND_API_KEY', '')
+        resend.Emails.send({
+            "from": settings.DEFAULT_FROM_EMAIL,
+            "to": recipient_list,
+            "subject": subject,
+            "html": html,
+            "text": plain,
+        })
         return True
     except Exception as e:
         print(f"[send_email] Failed to send '{subject}' to {recipient_list}: {e}")

@@ -193,18 +193,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Mailpit email backend configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = '127.0.0.1'
-EMAIL_PORT = 1025
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-EMAIL_USE_TLS = False
-DEFAULT_FROM_EMAIL = 'FoodCourt <noreply@foodcourt.local>'
+# ── Resend email ─────────────────────────────────────────────────────────
+# Using Resend (resend.com) as the transactional email provider.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'FoodCourt <noreply@foodcourt.com>')
 
-# Fixed base URL used for building absolute links in emails (e.g. password reset).
-# Change to your real domain in production.
-SITE_URL = 'http://127.0.0.1:8000'
+# Base URL used for building absolute links in emails (e.g. password reset).
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
 
 # ── Paystack ──────────────────────────────────────────────────────────────

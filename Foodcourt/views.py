@@ -10,10 +10,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.mail import send_mail
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django.utils import timezone
 from django.conf import settings
 from django.http import JsonResponse
@@ -29,24 +26,15 @@ from .models import (
     Restaurant, Category, MenuItem, InventoryItem, Coupon, Review, Profile,
     Riders, Delivery, DeliveryStatusLog, Notification, RiderReview
 )
-from .notifications import send_order_confirmation_emails
+from .notifications import send_email, send_order_confirmation_emails
 from . import delivery_services
 from payments import services as payment_services
 from payments.services import PaystackError
 from payments.models import Payment
 
     
+    
 
-
-def send_email(subject, template_name, context, recipient_list):
-    try:
-        html = render_to_string(template_name, context)
-        plain = strip_tags(html)
-        send_mail(subject, plain, settings.DEFAULT_FROM_EMAIL, recipient_list, html_message=html)
-        return True
-    except Exception as e:
-        print(f"[send_email] Failed to send '{subject}' to {recipient_list}: {e}")
-        return False
 
 def get_current_rider(request):
     rider_id = request.session.get('rider_id')
