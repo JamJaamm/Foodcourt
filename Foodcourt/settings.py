@@ -45,6 +45,16 @@ if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
         os.environ.get("RENDER_EXTERNAL_HOSTNAME")
     )
 
+# CSRF — allow the Render hostname so POST forms work behind the proxy.
+CSRF_TRUSTED_ORIGINS = []
+if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    CSRF_TRUSTED_ORIGINS.append(
+        f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}"
+    )
+
+# Tell Django it's behind Render's reverse proxy (fixes HTTPS detection).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 # Application definition
 

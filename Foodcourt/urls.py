@@ -43,6 +43,7 @@ urlpatterns = [
     path('admin-dashboard/restaurants/', views.admin_dashboard_view, {'section': 'restaurants'}, name='admin_restaurants'),
     path('admin-dashboard/orders/', views.admin_dashboard_view, {'section': 'orders'}, name='admin_orders'),
     path('admin-dashboard/riders/', views.admin_dashboard_view, {'section': 'riders'}, name='admin_riders'),
+    path('admin-dashboard/users/', views.admin_dashboard_view, {'section': 'users'}, name='admin_users'),
     path('admin-dashboard/payments/', views.admin_dashboard_view, {'section': 'payments'}, name='admin_payments'),
     path('admin-dashboard/riders/<int:pk>/approve/', views.approve_rider_view, name='approve_rider'),
     path('admin-dashboard/riders/<int:pk>/reject/', views.reject_rider_view, name='reject_rider'),

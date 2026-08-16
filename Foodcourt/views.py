@@ -1113,6 +1113,41 @@ def admin_dashboard_view(request, section=None):
             'hide_navbar': True,
         })
 
+    # ── Registered users section ──
+    if section == 'users':
+        if not is_staff:
+            return redirect('admin_dashboard')
+        users_qs = User.objects.order_by('-date_joined')
+        user_query = request.GET.get('q', '').strip()
+        if user_query:
+            users_qs = users_qs.filter(
+                db_models.Q(username__icontains=user_query)
+                | db_models.Q(email__icontains=user_query)
+                | db_models.Q(first_name__icontains=user_query)
+                | db_models.Q(last_name__icontains=user_query)
+            )
+        user_rows = []
+        for u in users_qs:
+            profile = getattr(u, 'profile', None)
+            user_rows.append({
+                'id': u.id,
+                'name': u.get_full_name() or u.username,
+                'email': u.email,
+                'phone': getattr(profile, 'phone', None) or '—',
+                'is_staff': u.is_staff,
+                'is_superuser': u.is_superuser,
+                'is_active': u.is_active,
+                'orders': u.orders.count() if hasattr(u, 'orders') else 0,
+                'date_joined': u.date_joined,
+            })
+        return render(request, 'admin_dashboard.html', {
+            'section': 'users',
+            'user_rows': user_rows,
+            'user_query': user_query,
+            'platform_stats': build_platform_stats(),
+            'hide_navbar': True,
+        })
+
     # ── Registered restaurants section ──
     if section == 'restaurants':
         if not is_staff:
