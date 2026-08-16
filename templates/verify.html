@@ -155,7 +155,33 @@
 
   function resendCode(event) {
     event.preventDefault();
-    Toast.show('Verification code resent to your email!', 'success');
+    const link = event.target;
+    link.textContent = 'Sending...';
+    link.style.pointerEvents = 'none';
+
+    fetch('/verify/resend/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        Toast.show('Verification code resent to your email!', 'success');
+        // Hide the email failure warning if it was showing
+        const warning = document.querySelector('.alert-warning');
+        if (warning) warning.style.display = 'none';
+      } else {
+        Toast.show(data.error || 'Failed to resend code.', 'error');
+      }
+    })
+    .catch(() => Toast.show('Failed to resend code. Please try again.', 'error'))
+    .finally(() => {
+      link.textContent = 'Resend Code';
+      link.style.pointerEvents = '';
+    });
   }
 </script>
 {% endblock %}

@@ -3,6 +3,7 @@
 Kept out of ``Foodcourt.views`` so the payments service layer can send
 order-confirmation emails without creating a circular import.
 """
+import logging
 from decimal import Decimal, InvalidOperation
 
 import resend
@@ -10,6 +11,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import strip_tags
+
+logger = logging.getLogger(__name__)
 
 
 def _site_url(path):
@@ -27,17 +30,25 @@ def send_email(subject, template_name, context, recipient_list):
         html = render_to_string(template_name, context)
         plain = strip_tags(html)
 
-        resend.api_key = getattr(settings, 'RESEND_API_KEY', '')
-        resend.Emails.send({
+        api_key = getattr(settings, 'RESEND_API_KEY', '')
+        if not api_key:
+            logger.error("[send_email] RESEND_API_KEY is not set. Cannot send '%s'", subject)
+            print("[send_email] RESEND_API_KEY is not set. Cannot send '%s'" % subject)
+            return False
+
+        resend.api_key = api_key
+        result = resend.Emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": recipient_list,
             "subject": subject,
             "html": html,
             "text": plain,
         })
+        logger.info("[send_email] Sent '%s' to %s — id: %s", subject, recipient_list, getattr(result, 'id', ''))
         return True
     except Exception as e:
-        print(f"[send_email] Failed to send '{subject}' to {recipient_list}: {e}")
+        logger.error("[send_email] Failed to send '%s' to %s: %s", subject, recipient_list, e)
+        print("[send_email] Failed to send '%s' to %s: %s" % (subject, recipient_list, e))
         return False
 
 

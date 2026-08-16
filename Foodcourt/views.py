@@ -360,6 +360,39 @@ def verify_view(request):
         'dev_code': dev_code,
     })
 
+def resend_verification_code(request):
+    """AJAX endpoint — resend a new verification code to the user's email."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    user_id = request.session.get('verification_user_id')
+    if not user_id:
+        return JsonResponse({'error': 'No pending verification.'}, status=400)
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User not found.'}, status=404)
+
+    # Invalidate old unused codes
+    VerificationCode.objects.filter(user=user, is_used=False).delete()
+
+    code = f"{random.randint(100000, 999999)}"
+    VerificationCode.objects.create(user=user, code=code)
+
+    email_sent = send_email(
+        subject="Verify your FoodCourt account",
+        template_name="emails/verify_email.html",
+        context={"code": code},
+        recipient_list=[user.email],
+    )
+
+    request.session['verification_email_sent'] = email_sent
+
+    if email_sent:
+        return JsonResponse({'success': True})
+    return JsonResponse({'error': 'Failed to send email. Please try again.'}, status=500)
+
 def logout_view(request):
     logout(request)
     return redirect('home')
@@ -741,8 +774,42 @@ def rider_verify_view(request):
         'error': error,
         'success': success,
         'email': rider.email,
+        'email_sent': email_sent,
         'dev_code': dev_code,
     })
+
+def rider_resend_verification_code(request):
+    """AJAX endpoint — resend a new verification code to the rider's email."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    rider_id = request.session.get('rider_verification_rider_id')
+    if not rider_id:
+        return JsonResponse({'error': 'No pending verification.'}, status=400)
+
+    try:
+        rider = Riders.objects.get(id=rider_id)
+    except Riders.DoesNotExist:
+        return JsonResponse({'error': 'Rider not found.'}, status=404)
+
+    # Invalidate old unused codes
+    VerificationCode.objects.filter(rider=rider, is_used=False).delete()
+
+    code = f"{random.randint(100000, 999999)}"
+    VerificationCode.objects.create(rider=rider, code=code)
+
+    email_sent = send_email(
+        subject="Verify your FoodCourt Riders account",
+        template_name="emails/rider_verify_email.html",
+        context={"code": code, "name": rider.first_name},
+        recipient_list=[rider.email],
+    )
+
+    request.session['rider_verification_email_sent'] = email_sent
+
+    if email_sent:
+        return JsonResponse({'success': True})
+    return JsonResponse({'error': 'Failed to send email. Please try again.'}, status=500)
 
 @rider_required
 def rider_dashboard_view(request):

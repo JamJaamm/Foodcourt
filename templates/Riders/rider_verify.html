@@ -34,6 +34,13 @@
     <div class="rdr-auth-error show">{{ error }}</div>
     {% endif %}
 
+    {% if email_sent == False %}
+    <div style="display:flex;gap:12px;align-items:flex-start;background:#FFF3CD;color:#856404;font-size:14px;border-radius:12px;padding:14px 16px;margin-bottom:18px;">
+      <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px;"></i>
+      <span>We couldn't deliver the email. {% if dev_code %}Your code is <strong>{{ dev_code }}</strong>{% else %}Please use the resend option below.{% endif %}</span>
+    </div>
+    {% endif %}
+
     {% if success %}
     <div style="display:flex;gap:12px;align-items:flex-start;background:var(--rdr-green-subtle);color:#067A5B;font-size:14px;border-radius:12px;padding:14px 16px;margin-bottom:18px;">
       <i class="fa-solid fa-circle-check" style="margin-top:2px;"></i>
@@ -56,6 +63,10 @@
       <button type="submit" class="rdr-btn rdr-btn-green" style="width:100%;"><i class="fa-solid fa-shield-halved me-1"></i> Verify Email</button>
     </form>
 
+    <p style="text-align:center;margin-top:18px;font-size:13.5px;color:var(--rdr-muted);">
+      Didn't receive the code? <a href="#" id="rider-resend-link" onclick="resendRiderCode(event)" style="color:var(--rdr-green-dark);font-weight:600;">Resend Code</a>
+    </p>
+
     {% endif %}
 
     <p style="text-align:center;margin-top:24px;font-size:13.5px;color:var(--rdr-muted);">
@@ -65,4 +76,40 @@
 </div>
 
 </body>
+
+<script>
+function resendRiderCode(event) {
+  event.preventDefault();
+  const link = document.getElementById('rider-resend-link');
+  link.textContent = 'Sending...';
+  link.style.pointerEvents = 'none';
+
+  fetch('/riders/verify/resend/', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      // Simple success feedback
+      link.textContent = 'Code Sent!';
+      setTimeout(() => { link.textContent = 'Resend Code'; }, 3000);
+      // Hide email failure warning if showing
+      const warning = document.querySelector('[style*="FFF3CD"]');
+      if (warning) warning.style.display = 'none';
+    } else {
+      link.textContent = 'Failed — Try Again';
+      setTimeout(() => { link.textContent = 'Resend Code'; }, 3000);
+    }
+  })
+  .catch(() => {
+    link.textContent = 'Failed — Try Again';
+    setTimeout(() => { link.textContent = 'Resend Code'; }, 3000);
+  })
+  .finally(() => { link.style.pointerEvents = ''; });
+}
+</script>
 </html>
