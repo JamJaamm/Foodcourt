@@ -200,49 +200,133 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
           <div>
             <h2 class="db-header-title" style="margin-bottom:4px;">Registered Users 👥</h2>
-            <p class="text-secondary mb-0">All customers registered on the FoodCourt platform.</p>
+            <p class="text-secondary mb-0">Manage and inspect all platform users.</p>
           </div>
-          <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
-            <i class="fa-solid fa-arrow-left"></i> Back to Overview
-          </a>
+          <div class="d-flex gap-2">
+            <a href="{% url 'admin_export_users' %}" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+              <i class="fa-solid fa-download me-1"></i> Export CSV
+            </a>
+            <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+              <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+          </div>
         </div>
 
-        <!-- Platform stats -->
+        <!-- User Stats Cards -->
         <div class="db-stats-row" style="margin-top:18px;">
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-num">{{ user_stats.total }}</div>
             <div class="db-stat-label">Total Users</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
-            <div class="db-stat-label">Restaurants</div>
+            <div class="db-stat-num" style="color:var(--success);">{{ user_stats.active }}</div>
+            <div class="db-stat-label">Active</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
-            <div class="db-stat-label">Approved Riders</div>
+            <div class="db-stat-num" style="color:var(--danger);">{{ user_stats.blocked }}</div>
+            <div class="db-stat-label">Blocked</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.orders }}</div>
-            <div class="db-stat-label">Total Orders</div>
+            <div class="db-stat-num" style="color:var(--primary);">{{ user_stats.new_today }}</div>
+            <div class="db-stat-label">New Today</div>
           </div>
         </div>
 
-        <!-- Search -->
-        <form method="GET" class="d-flex gap-2 my-4" style="max-width:420px;">
-          <input type="text" name="q" value="{{ user_query }}" class="form-control" placeholder="Search by name or email...">
-          <button type="submit" class="fc-btn fc-btn-primary" style="white-space:nowrap;"><i class="fa-solid fa-magnifying-glass me-1"></i>Search</button>
+        <!-- Filters & Search -->
+        <form method="GET" class="db-card" style="margin-top:20px;padding:16px;">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3 col-6">
+              <label class="addr-form-label">Search</label>
+              <input type="text" name="q" value="{{ user_query }}" class="form-control" placeholder="Name, email, phone...">
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="addr-form-label">Status</label>
+              <select name="status" class="form-select" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                <option value="">All</option>
+                <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="blocked" {% if filters.status == 'blocked' %}selected{% endif %}>Blocked</option>
+              </select>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="addr-form-label">Verification</label>
+              <select name="verification" class="form-select" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                <option value="">All</option>
+                <option value="verified" {% if filters.verification == 'verified' %}selected{% endif %}>Verified</option>
+                <option value="unverified" {% if filters.verification == 'unverified' %}selected{% endif %}>Unverified</option>
+              </select>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="addr-form-label">Registered</label>
+              <select name="registered" class="form-select" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                <option value="">All Time</option>
+                <option value="today" {% if filters.registered == 'today' %}selected{% endif %}>Today</option>
+                <option value="7days" {% if filters.registered == '7days' %}selected{% endif %}>Last 7 Days</option>
+                <option value="30days" {% if filters.registered == '30days' %}selected{% endif %}>Last 30 Days</option>
+                <option value="thisyear" {% if filters.registered == 'thisyear' %}selected{% endif %}>This Year</option>
+              </select>
+            </div>
+            <div class="col-md-2 col-6">
+              <label class="addr-form-label">Activity</label>
+              <select name="activity" class="form-select" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                <option value="">All</option>
+                <option value="no_orders" {% if filters.activity == 'no_orders' %}selected{% endif %}>No Orders</option>
+                <option value="has_orders" {% if filters.activity == 'has_orders' %}selected{% endif %}>Has Orders</option>
+                <option value="10plus" {% if filters.activity == '10plus' %}selected{% endif %}>10+ Orders</option>
+              </select>
+            </div>
+            <div class="col-md-1 col-6">
+              <button type="submit" class="fc-btn fc-btn-primary w-100" style="white-space:nowrap;padding:11px 14px;"><i class="fa-solid fa-filter"></i></button>
+            </div>
+          </div>
+          {% if user_query or filters.status or filters.verification or filters.registered or filters.activity %}
+          <div class="mt-2 d-flex gap-2 flex-wrap" style="font-size:12px;">
+            <a href="{% url 'admin_users' %}" style="color:var(--danger);font-weight:600;">Clear all filters</a>
+          </div>
+          {% endif %}
         </form>
 
-        <!-- Users table -->
+        <!-- Bulk Actions + Sort -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3 mb-2">
+          <form method="POST" action="{% url 'admin_bulk_user_action' %}" id="bulk-form" class="d-flex gap-2 align-items-center">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="bulk-action" value="">
+            <input type="hidden" name="user_ids" id="bulk-ids" value="">
+            <label class="d-flex align-items-center gap-2" style="font-size:13px;font-weight:600;cursor:pointer;">
+              <input type="checkbox" id="select-all-users" style="width:16px;height:16px;"> Select All
+            </label>
+            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="document.getElementById('bulk-action').value='bulk_block'" style="border-radius:8px;font-size:12px;font-weight:600;">Block Selected</button>
+            <button type="submit" class="btn btn-sm btn-outline-success" onclick="document.getElementById('bulk-action').value='bulk_unblock'" style="border-radius:8px;font-size:12px;font-weight:600;">Unblock Selected</button>
+          </form>
+          <div class="d-flex gap-2 align-items-center" style="font-size:12px;">
+            <span class="text-muted">Sort:</span>
+            <a href="?sort=date_joined&{{ request.GET.urlencode|cut:'sort=-date_joined&' }}" class="text-decoration-none" style="color:{% if current_sort == 'date_joined' %}var(--primary){% else %}var(--text-muted){% endif %};font-weight:600;">Oldest</a>
+            <a href="?sort=-date_joined" class="text-decoration-none" style="color:{% if current_sort == '-date_joined' %}var(--primary){% else %}var(--text-muted){% endif %};font-weight:600;">Newest</a>
+            <a href="?sort=first_name" class="text-decoration-none" style="color:{% if current_sort == 'first_name' %}var(--primary){% else %}var(--text-muted){% endif %};font-weight:600;">Name</a>
+            <a href="?sort=-last_login" class="text-decoration-none" style="color:{% if current_sort == '-last_login' %}var(--primary){% else %}var(--text-muted){% endif %};font-weight:600;">Last Login</a>
+          </div>
+        </div>
+
+        <!-- Users Table -->
         <div class="db-card">
           <div class="db-table-wrap">
             <table class="db-table">
               <thead>
-                <tr><th>User</th><th>Contact</th><th>Orders</th><th>Role</th><th>Status</th><th>Joined</th></tr>
+                <tr>
+                  <th style="width:30px;"></th>
+                  <th>User</th>
+                  <th>Contact</th>
+                  <th>Orders</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Verified</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {% for u in user_rows %}
                 <tr>
+                  <td><input type="checkbox" class="user-select" value="{{ u.id }}" style="width:16px;height:16px;cursor:pointer;"></td>
                   <td>
                     <div style="display:flex;align-items:center;gap:10px;">
                       <div style="width:34px;height:34px;border-radius:50%;background:var(--primary-subtle);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ u.name|first }}</div>
@@ -253,10 +337,10 @@
                     </div>
                   </td>
                   <td>
-                    <div>{{ u.email }}</div>
+                    <div style="font-size:13px;">{{ u.email }}</div>
                     <div style="font-size:11px;color:var(--text-muted);">{{ u.phone }}</div>
                   </td>
-                  <td>{{ u.orders }}</td>
+                  <td style="font-weight:700;">{{ u.orders }}</td>
                   <td>
                     {% if u.is_superuser %}
                     <span class="status-badge status-out_for_delivery">Superadmin</span>
@@ -270,18 +354,233 @@
                     {% if u.is_active %}
                     <span class="status-badge status-delivered">Active</span>
                     {% else %}
-                    <span class="status-badge status-cancelled">Inactive</span>
+                    <span class="status-badge status-cancelled">Blocked</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if u.has_verified %}
+                    <span style="color:var(--success);font-weight:600;font-size:12px;">&#9679; Verified</span>
+                    {% else %}
+                    <span style="color:var(--warning);font-weight:600;font-size:12px;">&#9679; Unverified</span>
                     {% endif %}
                   </td>
                   <td style="font-size:12px;color:var(--text-muted);">{{ u.date_joined|date:"M d, Y" }}</td>
+                  <td>
+                    <div class="d-flex gap-1">
+                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openUserDetail({{ u.id }})">
+                        <i class="fa-solid fa-eye"></i>
+                      </button>
+                      {% if u.is_active %}
+                      <button class="btn btn-sm" style="background:#ffebee;color:#c62828;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="confirmAction('block','{% url 'admin_block_user' u.id %}')">
+                        <i class="fa-solid fa-ban"></i>
+                      </button>
+                      {% else %}
+                      <button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="confirmAction('unblock','{% url 'admin_unblock_user' u.id %}')">
+                        <i class="fa-solid fa-check"></i>
+                      </button>
+                      {% endif %}
+                      {% if not u.has_verified %}
+                      <button class="btn btn-sm" style="background:#fff3e0;color:#e65100;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="confirmAction('resend','{% url 'admin_resend_verification' u.id %}')">
+                        <i class="fa-solid fa-envelope"></i>
+                      </button>
+                      {% endif %}
+                    </div>
+                  </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="text-center text-muted py-4">No users found.</td></tr>
+                <tr><td colspan="9" class="text-center py-5">
+                  <div style="font-size:36px;margin-bottom:12px;">&#128100;</div>
+                  <div style="font-weight:700;font-size:15px;color:var(--text-primary);">No users found</div>
+                  <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Try adjusting your search or filters.</div>
+                </td></tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2">
+          <div style="font-size:13px;color:var(--text-muted);">
+            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} users
+          </div>
+          <nav>
+            <ul class="pagination" style="margin:0;gap:4px;">
+              {% if page_obj.has_previous %}
+              <li><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ user_query }}&status={{ filters.status }}&verification={{ filters.verification }}&registered={{ filters.registered }}&activity={{ filters.activity }}&sort={{ current_sort }}" style="border-radius:8px;border:1px solid var(--border);padding:6px 12px;font-size:13px;text-decoration:none;color:var(--text-primary);">&laquo;</a></li>
+              {% endif %}
+              {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li><span class="page-link" style="border-radius:8px;background:var(--primary);color:#fff;border:1px solid var(--primary);padding:6px 12px;font-size:13px;font-weight:700;">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li><a class="page-link" href="?page={{ num }}&q={{ user_query }}&status={{ filters.status }}&verification={{ filters.verification }}&registered={{ filters.registered }}&activity={{ filters.activity }}&sort={{ current_sort }}" style="border-radius:8px;border:1px solid var(--border);padding:6px 12px;font-size:13px;text-decoration:none;color:var(--text-primary);">{{ num }}</a></li>
+                {% endif %}
+              {% endfor %}
+              {% if page_obj.has_next %}
+              <li><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ user_query }}&status={{ filters.status }}&verification={{ filters.verification }}&registered={{ filters.registered }}&activity={{ filters.activity }}&sort={{ current_sort }}" style="border-radius:8px;border:1px solid var(--border);padding:6px 12px;font-size:13px;text-decoration:none;color:var(--text-primary);">&raquo;</a></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+
+        <!-- User Detail Modal -->
+        <div id="userDetailModal" style="display:none;position:fixed;inset:0;z-index:5000;align-items:center;justify-content:center;padding:20px;">
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);" onclick="closeUserDetail()"></div>
+          <div style="position:relative;background:var(--bg-card);border-radius:var(--radius-xl);width:100%;max-width:720px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-xl);">
+            <div style="position:sticky;top:0;background:var(--bg-card);padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;z-index:1;">
+              <h3 style="margin:0;font-size:18px;font-weight:800;">User Details</h3>
+              <button onclick="closeUserDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">&times;</button>
+            </div>
+            <div id="userDetailContent" style="padding:24px;">
+              <div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;color:var(--primary);"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirmModal" style="display:none;position:fixed;inset:0;z-index:5000;align-items:center;justify-content:center;padding:20px;">
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);" onclick="closeConfirm()"></div>
+          <div style="position:relative;background:var(--bg-card);border-radius:var(--radius-lg);width:100%;max-width:420px;padding:28px;box-shadow:var(--shadow-xl);text-align:center;">
+            <div style="font-size:36px;margin-bottom:12px;" id="confirm-icon"></div>
+            <h3 style="font-size:17px;font-weight:800;margin-bottom:8px;" id="confirm-title"></h3>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;" id="confirm-msg"></p>
+            <div class="d-flex gap-2 justify-content-center">
+              <button class="fc-btn fc-btn-ghost" onclick="closeConfirm()" style="padding:10px 20px;">Cancel</button>
+              <a id="confirm-btn" href="#" class="fc-btn" style="padding:10px 20px;text-decoration:none;color:#fff;"></a>
+            </div>
+          </div>
+        </div>
+
+        <script>
+        (function(){
+          /* Select all checkboxes */
+          var selectAll = document.getElementById('select-all-users');
+          if(selectAll) selectAll.addEventListener('change', function(){
+            document.querySelectorAll('.user-select').forEach(function(cb){ cb.checked = selectAll.checked; });
+            updateBulkIds();
+          });
+          document.querySelectorAll('.user-select').forEach(function(cb){
+            cb.addEventListener('change', updateBulkIds);
+          });
+          function updateBulkIds(){
+            var ids = [];
+            document.querySelectorAll('.user-select:checked').forEach(function(cb){ ids.push(cb.value); });
+            document.getElementById('bulk-ids').value = ids.join(',');
+          }
+
+          /* Confirmation modal */
+          window.confirmAction = function(type, url){
+            var modal = document.getElementById('confirmModal');
+            var icon = document.getElementById('confirm-icon');
+            var title = document.getElementById('confirm-title');
+            var msg = document.getElementById('confirm-msg');
+            var btn = document.getElementById('confirm-btn');
+            if(type === 'block'){
+              icon.textContent = '\u{1F6AB}';
+              title.textContent = 'Block User?';
+              msg.textContent = 'This user will lose access to their account and all platform features.';
+              btn.textContent = 'Block User';
+              btn.className = 'fc-btn';
+              btn.style.background = '#c62828';
+            } else if(type === 'unblock'){
+              icon.textContent = '\u{2705}';
+              title.textContent = 'Unblock User?';
+              msg.textContent = 'This user will regain full access to their account.';
+              btn.textContent = 'Unblock User';
+              btn.className = 'fc-btn';
+              btn.style.background = '#1b5e20';
+            } else if(type === 'resend'){
+              icon.textContent = '\u{1F4E7}';
+              title.textContent = 'Resend Verification?';
+              msg.textContent = 'A new verification email will be sent to this user.';
+              btn.textContent = 'Send Email';
+              btn.className = 'fc-btn';
+              btn.style.background = 'var(--primary)';
+            }
+            btn.href = url;
+            modal.style.display = 'flex';
+          };
+          window.closeConfirm = function(){
+            document.getElementById('confirmModal').style.display = 'none';
+          };
+
+          /* User detail modal */
+          window.openUserDetail = function(userId){
+            var modal = document.getElementById('userDetailModal');
+            var content = document.getElementById('userDetailContent');
+            modal.style.display = 'flex';
+            content.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;color:var(--primary);"></i></div>';
+            fetch('/admin-dashboard/users/' + userId + '/detail-api/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+              .then(function(r){ return r.json(); })
+              .then(function(d){
+                var ordersHtml = '';
+                if(d.recent_orders.length){
+                  ordersHtml = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px 6px;color:var(--text-muted);font-size:10px;text-transform:uppercase;">Order</th><th style="text-align:left;padding:8px 6px;color:var(--text-muted);font-size:10px;text-transform:uppercase;">Restaurant</th><th style="text-align:left;padding:8px 6px;color:var(--text-muted);font-size:10px;text-transform:uppercase;">Total</th><th style="text-align:left;padding:8px 6px;color:var(--text-muted);font-size:10px;text-transform:uppercase;">Status</th><th style="text-align:left;padding:8px 6px;color:var(--text-muted);font-size:10px;text-transform:uppercase;">Payment</th></tr></thead><tbody>';
+                  d.recent_orders.forEach(function(o){
+                    var statusClass = 'status-' + o.status;
+                    ordersHtml += '<tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 6px;font-weight:600;">' + o.order_id + '</td><td style="padding:8px 6px;">' + o.restaurant + '</td><td style="padding:8px 6px;">\u20A6' + o.total.toLocaleString() + '</td><td style="padding:8px 6px;"><span class="status-badge ' + statusClass + '">' + o.status + '</span></td><td style="padding:8px 6px;"><span class="status-badge status-' + o.payment_status + '">' + o.payment_status + '</span></td></tr>';
+                  });
+                  ordersHtml += '</tbody></table>';
+                } else { ordersHtml = '<div class="text-center py-3" style="color:var(--text-muted);font-size:13px;">No orders yet.</div>'; }
+
+                var actionsHtml = '';
+                if(d.recent_actions.length){
+                  actionsHtml = '<div style="font-size:12px;">';
+                  d.recent_actions.forEach(function(a){
+                    actionsHtml += '<div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-muted);min-width:100px;">' + a.date + '</span><span><strong>' + a.admin_name + '</strong> ' + a.action + '</span></div>';
+                  });
+                  actionsHtml += '</div>';
+                } else { actionsHtml = '<div class="text-center py-3" style="color:var(--text-muted);font-size:13px;">No admin actions recorded.</div>'; }
+
+                content.innerHTML =
+                  '<div class="row g-4">' +
+                  '<div class="col-md-6">' +
+                    '<div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:16px;">' +
+                      '<h4 style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Account Information</h4>' +
+                      '<div style="display:grid;gap:8px;font-size:13px;">' +
+                        '<div><span style="color:var(--text-muted);">Name:</span> <strong>' + d.name + '</strong></div>' +
+                        '<div><span style="color:var(--text-muted);">Email:</span> ' + d.email + '</div>' +
+                        '<div><span style="color:var(--text-muted);">Phone:</span> ' + d.phone + '</div>' +
+                        '<div><span style="color:var(--text-muted);">ID:</span> ' + d.id + '</div>' +
+                        '<div><span style="color:var(--text-muted);">Joined:</span> ' + d.date_joined + '</div>' +
+                        '<div><span style="color:var(--text-muted);">Last Login:</span> ' + (d.last_login || '<em>Never logged in</em>') + '</div>' +
+                        '<div><span style="color:var(--text-muted);">Status:</span> ' + (d.is_active ? '<span style="color:var(--success);font-weight:700;">Active</span>' : '<span style="color:var(--danger);font-weight:700;">Blocked</span>') + '</div>' +
+                        '<div><span style="color:var(--text-muted);">Verified:</span> ' + (d.has_verified ? '<span style="color:var(--success);font-weight:700;">Verified</span>' : '<span style="color:var(--warning);font-weight:700;">Unverified</span>') + '</div>' +
+                        '<div><span style="color:var(--text-muted);">Role:</span> ' + (d.is_superuser ? 'Superadmin' : d.is_staff ? 'Staff' : 'Customer') + '</div>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="col-md-6">' +
+                    '<div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:16px;">' +
+                      '<h4 style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Order Statistics</h4>' +
+                      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                        '<div style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);text-align:center;"><div style="font-size:22px;font-weight:800;">' + d.order_stats.total + '</div><div style="font-size:11px;color:var(--text-muted);">Total Orders</div></div>' +
+                        '<div style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--success);">' + d.order_stats.completed + '</div><div style="font-size:11px;color:var(--text-muted);">Completed</div></div>' +
+                        '<div style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--warning);">' + d.order_stats.pending + '</div><div style="font-size:11px;color:var(--text-muted);">Pending</div></div>' +
+                        '<div style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--danger);">' + d.order_stats.cancelled + '</div><div style="font-size:11px;color:var(--text-muted);">Cancelled</div></div>' +
+                      '</div>' +
+                      '<div style="margin-top:12px;text-align:center;padding:10px;background:var(--bg-card);border-radius:var(--radius-sm);"><span style="font-size:11px;color:var(--text-muted);">Total Spent:</span> <strong style="font-size:16px;">\u20A6' + d.total_spent.toLocaleString() + '</strong></div>' +
+                    '</div>' +
+                  '</div>' +
+                  '</div>' +
+                  '<div style="margin-top:20px;">' +
+                    '<h4 style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Recent Orders</h4>' +
+                    '<div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:12px;overflow-x:auto;">' + ordersHtml + '</div>' +
+                  '</div>' +
+                  '<div style="margin-top:20px;">' +
+                    '<h4 style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">Admin Activity</h4>' +
+                    '<div style="background:var(--bg-elevated);border-radius:var(--radius-md);padding:12px;">' + actionsHtml + '</div>' +
+                  '</div>';
+              })
+              .catch(function(){ content.innerHTML = '<div class="text-center py-4 text-danger">Failed to load user details.</div>'; });
+          };
+          window.closeUserDetail = function(){
+            document.getElementById('userDetailModal').style.display = 'none';
+          };
+        })();
+        </script>
 
         {% elif section == 'restaurants' %}
 

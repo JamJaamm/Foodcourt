@@ -377,5 +377,26 @@ class RiderReview(models.Model):
         return f"{self.user.email} -> {self.rider.email} ({self.rating}*)"
 
 
+class AdminAction(models.Model):
+    ACTION_CHOICES = [
+        ('block_user', 'Blocked user'),
+        ('unblock_user', 'Unblocked user'),
+        ('resend_verification', 'Resent verification email'),
+        ('delete_user', 'Deleted user'),
+        ('bulk_block', 'Bulk blocked users'),
+        ('bulk_unblock', 'Bulk unblocked users'),
+        ('export_users', 'Exported users'),
+    ]
+    admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='admin_actions')
+    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_actions_received')
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES)
+    details = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.admin} -> {self.get_action_display()} -> {self.target_user}"
 
 

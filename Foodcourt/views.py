@@ -24,7 +24,7 @@ from django.urls import reverse
 from .models import (
     VerificationCode, Order, OrderItem, Address,
     Restaurant, Category, MenuItem, InventoryItem, Coupon, Review, Profile,
-    Riders, Delivery, DeliveryStatusLog, Notification, RiderReview
+    Riders, Delivery, DeliveryStatusLog, Notification, RiderReview, AdminAction
 )
 from .notifications import send_email, send_order_confirmation_emails
 from . import delivery_services
@@ -1123,7 +1123,10 @@ def admin_dashboard_view(request, section=None):
     if section == 'users':
         if not is_staff:
             return redirect('admin_dashboard')
-        users_qs = User.objects.order_by('-date_joined')
+        from datetime import timedelta
+        users_qs = User.objects.select_related('profile').prefetch_related('orders').order_by('-date_joined')
+
+        # Search
         user_query = request.GET.get('q', '').strip()
         if user_query:
             users_qs = users_qs.filter(
@@ -1131,10 +1134,80 @@ def admin_dashboard_view(request, section=None):
                 | db_models.Q(email__icontains=user_query)
                 | db_models.Q(first_name__icontains=user_query)
                 | db_models.Q(last_name__icontains=user_query)
+                | db_models.Q(profile__phone__icontains=user_query)
             )
+
+        # Filters
+        status_filter = request.GET.get('status', '').strip()
+        if status_filter == 'active':
+            users_qs = users_qs.filter(is_active=True)
+        elif status_filter == 'blocked':
+            users_qs = users_qs.filter(is_active=False)
+
+        verification_filter = request.GET.get('verification', '').strip()
+        if verification_filter == 'verified':
+            users_qs = users_qs.filter(is_active=True, last_login__isnull=False)
+        elif verification_filter == 'unverified':
+            users_qs = users_qs.filter(is_active=False, last_login__isnull=True)
+
+        reg_filter = request.GET.get('registered', '').strip()
+        today = timezone.localdate()
+        if reg_filter == 'today':
+            users_qs = users_qs.filter(date_joined__date=today)
+        elif reg_filter == '7days':
+            users_qs = users_qs.filter(date_joined__date__gte=today - timedelta(days=7))
+        elif reg_filter == '30days':
+            users_qs = users_qs.filter(date_joined__date__gte=today - timedelta(days=30))
+        elif reg_filter == 'thisyear':
+            users_qs = users_qs.filter(date_joined__year=today.year)
+
+        activity_filter = request.GET.get('activity', '').strip()
+        if activity_filter == 'no_orders':
+            from django.db.models import Count
+            users_qs = users_qs.annotate(order_count=Count('orders')).filter(order_count=0)
+        elif activity_filter == 'has_orders':
+            from django.db.models import Count
+            users_qs = users_qs.annotate(order_count=Count('orders')).filter(order_count__gt=0)
+        elif activity_filter == '10plus':
+            from django.db.models import Count
+            users_qs = users_qs.annotate(order_count=Count('orders')).filter(order_count__gte=10)
+
+        # Sorting
+        sort = request.GET.get('sort', '-date_joined').strip()
+        allowed_sorts = ['date_joined', '-date_joined', 'first_name', '-first_name', 'last_login', '-last_login']
+        if sort not in allowed_sorts:
+            sort = '-date_joined'
+        users_qs = users_qs.order_by(sort)
+
+        # Stats
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        blocked_users = User.objects.filter(is_active=False).count()
+        verified_users = User.objects.filter(is_active=True, last_login__isnull=False).count()
+        unverified_users = User.objects.filter(is_active=False, last_login__isnull=True).count()
+        new_today = User.objects.filter(date_joined__date=today).count()
+        new_this_month = User.objects.filter(date_joined__date__gte=today.replace(day=1)).count()
+
+        user_stats = {
+            'total': total_users,
+            'active': active_users,
+            'blocked': blocked_users,
+            'verified': verified_users,
+            'unverified': unverified_users,
+            'new_today': new_today,
+            'new_this_month': new_this_month,
+        }
+
+        # Pagination
+        paginator = Paginator(users_qs, 20)
+        page_num = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_num)
+
         user_rows = []
-        for u in users_qs:
+        for u in page_obj:
             profile = getattr(u, 'profile', None)
+            order_count = u.orders.count() if hasattr(u, 'orders') else 0
+            has_verified = u.is_active and u.last_login is not None
             user_rows.append({
                 'id': u.id,
                 'name': u.get_full_name() or u.username,
@@ -1143,13 +1216,25 @@ def admin_dashboard_view(request, section=None):
                 'is_staff': u.is_staff,
                 'is_superuser': u.is_superuser,
                 'is_active': u.is_active,
-                'orders': u.orders.count() if hasattr(u, 'orders') else 0,
+                'has_verified': has_verified,
+                'orders': order_count,
                 'date_joined': u.date_joined,
+                'last_login': u.last_login,
             })
+
         return render(request, 'admin_dashboard.html', {
             'section': 'users',
             'user_rows': user_rows,
+            'page_obj': page_obj,
             'user_query': user_query,
+            'user_stats': user_stats,
+            'current_sort': sort,
+            'filters': {
+                'status': status_filter,
+                'verification': verification_filter,
+                'registered': reg_filter,
+                'activity': activity_filter,
+            },
             'platform_stats': build_platform_stats(),
             'hide_navbar': True,
         })
@@ -1278,6 +1363,185 @@ def admin_dashboard_view(request, section=None):
         'platform_stats': build_platform_stats() if is_staff else None,
         'pending_approvals': pending_approvals,
     })
+
+def _admin_required(request):
+    """Check if the request user is staff/superuser. Returns bool."""
+    return request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+
+@login_required(login_url='login')
+def admin_block_user_view(request, pk):
+    if not _admin_required(request):
+        return redirect('admin_dashboard')
+    if request.method != 'POST':
+        return redirect('admin_users')
+    user = get_object_or_404(User, pk=pk)
+    if user.is_superuser and user == request.user:
+        messages.error(request, 'You cannot block yourself.')
+        return redirect('admin_users')
+    user.is_active = False
+    user.save(update_fields=['is_active'])
+    AdminAction.objects.create(admin=request.user, target_user=user, action='block_user',
+                               details=f"Blocked user {user.get_full_name() or user.email}")
+    messages.success(request, f'{user.get_full_name() or user.email} has been blocked.')
+    return redirect('admin_users')
+
+@login_required(login_url='login')
+def admin_unblock_user_view(request, pk):
+    if not _admin_required(request):
+        return redirect('admin_dashboard')
+    if request.method != 'POST':
+        return redirect('admin_users')
+    user = get_object_or_404(User, pk=pk)
+    user.is_active = True
+    user.save(update_fields=['is_active'])
+    AdminAction.objects.create(admin=request.user, target_user=user, action='unblock_user',
+                               details=f"Unblocked user {user.get_full_name() or user.email}")
+    messages.success(request, f'{user.get_full_name() or user.email} has been unblocked.')
+    return redirect('admin_users')
+
+@login_required(login_url='login')
+def admin_resend_verification_view(request, pk):
+    if not _admin_required(request):
+        return redirect('admin_dashboard')
+    if request.method != 'POST':
+        return redirect('admin_users')
+    user = get_object_or_404(User, pk=pk)
+    VerificationCode.objects.filter(user=user, is_used=False).delete()
+    code = f"{random.randint(100000, 999999)}"
+    VerificationCode.objects.create(user=user, code=code)
+    email_sent = send_email(
+        subject="Verify your FoodCourt account",
+        template_name="emails/verify_email.html",
+        context={"code": code},
+        recipient_list=[user.email],
+    )
+    AdminAction.objects.create(admin=request.user, target_user=user, action='resend_verification',
+                               details=f"Resent verification email to {user.email}")
+    if email_sent:
+        messages.success(request, f'Verification email sent to {user.email}.')
+    else:
+        messages.error(request, f'Failed to send email to {user.email}.')
+    return redirect('admin_users')
+
+@login_required(login_url='login')
+def admin_user_detail_api(request, pk):
+    if not _admin_required(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    user = get_object_or_404(User.objects.select_related('profile'), pk=pk)
+    profile = getattr(user, 'profile', None)
+    orders = user.orders.select_related('restaurant').order_by('-created_at') if hasattr(user, 'orders') else Order.objects.none()
+    order_stats = {
+        'total': orders.count(),
+        'completed': orders.filter(status='delivered').count(),
+        'pending': orders.filter(status='pending').count(),
+        'cancelled': orders.filter(status='cancelled').count(),
+    }
+    total_spent = orders.filter(status='delivered').aggregate(t=db_models.Sum('total'))['t'] or 0
+    recent_orders = []
+    for o in orders[:10]:
+        payment = getattr(o, 'payment', None)
+        recent_orders.append({
+            'id': o.id,
+            'order_id': o.order_id,
+            'restaurant': o.restaurant_name or (o.restaurant.name if o.restaurant else '—'),
+            'total': float(o.total),
+            'status': o.status,
+            'payment_status': payment.status if payment else '—',
+            'created_at': o.created_at.strftime('%b %d, %Y %H:%M'),
+            'items': [{'name': i.name, 'qty': i.quantity, 'price': float(i.price)} for i in o.items.all()],
+        })
+    recent_actions = list(AdminAction.objects.filter(target_user=user).select_related('admin').values(
+        'action', 'details', 'admin__first_name', 'admin__last_name', 'created_at'
+    )[:10])
+    for a in recent_actions:
+        a['admin_name'] = f"{a.pop('admin__first_name')} {a.pop('admin__last_name')}"
+        a['created_at'] = a['created_at'].strftime('%b %d, %Y %H:%M')
+    return JsonResponse({
+        'id': user.id,
+        'name': user.get_full_name() or user.username,
+        'email': user.email,
+        'phone': getattr(profile, 'phone', None) or '—',
+        'is_active': user.is_active,
+        'has_verified': user.is_active and user.last_login is not None,
+        'is_staff': user.is_staff,
+        'is_superuser': user.is_superuser,
+        'date_joined': user.date_joined.strftime('%b %d, %Y %H:%M'),
+        'last_login': user.last_login.strftime('%b %d, %Y %H:%M') if user.last_login else None,
+        'order_stats': order_stats,
+        'total_spent': float(total_spent),
+        'recent_orders': recent_orders,
+        'recent_actions': recent_actions,
+    })
+
+@login_required(login_url='login')
+def admin_bulk_user_action_view(request):
+    if not _admin_required(request):
+        return redirect('admin_dashboard')
+    if request.method != 'POST':
+        return redirect('admin_users')
+    action = request.POST.get('action', '').strip()
+    user_ids = request.POST.getlist('user_ids')
+    if not user_ids:
+        messages.error(request, 'No users selected.')
+        return redirect('admin_users')
+    users = User.objects.filter(id__in=user_ids)
+    count = users.count()
+    if action == 'bulk_block':
+        users.update(is_active=False)
+        AdminAction.objects.create(admin=request.user, action='bulk_block',
+                                   details=f"Bulk blocked {count} users (IDs: {', '.join(user_ids)})")
+        messages.success(request, f'{count} users blocked.')
+    elif action == 'bulk_unblock':
+        users.update(is_active=True)
+        AdminAction.objects.create(admin=request.user, action='bulk_unblock',
+                                   details=f"Bulk unblocked {count} users (IDs: {', '.join(user_ids)})")
+        messages.success(request, f'{count} users unblocked.')
+    else:
+        messages.error(request, 'Invalid action.')
+    return redirect('admin_users')
+
+@login_required(login_url='login')
+def admin_export_users_view(request):
+    if not _admin_required(request):
+        return redirect('admin_dashboard')
+    import csv
+    from django.http import HttpResponse
+    users = User.objects.select_related('profile').order_by('-date_joined')
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="foodcourt_users.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Name', 'Email', 'Phone', 'Status', 'Verified', 'Orders', 'Date Joined', 'Last Login'])
+    for u in users:
+        profile = getattr(u, 'profile', None)
+        order_count = u.orders.count() if hasattr(u, 'orders') else 0
+        writer.writerow([
+            u.id,
+            u.get_full_name() or u.username,
+            u.email,
+            getattr(profile, 'phone', '') or '',
+            'Active' if u.is_active else 'Blocked',
+            'Yes' if (u.is_active and u.last_login) else 'No',
+            order_count,
+            u.date_joined.strftime('%Y-%m-%d %H:%M'),
+            u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else 'Never',
+        ])
+    AdminAction.objects.create(admin=request.user, action='export_users',
+                               details=f"Exported {users.count()} users to CSV")
+    return response
+
+@login_required(login_url='login')
+def admin_audit_log_api(request):
+    if not _admin_required(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    actions = AdminAction.objects.select_related('admin', 'target_user').order_by('-created_at')[:50]
+    data = [{
+        'admin': a.admin.get_full_name() or a.admin.email if a.admin else '—',
+        'action': a.get_action_display(),
+        'target': a.target_user.get_full_name() or a.target_user.email if a.target_user else '—',
+        'details': a.details,
+        'date': a.created_at.strftime('%b %d, %Y %H:%M'),
+    } for a in actions]
+    return JsonResponse({'actions': data})
 
 @login_required(login_url='login')
 def approve_rider_view(request, pk):
