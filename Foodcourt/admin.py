@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import Riders
+from .models import Riders, Restaurant, DeliverySettings
 
 
 class RidersAdminForm(forms.ModelForm):
@@ -34,3 +34,24 @@ class RidersAdmin(admin.ModelAdmin):
     list_filter = ('status', 'is_active', 'vehicle_type', 'country')
     search_fields = ('username', 'email', 'phone', 'first_name', 'last_name', 'vehicle_plate', 'account_number', 'location')
     readonly_fields = ('created_at', 'updated_at', 'last_login')
+
+
+@admin.register(Restaurant)
+class RestaurantAdmin(admin.ModelAdmin):
+    list_display = ('name', 'cuisine', 'owner', 'rating', 'is_open', 'latitude', 'longitude', 'created_at')
+    list_filter = ('is_open', 'cuisine')
+    search_fields = ('name', 'owner__email', 'address')
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(DeliverySettings)
+class DeliverySettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return not DeliverySettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        obj, _ = DeliverySettings.objects.get_or_create(pk=1)
+        return super().changelist_view(request, extra_context={'obj': obj})

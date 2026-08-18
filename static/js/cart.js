@@ -3,6 +3,8 @@
 let currentAddressId = null;
 let currentPaymentMethod = 'card';
 let appliedPromo = null;
+let currentDeliveryFee = null;
+let currentDeliveryDistance = null;
 
 function readJsonData(id) {
   const el = document.getElementById(id);
@@ -37,6 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCartItems();
   renderSavedAddresses();
   setupInputFormatting();
+  // Fetch delivery fee if an address is already selected
+  if (currentAddressId !== null) {
+    fetchDeliveryFee();
+  }
 });
 
 
@@ -112,13 +118,64 @@ window.clearFullCart = function() {
 };
 
 /* ══════════════════════════════════════════════
+   DELIVERY FEE CALCULATION (AJAX)
+   ══════════════════════════════════════════════ */
+function fetchDeliveryFee() {
+  const cart = window.CartManager.getCart();
+  const firstItem = cart[0];
+  const restaurantId = firstItem ? firstItem.restaurantId : null;
+
+  if (!restaurantId || !currentAddressId) {
+    currentDeliveryFee = null;
+    currentDeliveryDistance = null;
+    updateCheckoutTotals();
+    return;
+  }
+
+  const deliveryEl = document.getElementById('checkout-delivery');
+  if (deliveryEl) {
+    deliveryEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size:11px;"></i> Calculating...';
+  }
+
+  fetch('/api/delivery-fee/?restaurant_id=' + restaurantId + '&address_id=' + currentAddressId)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        currentDeliveryFee = null;
+        currentDeliveryDistance = null;
+        if (deliveryEl) {
+          deliveryEl.innerHTML = '<span style="color:var(--danger);font-size:12px;">' + data.error + '</span>';
+        }
+        Toast.show(data.error, 'error');
+      } else {
+        currentDeliveryFee = data.delivery_fee;
+        currentDeliveryDistance = data.distance_km;
+        updateCheckoutTotals();
+      }
+    })
+    .catch(() => {
+      currentDeliveryFee = null;
+      currentDeliveryDistance = null;
+      updateCheckoutTotals();
+    });
+}
+
+/* ══════════════════════════════════════════════
    UPDATE TOTAL BREAKDOWN
    ══════════════════════════════════════════════ */
 function updateCheckoutTotals() {
   const subtotal = window.CartManager.getTotal();
   
-  // Custom delivery fee (e.g. $2.99 or free if subtotal > $30 or promo applied)
-  let deliveryFee = subtotal > 30 ? 0 : 2.99;
+  // Use server-calculated fee if available, otherwise show placeholder
+  let deliveryFee;
+  if (currentDeliveryFee !== null) {
+    deliveryFee = currentDeliveryFee;
+  } else if (currentAddressId === null) {
+    deliveryFee = 0;
+  } else {
+    deliveryFee = 0;
+  }
+
   let discount = 0;
 
   if (appliedPromo) {
@@ -137,13 +194,27 @@ function updateCheckoutTotals() {
   const grandTotal = Math.max(0, subtotal + deliveryFee - discount);
 
   document.getElementById('checkout-subtotal').textContent = window.formatPrice(subtotal);
-  document.getElementById('checkout-delivery').textContent = deliveryFee === 0 ? 'Free' : window.formatPrice(deliveryFee);
+
+  // Update delivery row
+  const deliveryEl = document.getElementById('checkout-delivery');
+  const distEl = document.getElementById('checkout-delivery-distance');
+  if (currentDeliveryFee !== null) {
+    const distText = currentDeliveryDistance ? currentDeliveryDistance.toFixed(1) + ' km' : '';
+    deliveryEl.textContent = deliveryFee === 0 ? 'Free' : window.formatPrice(deliveryFee);
+    if (distEl) distEl.textContent = distText ? '(' + distText + ')' : '';
+  } else if (currentAddressId === null) {
+    deliveryEl.textContent = 'Select address';
+    if (distEl) distEl.textContent = '';
+  } else if (!deliveryEl.querySelector('.fa-spinner')) {
+    deliveryEl.textContent = window.formatPrice(0);
+    if (distEl) distEl.textContent = '';
+  }
   
   const discountRow = document.getElementById('discount-row');
   if (discount > 0 || (appliedPromo && appliedPromo.type === 'delivery')) {
     discountRow.classList.remove('d-none');
     document.getElementById('discount-code-label').textContent = appliedPromo.code;
-    document.getElementById('checkout-discount').textContent = `-${window.formatPrice(discount)}`;
+    document.getElementById('checkout-discount').textContent = '-' + window.formatPrice(discount);
   } else {
     discountRow.classList.add('d-none');
   }
@@ -270,6 +341,9 @@ window.selectAddressCard = function(id) {
     const radio = card.querySelector('.address-option-radio');
     if (radio) radio.checked = isTarget;
   });
+
+  // Fetch delivery fee for this address
+  fetchDeliveryFee();
 };
 
 /* ══════════════════════════════════════════════
@@ -326,6 +400,7 @@ window.saveNewAddressFromCart = function() {
         .then(listData => {
           window.FOODCOURT_USER_ADDRESSES = listData.addresses || [];
           renderSavedAddresses();
+          fetchDeliveryFee();
           ok = true;
         });
     }
@@ -444,6 +519,12 @@ window.submitOrder = function() {
     return;
   }
 
+  // Validate delivery fee is calculated
+  if (currentDeliveryFee === null && currentAddressId !== null) {
+    Toast.show('Unable to calculate delivery fee. Please try a different address.', 'error');
+    return;
+  }
+
   if (currentPaymentMethod === 'card' || currentPaymentMethod === 'wallet') {
     // Card details are collected securely by Paystack on their hosted page —
     // we never read or store them here.
@@ -457,15 +538,14 @@ window.submitOrder = function() {
   }
 
   const subtotal = window.CartManager.getTotal();
-  let deliveryFee = subtotal > 30 ? 0 : 2.99;
+  const deliveryFee = currentDeliveryFee !== null ? currentDeliveryFee : 0;
   let discount = 0;
   if (appliedPromo) {
     if (appliedPromo.type === 'percent') discount = subtotal * (appliedPromo.value / 100);
     else if (appliedPromo.type === 'fixed') discount = appliedPromo.value;
-    else if (appliedPromo.type === 'delivery') deliveryFee = 0;
+    else if (appliedPromo.type === 'delivery') { /* delivery fee override handled below */ }
   }
   if (discount > subtotal) discount = subtotal;
-  const grandTotal = Math.max(0, subtotal + deliveryFee - discount);
 
   const orderBtn = document.getElementById('place-order-btn');
   const originalText = orderBtn.innerHTML;
@@ -480,11 +560,12 @@ window.submitOrder = function() {
       image: item.image || ''
     })),
     delivery_address: finalAddress,
+    address_id: currentAddressId,
     payment_method: currentPaymentMethod,
     subtotal: subtotal,
     delivery_fee: deliveryFee,
     discount: discount,
-    total: grandTotal,
+    total: subtotal + deliveryFee - discount,
     restaurant_name: restaurantName,
     restaurant_id: firstItem.restaurantId || null
   };

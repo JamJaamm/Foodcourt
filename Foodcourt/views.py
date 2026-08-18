@@ -1074,6 +1074,8 @@ def restaurant_detail_view(request, pk):
         'isNew': False,
         'cuisine': restaurant.cuisine or 'Food Court',
         'address': restaurant.address or '',
+        'latitude': float(restaurant.latitude) if restaurant.latitude is not None else None,
+        'longitude': float(restaurant.longitude) if restaurant.longitude is not None else None,
     }
 
     menu_json = [{
@@ -1794,6 +1796,116 @@ def notifications_read_api(request):
         return JsonResponse({'success': True})
     return JsonResponse({'error': 'POST required'}, status=405)
 
+
+def delivery_fee_api(request):
+    """AJAX endpoint: calculate delivery fee from restaurant + customer coordinates."""
+    restaurant_id = request.GET.get('restaurant_id')
+    address_id = request.GET.get('address_id')
+    if not restaurant_id or not address_id:
+        return JsonResponse({'error': 'restaurant_id and address_id required'}, status=400)
+    try:
+        restaurant = Restaurant.objects.get(pk=int(restaurant_id))
+    except (TypeError, ValueError, Restaurant.DoesNotExist):
+        return JsonResponse({'error': 'Restaurant not found'}, status=404)
+    try:
+        address = Address.objects.get(pk=int(address_id))
+    except (TypeError, ValueError, Address.DoesNotExist):
+        return JsonResponse({'error': 'Address not found'}, status=404)
+
+    if not restaurant.has_coordinates:
+        return JsonResponse({
+            'error': 'Delivery location for this restaurant is currently unavailable.',
+            'outside_range': True,
+        })
+    if not address.has_coordinates:
+        return JsonResponse({
+            'error': 'Please select or confirm your delivery location with coordinates.',
+            'outside_range': True,
+        })
+
+    from .delivery_service import calculate_delivery_fee
+    result = calculate_delivery_fee(
+        float(restaurant.latitude), float(restaurant.longitude),
+        float(address.latitude), float(address.longitude),
+    )
+    return JsonResponse({
+        'distance_km': float(result['distance_km']) if result['distance_km'] is not None else None,
+        'distance_method': result['distance_method'],
+        'delivery_fee': float(result['delivery_fee']) if result['delivery_fee'] is not None else None,
+        'error': result['error'],
+        'outside_range': result['outside_range'],
+    })
+
+
+@login_required(login_url='login')
+def admin_restaurant_update_api(request, pk):
+    """Admin AJAX: update restaurant location fields."""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        restaurant = Restaurant.objects.get(pk=pk)
+    except Restaurant.DoesNotExist:
+        return JsonResponse({'error': 'Restaurant not found'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    if 'latitude' in data:
+        val = data.get('latitude')
+        restaurant.latitude = Decimal(str(val)) if val not in (None, '') else None
+    if 'longitude' in data:
+        val = data.get('longitude')
+        restaurant.longitude = Decimal(str(val)) if val not in (None, '') else None
+    if 'address' in data:
+        restaurant.address = data['address']
+    if 'name' in data:
+        restaurant.name = data['name']
+    restaurant.save()
+    return JsonResponse({'success': True})
+
+
+@login_required(login_url='login')
+def admin_delivery_settings_api(request):
+    """Admin AJAX: get/update delivery settings."""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+
+    from .models import DeliverySettings
+    ds = DeliverySettings.get_active()
+
+    if request.method == 'GET':
+        return JsonResponse({
+            'tier_0_2': float(ds.tier_0_2),
+            'tier_2_5': float(ds.tier_2_5),
+            'tier_5_8': float(ds.tier_5_8),
+            'tier_8_12': float(ds.tier_8_12),
+            'tier_12_15': float(ds.tier_12_15),
+            'max_distance_km': float(ds.max_distance_km),
+            'surge_enabled': ds.surge_enabled,
+            'surge_multiplier': float(ds.surge_multiplier),
+        })
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        for field in ('tier_0_2', 'tier_2_5', 'tier_5_8', 'tier_8_12', 'tier_12_15', 'max_distance_km', 'surge_multiplier'):
+            if field in data:
+                setattr(ds, field, Decimal(str(data[field])))
+        if 'surge_enabled' in data:
+            ds.surge_enabled = bool(data['surge_enabled'])
+        ds.save()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
 @login_required(login_url='login')
 def place_order_view(request):
     if request.method != 'POST':
@@ -1807,21 +1919,17 @@ def place_order_view(request):
     items_data = data.get('items', [])
     delivery_address = data.get('delivery_address', '')
     payment_method = data.get('payment_method', 'cash')
-    subtotal = float(data.get('subtotal', 0))
-    delivery_fee = float(data.get('delivery_fee', 0))
-    discount = float(data.get('discount', 0))
-    total = float(data.get('total', 0))
+    subtotal = Decimal(str(data.get('subtotal', 0)))
+    discount = Decimal(str(data.get('discount', 0)))
     restaurant_name = data.get('restaurant_name', 'FoodCourt Order')
+    address_id = data.get('address_id')
 
     if not items_data:
         return JsonResponse({'error': 'Cart is empty'}, status=400)
     if not delivery_address:
         return JsonResponse({'error': 'Delivery address required'}, status=400)
 
-    year = datetime.now().year
-    random_num = random.randint(1000, 9999)
-    order_id = f'FC-{year}-{random_num}'
-
+    # Resolve restaurant
     restaurant = None
     restaurant_id = data.get('restaurant_id')
     if restaurant_id:
@@ -1832,6 +1940,38 @@ def place_order_view(request):
     if restaurant is None and restaurant_name:
         restaurant = Restaurant.objects.filter(name__iexact=restaurant_name).first()
 
+    # Server-side delivery fee calculation
+    delivery_fee = Decimal('0')
+    distance_km = None
+    if restaurant and restaurant.has_coordinates and address_id:
+        try:
+            address_obj = Address.objects.get(pk=int(address_id), user=request.user)
+            if address_obj.has_coordinates:
+                from .delivery_service import calculate_delivery_fee
+                fee_result = calculate_delivery_fee(
+                    float(restaurant.latitude), float(restaurant.longitude),
+                    float(address_obj.latitude), float(address_obj.longitude),
+                )
+                if fee_result['error']:
+                    return JsonResponse({'error': fee_result['error']}, status=400)
+                delivery_fee = fee_result['delivery_fee']
+                distance_km = fee_result['distance_km']
+            else:
+                delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
+        except (TypeError, ValueError, Address.DoesNotExist):
+            delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
+    else:
+        delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
+
+    # Ensure discount doesn't exceed subtotal
+    if discount > subtotal:
+        discount = subtotal
+    total = subtotal + delivery_fee - discount
+
+    year = datetime.now().year
+    random_num = random.randint(1000, 9999)
+    order_id = f'FC-{year}-{random_num}'
+
     order = Order.objects.create(
         user=request.user,
         restaurant=restaurant,
@@ -1841,6 +1981,7 @@ def place_order_view(request):
         payment_method=payment_method,
         subtotal=subtotal,
         delivery_fee=delivery_fee,
+        delivery_distance_km=distance_km,
         discount=discount,
         total=total,
         status='pending'
@@ -1906,6 +2047,7 @@ def dashboard_view(request):
             'items': items,
             'subtotal': float(o.subtotal),
             'deliveryFee': float(o.delivery_fee),
+            'deliveryDistance': float(o.delivery_distance_km) if o.delivery_distance_km else None,
             'discount': float(o.discount),
             'total': float(o.total),
             'status': o.status.capitalize(),
@@ -1968,7 +2110,9 @@ def address_api(request):
                 'id': a.id, 'label': a.label, 'address': a.full_address,
                 'street': a.street, 'landmark': a.landmark,
                 'city': a.city, 'state': a.state, 'country': a.country,
-                'phone': a.phone, 'is_default': a.is_default
+                'phone': a.phone, 'is_default': a.is_default,
+                'latitude': float(a.latitude) if a.latitude is not None else None,
+                'longitude': float(a.longitude) if a.longitude is not None else None,
             })
         return JsonResponse({'addresses': result})
 
@@ -1985,13 +2129,17 @@ def address_api(request):
             street = data.get('street', '').strip()
             if not label or not street:
                 return JsonResponse({'error': 'Label and street address are required'}, status=400)
+            lat_val = data.get('latitude')
+            lng_val = data.get('longitude')
             addr = Address.objects.create(
                 user=request.user, label=label, street=street,
                 landmark=data.get('landmark', '').strip(),
                 city=data.get('city', '').strip(),
                 state=data.get('state', '').strip(),
                 country=data.get('country', '').strip(),
-                phone=data.get('phone', '').strip()
+                phone=data.get('phone', '').strip(),
+                latitude=Decimal(str(lat_val)) if lat_val not in (None, '') else None,
+                longitude=Decimal(str(lng_val)) if lng_val not in (None, '') else None,
             )
             return JsonResponse({'success': True, 'id': addr.id, 'address': addr.full_address, 'is_default': addr.is_default})
 
@@ -2014,6 +2162,12 @@ def address_api(request):
                 addr.country = data['country'].strip()
             if 'phone' in data:
                 addr.phone = data['phone'].strip()
+            if 'latitude' in data:
+                val = data['latitude']
+                addr.latitude = Decimal(str(val)) if val not in (None, '') else None
+            if 'longitude' in data:
+                val = data['longitude']
+                addr.longitude = Decimal(str(val)) if val not in (None, '') else None
             addr.save()
             return JsonResponse({'success': True, 'id': addr.id, 'address': addr.full_address, 'is_default': addr.is_default})
 
@@ -2457,7 +2611,9 @@ def cart_view(request):
                 'id': a.id, 'label': a.label, 'address': a.full_address,
                 'street': a.street, 'landmark': a.landmark,
                 'city': a.city, 'state': a.state, 'country': a.country,
-                'phone': a.phone, 'is_default': a.is_default
+                'phone': a.phone, 'is_default': a.is_default,
+                'latitude': float(a.latitude) if a.latitude is not None else None,
+                'longitude': float(a.longitude) if a.longitude is not None else None,
             })
     coupons = [{
         'code': c.code,

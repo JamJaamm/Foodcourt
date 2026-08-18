@@ -43,6 +43,7 @@ class Order(models.Model):
     payment_method = models.CharField(max_length=20)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    delivery_distance_km = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -83,6 +84,8 @@ class Address(models.Model):
     state = models.CharField(max_length=100, default='')
     country = models.CharField(max_length=100, default='')
     phone = models.CharField(max_length=20, blank=True, default='')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -100,6 +103,10 @@ class Address(models.Model):
             parts.append(self.country)
         return ', '.join(parts)
 
+    @property
+    def has_coordinates(self):
+        return self.latitude is not None and self.longitude is not None
+
     def __str__(self):
         return f"{self.label}: {self.full_address[:50]}"
 
@@ -110,6 +117,8 @@ class Restaurant(models.Model):
     description = models.TextField(blank=True, default='')
     cuisine = models.CharField(max_length=100, blank=True, default='')
     address = models.TextField(blank=True, default='')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True, default='')
     email = models.EmailField(blank=True, default='')
     logo = models.URLField(blank=True, default='')
@@ -124,6 +133,10 @@ class Restaurant(models.Model):
     closing_time = models.TimeField(default='23:00')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def has_coordinates(self):
+        return self.latitude is not None and self.longitude is not None
 
     def __str__(self):
         return self.name
@@ -398,5 +411,29 @@ class AdminAction(models.Model):
 
     def __str__(self):
         return f"{self.admin} -> {self.get_action_display()} -> {self.target_user}"
+
+
+class DeliverySettings(models.Model):
+    tier_0_2 = models.DecimalField(max_digits=8, decimal_places=2, default=700, verbose_name='0–2 km fee')
+    tier_2_5 = models.DecimalField(max_digits=8, decimal_places=2, default=1200, verbose_name='2–5 km fee')
+    tier_5_8 = models.DecimalField(max_digits=8, decimal_places=2, default=1700, verbose_name='5–8 km fee')
+    tier_8_12 = models.DecimalField(max_digits=8, decimal_places=2, default=2300, verbose_name='8–12 km fee')
+    tier_12_15 = models.DecimalField(max_digits=8, decimal_places=2, default=3000, verbose_name='12–15 km fee')
+    max_distance_km = models.DecimalField(max_digits=6, decimal_places=1, default=15.0, verbose_name='Maximum delivery distance (km)')
+    surge_enabled = models.BooleanField(default=False, verbose_name='Surge pricing enabled')
+    surge_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default=1.00, verbose_name='Surge multiplier')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Delivery Settings'
+        verbose_name_plural = 'Delivery Settings'
+
+    def __str__(self):
+        return f"Delivery Settings (max {self.max_distance_km} km)"
+
+    @classmethod
+    def get_active(cls):
+        settings_obj, _ = cls.objects.get_or_create(pk=1)
+        return settings_obj
 
 

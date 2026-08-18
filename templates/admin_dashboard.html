@@ -589,9 +589,14 @@
             <h2 class="db-header-title" style="margin-bottom:4px;">Registered Restaurants 🏪</h2>
             <p class="text-secondary mb-0">All restaurants currently on the FoodCourt platform.</p>
           </div>
-          <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
-            <i class="fa-solid fa-arrow-left"></i> Back to Overview
-          </a>
+          <div class="d-flex gap-2">
+            <button class="db-menu-btn" style="text-decoration:none;padding:10px 18px;" onclick="openDeliverySettings()">
+              <i class="fa-solid fa-truck-fast me-1"></i> Delivery Settings
+            </button>
+            <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+              <i class="fa-solid fa-arrow-left"></i> Back to Overview
+            </a>
+          </div>
         </div>
 
         <!-- Platform stats -->
@@ -629,7 +634,7 @@
           <div class="db-table-wrap">
             <table class="db-table">
               <thead>
-                <tr><th>Restaurant</th><th>Cuisine</th><th>Owner</th><th>Rating</th><th>Orders</th><th>Menu</th><th>Status</th><th>Joined</th></tr>
+                <tr><th>Restaurant</th><th>Cuisine</th><th>Owner</th><th>Rating</th><th>Location</th><th>Status</th><th>Actions</th><th>Joined</th></tr>
               </thead>
               <tbody>
                 {% for r in restaurant_rows %}
@@ -650,14 +655,25 @@
                     <span style="color:var(--text-muted);">—</span>
                     {% endif %}
                   </td>
-                  <td>{{ r.orders }}</td>
-                  <td>{{ r.menu_items }}</td>
+                  <td>
+                    {% if r.latitude and r.longitude %}
+                    <span style="color:var(--rdr-green);font-size:11px;"><i class="fa-solid fa-check-circle me-1"></i>Set</span>
+                    <div style="font-size:10px;color:var(--text-muted);">{{ r.latitude|floatformat:4 }}, {{ r.longitude|floatformat:4 }}</div>
+                    {% else %}
+                    <span style="color:var(--danger);font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>Missing</span>
+                    {% endif %}
+                  </td>
                   <td>
                     {% if r.is_open %}
                     <span class="status-badge status-delivered">Open</span>
                     {% else %}
                     <span class="status-badge status-cancelled">Closed</span>
                     {% endif %}
+                  </td>
+                  <td>
+                    <button class="fc-btn fc-btn-outline fc-btn-sm" onclick="openRestaurantLocationModal({{ r.id }}, '{{ r.name|escapejs }}', '{{ r.address|escapejs }}', '{{ r.latitude|default_if_none:'' }}', '{{ r.longitude|default_if_none:'' }}')" style="font-size:11px;padding:4px 10px;">
+                      <i class="fa-solid fa-location-dot"></i> Location
+                    </button>
                   </td>
                   <td style="font-size:12px;color:var(--text-muted);">{{ r.created_at|date:"M d, Y" }}</td>
                 </tr>
@@ -666,6 +682,89 @@
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Restaurant Location Modal -->
+        <div id="restaurantLocationModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:16px;padding:28px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto;">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h3 style="margin:0;font-size:18px;font-weight:800;"><i class="fa-solid fa-location-dot text-primary me-2"></i>Restaurant Location</h3>
+              <button onclick="closeRestaurantLocationModal()" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+            </div>
+            <p id="rloc-restaurant-name" style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;"></p>
+            <input type="hidden" id="rloc-restaurant-id">
+            <div style="margin-bottom:12px;">
+              <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Address</label>
+              <input type="text" id="rloc-address" class="form-control" style="font-size:13px;">
+            </div>
+            <div class="d-flex gap-3">
+              <div style="flex:1;margin-bottom:12px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Latitude</label>
+                <input type="number" step="any" id="rloc-latitude" class="form-control" style="font-size:13px;" placeholder="e.g. 6.4281">
+              </div>
+              <div style="flex:1;margin-bottom:12px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Longitude</label>
+                <input type="number" step="any" id="rloc-longitude" class="form-control" style="font-size:13px;" placeholder="e.g. 3.4219">
+              </div>
+            </div>
+            <div style="background:#f8f9fa;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
+              <i class="fa-solid fa-info-circle me-1"></i> Enter coordinates from Google Maps (right-click > What's here?) or leave blank if unavailable.
+            </div>
+            <div id="rloc-status" style="font-size:12px;margin-bottom:10px;display:none;"></div>
+            <div class="d-flex gap-2">
+              <button onclick="saveRestaurantLocation()" class="fc-btn fc-btn-primary" style="flex:1;padding:10px;"><i class="fa-solid fa-save me-1"></i> Save Location</button>
+              <button onclick="closeRestaurantLocationModal()" class="fc-btn fc-btn-outline" style="padding:10px;">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Settings Modal -->
+        <div id="deliverySettingsModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:16px;padding:28px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h3 style="margin:0;font-size:18px;font-weight:800;"><i class="fa-solid fa-truck-fast text-primary me-2"></i>Delivery Settings</h3>
+              <button onclick="closeDeliverySettings()" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Configure delivery pricing tiers and maximum delivery distance.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">0–2 km (₦)</label>
+                <input type="number" id="ds-tier-0-2" class="form-control" style="font-size:13px;" step="50">
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">2–5 km (₦)</label>
+                <input type="number" id="ds-tier-2-5" class="form-control" style="font-size:13px;" step="50">
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">5–8 km (₦)</label>
+                <input type="number" id="ds-tier-5-8" class="form-control" style="font-size:13px;" step="50">
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">8–12 km (₦)</label>
+                <input type="number" id="ds-tier-8-12" class="form-control" style="font-size:13px;" step="50">
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">12–15 km (₦)</label>
+                <input type="number" id="ds-tier-12-15" class="form-control" style="font-size:13px;" step="50">
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Max Distance (km)</label>
+                <input type="number" id="ds-max-distance" class="form-control" style="font-size:13px;" step="0.5">
+              </div>
+            </div>
+            <div style="background:#f8f9fa;border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="ds-surge-enabled" style="accent-color:var(--primary);">
+                <strong>Enable Surge Pricing</strong>
+              </label>
+              <div style="margin-top:8px;">
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Surge Multiplier</label>
+                <input type="number" id="ds-surge-multiplier" class="form-control" style="font-size:13px;" step="0.1" min="1" max="3" value="1.0">
+              </div>
+            </div>
+            <div id="ds-status" style="font-size:12px;margin-bottom:10px;display:none;"></div>
+            <button onclick="saveDeliverySettings()" class="fc-btn fc-btn-primary w-100 py-2" style="font-weight:700;"><i class="fa-solid fa-save me-1"></i> Save Delivery Settings</button>
           </div>
         </div>
 
@@ -718,21 +817,30 @@
           <div class="db-table-wrap">
             <table class="db-table">
               <thead>
-                <tr><th>Order</th><th>Customer</th><th>Restaurant</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr>
+                <tr><th>Order</th><th>Customer</th><th>Restaurant</th><th>Items</th><th>Delivery</th><th>Total</th><th>Status</th><th>Date</th></tr>
               </thead>
               <tbody>
                 {% for o in orders %}
                 <tr>
                   <td><strong>{{ o.order_id }}</strong></td>
                   <td>{{ o.user.get_full_name|default:o.user.email }}</td>
-                  <td>{{ o.restaurant.name|default:'—' }}</td>
+                  <td>
+                    <div>{{ o.restaurant.name|default:'—' }}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">{{ o.delivery_address|truncatechars:40 }}</div>
+                  </td>
                   <td>{{ o.items.count }}</td>
+                  <td>
+                    {% if o.delivery_distance_km %}
+                    <div style="font-size:12px;font-weight:600;">{{ o.delivery_distance_km|floatformat:1 }} km</div>
+                    {% endif %}
+                    <div style="font-size:12px;">₦{{ o.delivery_fee|money }}</div>
+                  </td>
                   <td>₦{{ o.total|money }}</td>
                   <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
                   <td style="font-size:12px;color:var(--text-muted);">{{ o.created_at|date:"M d, Y H:i" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" class="text-center text-muted py-4">No orders found.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No orders found.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -1101,5 +1209,120 @@
     </div>
   </div>
 </section>
+
+<script>
+function getCookie(name) {
+  let v = null;
+  if (document.cookie && document.cookie !== '') {
+    document.cookie.split(';').forEach(c => {
+      c = c.trim();
+      if (c.substring(0, name.length + 1) === name + '=') v = decodeURIComponent(c.substring(name.length + 1));
+    });
+  }
+  return v;
+}
+
+// ─── Restaurant Location Modal ───
+function openRestaurantLocationModal(id, name, address, lat, lng) {
+  document.getElementById('rloc-restaurant-id').value = id;
+  document.getElementById('rloc-restaurant-name').textContent = name;
+  document.getElementById('rloc-address').value = address;
+  document.getElementById('rloc-latitude').value = lat || '';
+  document.getElementById('rloc-longitude').value = lng || '';
+  document.getElementById('rloc-status').style.display = 'none';
+  var modal = document.getElementById('restaurantLocationModal');
+  modal.style.display = 'flex';
+}
+function closeRestaurantLocationModal() {
+  document.getElementById('restaurantLocationModal').style.display = 'none';
+}
+function saveRestaurantLocation() {
+  var id = document.getElementById('rloc-restaurant-id').value;
+  var statusEl = document.getElementById('rloc-status');
+  var payload = {
+    address: document.getElementById('rloc-address').value.trim(),
+    latitude: document.getElementById('rloc-latitude').value || null,
+    longitude: document.getElementById('rloc-longitude').value || null
+  };
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = 'Saving...';
+  fetch('/admin-dashboard/restaurants/' + id + '/update/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+    body: JSON.stringify(payload)
+  }).then(r => r.json()).then(res => {
+    if (res.success) {
+      statusEl.style.color = 'var(--rdr-green)';
+      statusEl.textContent = 'Location saved! Reloading...';
+      setTimeout(() => location.reload(), 800);
+    } else {
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = res.error || 'Failed to save.';
+    }
+  }).catch(() => {
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = 'Network error.';
+  });
+}
+
+// ─── Delivery Settings Modal ───
+function openDeliverySettings() {
+  document.getElementById('deliverySettingsModal').style.display = 'flex';
+  document.getElementById('ds-status').style.display = 'none';
+  fetch('/admin-dashboard/delivery-settings/').then(r => r.json()).then(d => {
+    document.getElementById('ds-tier-0-2').value = d.tier_0_2;
+    document.getElementById('ds-tier-2-5').value = d.tier_2_5;
+    document.getElementById('ds-tier-5-8').value = d.tier_5_8;
+    document.getElementById('ds-tier-8-12').value = d.tier_8_12;
+    document.getElementById('ds-tier-12-15').value = d.tier_12_15;
+    document.getElementById('ds-max-distance').value = d.max_distance_km;
+    document.getElementById('ds-surge-enabled').checked = d.surge_enabled;
+    document.getElementById('ds-surge-multiplier').value = d.surge_multiplier;
+  });
+}
+function closeDeliverySettings() {
+  document.getElementById('deliverySettingsModal').style.display = 'none';
+}
+function saveDeliverySettings() {
+  var statusEl = document.getElementById('ds-status');
+  var payload = {
+    tier_0_2: parseFloat(document.getElementById('ds-tier-0-2').value) || 0,
+    tier_2_5: parseFloat(document.getElementById('ds-tier-2-5').value) || 0,
+    tier_5_8: parseFloat(document.getElementById('ds-tier-5-8').value) || 0,
+    tier_8_12: parseFloat(document.getElementById('ds-tier-8-12').value) || 0,
+    tier_12_15: parseFloat(document.getElementById('ds-tier-12-15').value) || 0,
+    max_distance_km: parseFloat(document.getElementById('ds-max-distance').value) || 15,
+    surge_enabled: document.getElementById('ds-surge-enabled').checked,
+    surge_multiplier: parseFloat(document.getElementById('ds-surge-multiplier').value) || 1.0
+  };
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.textContent = 'Saving...';
+  fetch('/admin-dashboard/delivery-settings/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+    body: JSON.stringify(payload)
+  }).then(r => r.json()).then(res => {
+    if (res.success) {
+      statusEl.style.color = 'var(--rdr-green)';
+      statusEl.textContent = 'Settings saved successfully!';
+    } else {
+      statusEl.style.color = 'var(--danger)';
+      statusEl.textContent = res.error || 'Failed to save.';
+    }
+  }).catch(() => {
+    statusEl.style.color = 'var(--danger)';
+    statusEl.textContent = 'Network error.';
+  });
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('#restaurantLocationModal, #deliverySettingsModal').forEach(function(el) {
+  el.addEventListener('click', function(e) {
+    if (e.target === el) el.style.display = 'none';
+  });
+});
+</script>
 
 {% endblock %}
