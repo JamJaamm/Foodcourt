@@ -399,7 +399,7 @@ img { max-width: 100%; }
 .rdr-progress-steps span.now { color: var(--rdr-orange); }
 
 /* Body */
-.rdr-modal-body { padding: 24px 30px; overflow-y: auto; flex: 1; }
+.rdr-modal-body { padding: 24px 30px; overflow-y: auto; flex: 1; min-height: 0; }
 .rdr-step-panel { display: none; animation: rdrStep .3s ease; }
 .rdr-step-panel.active { display: block; }
 @keyframes rdrStep { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
@@ -563,9 +563,12 @@ img { max-width: 100%; }
   .rdr-steps { grid-template-columns: 1fr; row-gap: 34px; }
   .rdr-step::after { display: none; }
   .rdr-float-chip.fc-3 { display: none; }
-  .rdr-modal-card { max-height: 96vh; border-radius: 20px; }
-  .rdr-modal-body { padding: 20px; }
+  .rdr-modal { padding: 0; align-items: flex-end; }
+  .rdr-modal-card { max-height: 100vh; max-height: 100dvh; border-radius: 20px 20px 0 0; min-height: 0; }
+  .rdr-modal-body { padding: 20px; min-height: 0; -webkit-overflow-scrolling: touch; }
   .rdr-modal-head, .rdr-progress, .rdr-modal-foot { padding-left: 20px; padding-right: 20px; }
+  .rdr-progress-steps { flex-wrap: wrap; gap: 4px 8px; }
+  .rdr-progress-steps span { font-size: 10px; }
   .rdr-cta { padding: 44px 26px; }
   .rdr-footer .rdr-container { grid-template-columns: 1fr; }
   .rdr-hero-btns .rdr-btn { width: 100%; }

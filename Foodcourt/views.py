@@ -544,6 +544,12 @@ def build_restaurants_payload():
 def home_view(request):
     return render(request, 'index.html', {'db_restaurants': build_restaurants_payload()})
 
+def terms_view(request):
+    return render(request, 'terms.html')
+
+def privacy_view(request):
+    return render(request, 'privacy.html')
+
 def rider_view(request):
     return render(request, 'Riders/rider.html')
 

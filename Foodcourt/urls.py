@@ -10,6 +10,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('payments/', include('payments.urls')),
     path('', views.home_view, name='home'),
+    path('terms/', views.terms_view, name='terms'),
+    path('privacy/', views.privacy_view, name='privacy'),
     path('riders/', views.rider_view, name='riders'),
     path('riders/api/banks/', views.rider_banks_api, name='rider_banks_api'),
     path('riders/api/banks/resolve/', views.rider_bank_resolve_api, name='rider_bank_resolve_api'),

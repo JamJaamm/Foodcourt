@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}">
   <link rel="stylesheet" href="{% static 'css/animations.css' %}">
+  <link rel="stylesheet" href="{% static 'css/foodcourt-loader.css' %}?v=1">
   <link rel="shortcut icon" href="{% static 'images/7541708.png' %}" type="image/x-icon">
 
   {% block extra_css %}{% endblock %}
@@ -38,6 +39,38 @@
   </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════
+     FOODCOURT LOADER
+═══════════════════════════════════════════ -->
+<div class="fc-loader-overlay" id="fc-loader-overlay" role="status" aria-live="polite" aria-label="Loading">
+  <div class="fc-loader-content">
+    <div class="fc-loader-brand">Food<span>Court</span></div>
+    <div class="fc-loader-scene">
+      <div class="fc-loader-dots">
+        <div class="fc-loader-dot"></div>
+        <div class="fc-loader-dot"></div>
+        <div class="fc-loader-dot"></div>
+        <div class="fc-loader-dot"></div>
+      </div>
+      <div class="fc-loader-steam">
+        <div class="fc-steam-particle"></div>
+        <div class="fc-steam-particle"></div>
+        <div class="fc-steam-particle"></div>
+      </div>
+      <div class="fc-loader-burger">
+        <div class="fc-burger-top"></div>
+        <div class="fc-burger-lettuce"></div>
+        <div class="fc-burger-cheese"></div>
+        <div class="fc-burger-patty"></div>
+        <div class="fc-burger-bottom"></div>
+      </div>
+      <div class="fc-loader-tray"></div>
+    </div>
+    <div class="fc-loader-text" id="fc-loader-text">Preparing your order</div>
+    <div class="fc-loader-progress"><div class="fc-loader-progress-bar"></div></div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════
      NAVBAR
@@ -205,8 +238,8 @@
         <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:10px;">
           <li><a href="#" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Help Centre</a></li>
           <li><a href="#" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Safety</a></li>
-          <li><a href="#" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Privacy Policy</a></li>
-          <li><a href="#" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Terms of Service</a></li>
+          <li><a href="/privacy/" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Privacy Policy</a></li>
+          <li><a href="/terms/" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Terms of Service</a></li>
           <li><a href="#" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">Contact Us</a></li>
         </ul>
       </div>
@@ -238,8 +271,8 @@
     <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:48px;padding:24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">© 2026 FoodCourt Inc. All rights reserved.</p>
       <div style="display:flex;gap:20px;">
-        <a href="#" style="color:rgba(255,255,255,0.4);font-size:13px;text-decoration:none;">Privacy</a>
-        <a href="#" style="color:rgba(255,255,255,0.4);font-size:13px;text-decoration:none;">Terms</a>
+        <a href="/privacy/" style="color:rgba(255,255,255,0.4);font-size:13px;text-decoration:none;">Privacy</a>
+        <a href="/terms/" style="color:rgba(255,255,255,0.4);font-size:13px;text-decoration:none;">Terms</a>
         <a href="#" style="color:rgba(255,255,255,0.4);font-size:13px;text-decoration:none;">Cookies</a>
       </div>
     </div>
@@ -311,6 +344,9 @@
 </script>
 {% endif %}
 {% block extra_js %}{% endblock %}
+
+<!-- FoodCourt Loader -->
+<script src="{% static 'js/foodcourt-loader.js' %}?v=1"></script>
 
 </body>
 </html>

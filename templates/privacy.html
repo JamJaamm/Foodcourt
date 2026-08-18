@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FoodCourt — Privacy Policy{% endblock %}
+
+{% block extra_css %}
+<style>
+  .legal-page { max-width: 800px; margin: 0 auto; padding: 60px 24px 80px; }
+  .legal-page h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--text-primary); margin-bottom: 8px; }
+  .legal-page .legal-date { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+  .legal-page h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--text-primary); margin-top: 36px; margin-bottom: 12px; }
+  .legal-page p, .legal-page li { font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
+  .legal-page ul { padding-left: 20px; margin-bottom: 16px; }
+  .legal-page li { margin-bottom: 8px; }
+  .legal-page a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  .legal-page a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="legal-page">
+  <h1>Privacy Policy</h1>
+  <p class="legal-date">Last updated: August 18, 2026</p>
+
+  <h2>1. Introduction</h2>
+  <p>FoodCourt ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform, including our website, mobile application, and related services (collectively, the "Service").</p>
+
+  <h2>2. Information We Collect</h2>
+  <p>We may collect the following types of information:</p>
+  <ul>
+    <li><strong>Personal Information:</strong> Name, email address, phone number, and delivery address when you create an account or place an order.</li>
+    <li><strong>Payment Information:</strong> Transaction references and payment method type. We do not store full card numbers — payments are processed securely by Paystack.</li>
+    <li><strong>Order History:</strong> Details of orders you place, including restaurants, items, and delivery information.</li>
+    <li><strong>Device and Usage Information:</strong> IP address, browser type, device type, operating system, and pages visited, collected automatically through cookies and analytics tools.</li>
+    <li><strong>Location Data:</strong> Approximate location derived from your IP address or, with your permission, your device's GPS to show nearby restaurants and enable delivery.</li>
+  </ul>
+
+  <h2>3. How We Use Your Information</h2>
+  <p>We use the information we collect to:</p>
+  <ul>
+    <li>Process and fulfil your food orders.</li>
+    <li>Send transactional emails (order confirmations, verification codes, password resets).</li>
+    <li>Provide customer support and respond to your enquiries.</li>
+    <li>Improve and personalise the Service.</li>
+    <li>Detect and prevent fraud, abuse, and security issues.</li>
+    <li>Comply with legal obligations.</li>
+    <li>Send marketing communications (only with your consent; you can opt out at any time).</li>
+  </ul>
+
+  <h2>4. How We Share Your Information</h2>
+  <p>We may share your information with:</p>
+  <ul>
+    <li><strong>Restaurants:</strong> Your name, order details, and delivery address are shared with the restaurant to fulfil your order.</li>
+    <li><strong>Delivery Riders:</strong> Your name and delivery address are shared with assigned riders to complete delivery.</li>
+    <li><strong>Payment Processor:</strong> Paystack processes your payments. We do not have access to your full card details.</li>
+    <li><strong>Service Providers:</strong> Third-party providers that help us operate the Service (hosting, email delivery, analytics).</li>
+    <li><strong>Legal Requirements:</strong> When required by law, court order, or government regulation.</li>
+  </ul>
+  <p>We do not sell your personal information to third parties.</p>
+
+  <h2>5. Data Security</h2>
+  <p>We implement industry-standard security measures to protect your personal information, including encryption in transit (TLS/SSL) and at rest. However, no method of electronic transmission or storage is 100% secure, and we cannot guarantee absolute security.</p>
+
+  <h2>6. Data Retention</h2>
+  <p>We retain your personal information for as long as your account is active or as needed to provide the Service. If you delete your account, we will remove your personal data within 30 days, except where we are required to retain it for legal or regulatory purposes.</p>
+
+  <h2>7. Your Rights</h2>
+  <p>Depending on your jurisdiction, you may have the right to:</p>
+  <ul>
+    <li>Access the personal information we hold about you.</li>
+    <li>Request correction of inaccurate data.</li>
+    <li>Request deletion of your personal data.</li>
+    <li>Object to or restrict certain processing of your data.</li>
+    <li>Withdraw consent for marketing communications at any time.</li>
+  </ul>
+  <p>To exercise any of these rights, contact us at <a href="mailto:privacy@foodcourt.com">privacy@foodcourt.com</a>.</p>
+
+  <h2>8. Cookies</h2>
+  <p>We use cookies and similar technologies to maintain your session, remember your preferences, and analyse usage of the Service. You can control cookie settings through your browser preferences.</p>
+
+  <h2>9. Children's Privacy</h2>
+  <p>The Service is not intended for users under the age of 18. We do not knowingly collect personal information from children. If we become aware that we have collected data from a child, we will delete it promptly.</p>
+
+  <h2>10. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated "Last updated" date. Your continued use of the Service after changes are posted constitutes acceptance of the updated policy.</p>
+
+  <h2>11. Contact Us</h2>
+  <p>If you have any questions about this Privacy Policy, please contact us at <a href="mailto:privacy@foodcourt.com">privacy@foodcourt.com</a>.</p>
+</div>
+{% endblock %}
