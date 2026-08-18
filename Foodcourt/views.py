@@ -623,6 +623,77 @@ def rider_login_view(request):
 
     return render(request, 'Riders/rider_login.html', {'error': error, 'email_val': email_val})
 
+def rider_forgot_password_view(request):
+    if get_current_rider(request):
+        return redirect('rider_dashboard')
+
+    error = None
+    email_val = ""
+
+    if request.method == "POST":
+        email = request.POST.get('email', '').strip()
+        email_val = email
+        if not email:
+            error = "Please enter your email address."
+        else:
+            try:
+                rider = Riders.objects.get(email=email)
+            except Riders.DoesNotExist:
+                rider = None
+
+            if rider is not None:
+                VerificationCode.objects.filter(rider=rider, is_used=False).delete()
+                code = f"{random.randint(100000, 999999)}"
+                VerificationCode.objects.create(rider=rider, code=code)
+                send_email(
+                    subject="Reset your FoodCourt Rider password",
+                    template_name="emails/verify_email.html",
+                    context={"code": code},
+                    recipient_list=[rider.email],
+                )
+            request.session['rider_reset_email'] = email
+            return redirect('rider_reset_password')
+
+    return render(request, 'Riders/rider_forgot_password.html', {'error': error, 'email_val': email_val})
+
+def rider_reset_password_view(request):
+    rider_email = request.session.get('rider_reset_email', '')
+    error = None
+    success = False
+
+    if request.method == "POST":
+        code = request.POST.get('code', '').strip()
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        if not code or not new_password or not confirm_password:
+            error = "All fields are required."
+        elif new_password != confirm_password:
+            error = "Passwords do not match."
+        elif len(new_password) < 8:
+            error = "Password must be at least 8 characters."
+        else:
+            try:
+                rider = Riders.objects.get(email=rider_email)
+            except Riders.DoesNotExist:
+                error = "Invalid request. Please try again."
+            else:
+                verification = VerificationCode.objects.filter(rider=rider, code=code, is_used=False).first()
+                if not verification or verification.is_expired():
+                    error = "Invalid or expired code. Please request a new one."
+                else:
+                    rider.set_password(new_password)
+                    rider.save(update_fields=['password'])
+                    verification.is_used = True
+                    verification.save(update_fields=['is_used'])
+                    success = True
+
+    return render(request, 'Riders/rider_reset_password.html', {
+        'error': error,
+        'success': success,
+        'rider_email': rider_email,
+    })
+
 def rider_register_view(request):
     if request.method != "POST":
         return redirect('riders')
@@ -1126,6 +1197,10 @@ def admin_dashboard_view(request, section=None):
         from datetime import timedelta
         users_qs = User.objects.select_related('profile').prefetch_related('orders').order_by('-date_joined')
 
+        # Exclude restaurant owners — they have their own section
+        restaurant_owner_ids = Restaurant.objects.values_list('owner_id', flat=True)
+        users_qs = users_qs.exclude(id__in=restaurant_owner_ids)
+
         # Search
         user_query = request.GET.get('q', '').strip()
         if user_query:
@@ -1179,14 +1254,15 @@ def admin_dashboard_view(request, section=None):
             sort = '-date_joined'
         users_qs = users_qs.order_by(sort)
 
-        # Stats
-        total_users = User.objects.count()
-        active_users = User.objects.filter(is_active=True).count()
-        blocked_users = User.objects.filter(is_active=False).count()
-        verified_users = User.objects.filter(is_active=True, last_login__isnull=False).count()
-        unverified_users = User.objects.filter(is_active=False, last_login__isnull=True).count()
-        new_today = User.objects.filter(date_joined__date=today).count()
-        new_this_month = User.objects.filter(date_joined__date__gte=today.replace(day=1)).count()
+        # Stats (exclude restaurant owners)
+        base_users = User.objects.exclude(id__in=restaurant_owner_ids)
+        total_users = base_users.count()
+        active_users = base_users.filter(is_active=True).count()
+        blocked_users = base_users.filter(is_active=False).count()
+        verified_users = base_users.filter(is_active=True, last_login__isnull=False).count()
+        unverified_users = base_users.filter(is_active=False, last_login__isnull=True).count()
+        new_today = base_users.filter(date_joined__date=today).count()
+        new_this_month = base_users.filter(date_joined__date__gte=today.replace(day=1)).count()
 
         user_stats = {
             'total': total_users,
