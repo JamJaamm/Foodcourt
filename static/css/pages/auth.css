@@ -264,3 +264,35 @@
     display: none;
   }
 }
+
+@media (max-width: 640px) {
+  .auth-container {
+    min-height: auto;
+  }
+  .auth-form-panel {
+    padding: 16px;
+    min-height: calc(100vh - var(--navbar-h));
+    align-items: flex-start;
+    padding-top: 24px;
+  }
+  .auth-card {
+    padding: 20px;
+    border-radius: var(--radius-lg);
+  }
+  .auth-title {
+    font-size: var(--text-xl);
+  }
+  .auth-social-row {
+    flex-wrap: wrap;
+  }
+  .auth-social-btn {
+    min-width: calc(50% - 8px);
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  .auth-form-footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+}
