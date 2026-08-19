@@ -173,10 +173,11 @@ function renderAddresses() {
 
   container.innerHTML = list.map(addr => {
     const icon = addr.label && addr.label.toLowerCase().includes('work') ? 'fa-building' : 'fa-house';
-    const landmarkHtml = addr.landmark ? `<div class="addr-detail-line"><i class="fa-solid fa-location-dot"></i><span>Near ${addr.landmark}</span></div>` : '';
+    const countryLine = addr.country ? `<div class="addr-detail-line"><i class="fa-solid fa-globe"></i><span>${addr.country}</span></div>` : '';
+    const stateLine = addr.state ? `<div class="addr-detail-line"><i class="fa-solid fa-map"></i><span>${addr.state}</span></div>` : '';
     const lgaLine = addr.lga ? `<div class="addr-detail-line"><i class="fa-solid fa-map-location-dot"></i><span>${addr.lga}</span></div>` : '';
-    const cityState = [addr.city, addr.state].filter(Boolean).join(', ');
-    const countryHtml = addr.country ? `<div class="addr-detail-line"><i class="fa-solid fa-globe"></i><span>${addr.country}</span></div>` : '';
+    const cityLine = addr.city ? `<div class="addr-detail-line"><i class="fa-solid fa-city"></i><span>${addr.city}</span></div>` : '';
+    const landmarkLine = addr.landmark ? `<div class="addr-detail-line"><i class="fa-solid fa-location-dot"></i><span>Near ${addr.landmark}</span></div>` : '';
     const phoneHtml = addr.phone ? `<div class="addr-detail-line"><i class="fa-solid fa-phone"></i><span>${addr.phone}</span></div>` : '';
     const locBadge = addr.location_confirmed
       ? '<span style="font-size:10px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:1px 6px;border-radius:8px;margin-left:6px;">✓ Confirmed</span>'
@@ -192,11 +193,12 @@ function renderAddresses() {
           ${locBadge}
         </span>
       </div>
-      <div class="addr-detail-line"><i class="fa-solid fa-house"></i><span>${addr.street}</span></div>
-      ${landmarkHtml}
+      ${countryLine}
+      ${stateLine}
       ${lgaLine}
-      <div class="addr-detail-line"><i class="fa-solid fa-city"></i><span>${cityState || addr.city}</span></div>
-      ${countryHtml}
+      ${cityLine}
+      ${landmarkLine}
+      <div class="addr-detail-line"><i class="fa-solid fa-road"></i><span>${addr.street}</span></div>
       ${phoneHtml}
       
       <div class="db-address-actions">
