@@ -1906,6 +1906,66 @@ def geocode_api(request):
     return JsonResponse({'error': 'Could not find location for this address.'}, status=404)
 
 
+def locations_api(request):
+    """
+    AJAX endpoint: return countries and their states/regions.
+    Nigeria uses nigeria_states_lgas for accurate state data.
+    All other countries use pycountry subdivisions.
+    Cached in-memory after first call.
+    """
+    from django.core.cache import cache
+    cached = cache.get('locations_data')
+    if cached:
+        return JsonResponse(cached)
+
+    from nigeria_states_lgas import get_states as get_ng_states
+    import pycountry
+
+    priority_order = [
+        'Nigeria', 'Ghana', 'Kenya', 'South Africa', 'United States',
+        'United Kingdom', 'Canada', 'Cameroon', 'United Arab Emirates',
+    ]
+
+    ng_states = sorted(get_ng_states())
+
+    countries_map = {}
+    for c in pycountry.countries:
+        name = c.name
+        if hasattr(c, 'common_name'):
+            name = c.common_name
+        countries_map[name] = c.alpha_2
+
+    all_subs = {}
+    for s in pycountry.subdivisions:
+        cc = s.country_code
+        if cc not in all_subs:
+            all_subs[cc] = []
+        all_subs[cc].append(s.name)
+
+    result_countries = []
+
+    ng_code = countries_map.get('Nigeria', 'NG')
+    result_countries.append({'name': 'Nigeria', 'states': ng_states})
+
+    for cname in priority_order:
+        if cname == 'Nigeria':
+            continue
+        cc = countries_map.get(cname)
+        if cc:
+            states = sorted(set(all_subs.get(cc, [])))
+            result_countries.append({'name': cname, 'states': states})
+
+    for cname, cc in sorted(countries_map.items()):
+        if cname in [c['name'] for c in result_countries]:
+            continue
+        states = sorted(set(all_subs.get(cc, [])))
+        result_countries.append({'name': cname, 'states': states})
+
+    data = {'countries': result_countries}
+    cache.set('locations_data', data, 3600)
+    return JsonResponse(data)
+
+
 @login_required(login_url='login')
 def admin_restaurant_update_api(request, pk):
     """Admin AJAX: update restaurant location fields."""

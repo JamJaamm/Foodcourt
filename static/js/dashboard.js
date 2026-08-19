@@ -243,8 +243,7 @@ window.saveNewAddress = function(event) {
       document.getElementById('new-addr-street').value = '';
       document.getElementById('new-addr-landmark').value = '';
       document.getElementById('new-addr-city').value = '';
-      document.getElementById('new-addr-state').value = '';
-      document.getElementById('new-addr-country').value = 'United States';
+      populateStates(document.getElementById('new-addr-country').value, document.getElementById('new-addr-state'), '');
       document.getElementById('new-addr-phone').value = '';
       toggleAddAddressForm();
       loadAddresses();
@@ -270,8 +269,8 @@ window.editAddressCard = function(id) {
   document.getElementById('edit-addr-street').value = addr.street || '';
   document.getElementById('edit-addr-landmark').value = addr.landmark || '';
   document.getElementById('edit-addr-city').value = addr.city || '';
-  document.getElementById('edit-addr-state').value = addr.state || '';
   document.getElementById('edit-addr-country').value = addr.country || '';
+  populateStates(addr.country || '', document.getElementById('edit-addr-state'), addr.state || '');
   document.getElementById('edit-addr-phone').value = addr.phone || '';
 
   const card = document.getElementById('edit-address-form-card');

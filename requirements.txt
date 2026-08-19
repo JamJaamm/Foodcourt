@@ -18,6 +18,7 @@ IMAPClient==3.0.1
 mail-parser==4.1.4
 mailsuite==1.10.0
 mysqlclient==2.2.7
+nigeria-states-lgas==1.0.6
 oauthlib==3.3.1
 packaging==26.3
 pillow==11.3.0

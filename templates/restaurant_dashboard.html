@@ -489,8 +489,8 @@
               </div>
             </div>
 
-            <div style="grid-column:span 2"><label>Country</label><select id="set-country"><option value="Nigeria" {% if restaurant.country == 'Nigeria' %}selected{% endif %}>Nigeria</option></select></div>
-            <div><label>State</label><input type="text" id="set-state" value="{{ restaurant.state }}"></div>
+            <div style="grid-column:span 2"><label>Country</label><select id="set-country" style="width:100%;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--border);font-size:14px;"></select></div>
+            <div><label>State</label><select id="set-state" style="width:100%;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--border);font-size:14px;"><option value="" disabled>Select State / Region</option></select></div>
             <div><label>City</label><input type="text" id="set-city" value="{{ restaurant.city }}"></div>
             <div style="grid-column:span 2"><label>Area / Locality</label><input type="text" id="set-area" value="{{ restaurant.area }}" placeholder="e.g. Lekki Phase 1"></div>
             <div style="grid-column:span 2"><label>Street Address</label><input type="text" id="set-street" value="{{ restaurant.street_address }}" placeholder="e.g. 12 Admiralty Way"></div>
@@ -554,7 +554,16 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/locations_data.js' %}"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  populateCountries(document.getElementById('set-country'), '{{ restaurant.country|default:"Nigeria" }}');
+  populateStates(document.getElementById('set-country').value, document.getElementById('set-state'), '{{ restaurant.state|default:"" }}');
+  document.getElementById('set-country').addEventListener('change', function() {
+    populateStates(this.value, document.getElementById('set-state'), '');
+  });
+});
+
 const CSRF_TOKEN = getCookie('csrftoken');
 function getCookie(n){let v=null;if(document.cookie&&document.cookie!==''){document.cookie.split(';').forEach(c=>{c=c.trim();if(c.substring(0,n.length+1)===(n+'='))v=decodeURIComponent(c.substring(n.length+1))})}return v}
 

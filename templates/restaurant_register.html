@@ -117,7 +117,7 @@
         <div class="auth-form-group">
           <i class="fa-solid fa-globe auth-input-icon"></i>
           <select class="auth-input" name="country" id="reg-country" style="padding-left:40px;">
-            <option value="Nigeria" selected>Nigeria</option>
+            <!-- Populated by JS from locations_data.js -->
           </select>
         </div>
 
@@ -125,7 +125,9 @@
           <div class="col-6">
             <div class="auth-form-group">
               <i class="fa-solid fa-map auth-input-icon"></i>
-              <input type="text" class="auth-input" name="state" id="reg-state" placeholder="State" value="{{ form_data.state|default:'' }}" required style="padding-left:40px;">
+              <select class="auth-input" name="state" id="reg-state" style="padding-left:40px;" required>
+                <option value="" disabled selected>Select State / Region</option>
+              </select>
             </div>
           </div>
           <div class="col-6">
@@ -214,7 +216,13 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/locations_data.js' %}"></script>
 <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    populateCountries(document.getElementById('reg-country'), '{{ form_data.country|default:"Nigeria" }}');
+    populateStates(document.getElementById('reg-country').value, document.getElementById('reg-state'), '{{ form_data.state|default:"" }}');
+  });
+
   function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
     const icon = btn.querySelector('i');

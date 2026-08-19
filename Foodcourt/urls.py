@@ -69,6 +69,7 @@ urlpatterns = [
     path('order/place/', views.place_order_view, name='place_order'),
     path('api/delivery-fee/', views.delivery_fee_api, name='delivery_fee_api'),
     path('api/geocode/', views.geocode_api, name='geocode_api'),
+    path('api/locations/', views.locations_api, name='locations_api'),
     path('admin-dashboard/delivery-settings/', views.admin_delivery_settings_api, name='admin_delivery_settings_api'),
     path('admin-dashboard/restaurants/<int:pk>/update/', views.admin_restaurant_update_api, name='admin_restaurant_update_api'),
     path('logout/', views.logout_view, name='logout'),

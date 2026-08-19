@@ -580,26 +580,18 @@
               <span class="rdr-field-error" data-error-for="rdrCity">City is required.</span>
             </div>
             <div class="rdr-field">
-              <label class="rdr-label">State <span class="req">*</span></label>
-              <input type="text" class="rdr-input" id="rdrState" placeholder="e.g. Lagos State" autocomplete="address-level1">
-              <span class="rdr-field-error" data-error-for="rdrState">State is required.</span>
-            </div>
-          </div>
-
-          <div class="rdr-row-2">
-            <div class="rdr-field">
               <label class="rdr-label">Country <span class="req">*</span></label>
               <select class="rdr-select" id="rdrCountry">
-                <option value="" selected disabled>Select country</option>
-                <option>Nigeria</option>
-                <option>Ghana</option>
-                <option>Kenya</option>
-                <option>South Africa</option>
-                <option>United Kingdom</option>
-                <option>United States</option>
-                <option>Other</option>
+                <!-- Populated by JS from locations_data.js -->
               </select>
               <span class="rdr-field-error" data-error-for="rdrCountry">Please select your country.</span>
+            </div>
+            <div class="rdr-field">
+              <label class="rdr-label">State <span class="req">*</span></label>
+              <select class="rdr-select" id="rdrState">
+                <option value="" disabled selected>Select State / Region</option>
+              </select>
+              <span class="rdr-field-error" data-error-for="rdrState">State is required.</span>
             </div>
             <div class="rdr-field">
               <label class="rdr-label">Postal Code</label>
@@ -797,6 +789,15 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/locations_data.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  populateCountries(document.getElementById('rdrCountry'), 'Nigeria');
+  document.getElementById('rdrCountry').addEventListener('change', function() {
+    populateStates(this.value, document.getElementById('rdrState'), '');
+  });
+});
+</script>
 <script src="{% static 'js/rider.js' %}?v=5"></script>
 <script>
 (function () {

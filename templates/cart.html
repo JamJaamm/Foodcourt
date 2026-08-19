@@ -98,12 +98,15 @@
                   <input type="text" id="naddr-city" placeholder="City">
                 </div>
                 <div class="form-floating-custom flex-grow-1">
-                  <input type="text" id="naddr-state" placeholder="State / Province">
+                  <select id="naddr-state" style="width:100%;padding:14px 16px;border-radius:14px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);font-size:14px;outline:none;">
+                    <option value="" disabled selected>State / Region</option>
+                  </select>
                 </div>
               </div>
               <div class="d-flex gap-3 mt-3">
                 <div class="form-floating-custom flex-grow-1">
-                  <input type="text" id="naddr-country" placeholder="Country">
+                  <select id="naddr-country" style="width:100%;padding:14px 16px;border-radius:14px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);font-size:14px;outline:none;">
+                  </select>
                 </div>
                 <div class="form-floating-custom flex-grow-1">
                   <input type="tel" id="naddr-phone" placeholder="Phone number">
@@ -238,5 +241,14 @@ window.FOODCOURT_USER = {
 </script>
 {{ user_addresses_json|json_script:"db-user-addresses" }}
 {{ coupons_json|json_script:"db-promo-data" }}
+<script src="{% static 'js/locations_data.js' %}"></script>
 <script src="{% static 'js/cart.js' %}?v=5"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  populateCountries(document.getElementById('naddr-country'), 'Nigeria');
+  document.getElementById('naddr-country').addEventListener('change', function() {
+    populateStates(this.value, document.getElementById('naddr-state'), '');
+  });
+});
+</script>
 {% endblock %}
