@@ -674,6 +674,9 @@
                     <button class="fc-btn fc-btn-outline fc-btn-sm" onclick="openRestaurantLocationModal({{ r.id }}, '{{ r.name|escapejs }}', '{{ r.address|escapejs }}', '{{ r.latitude|default_if_none:'' }}', '{{ r.longitude|default_if_none:'' }}')" style="font-size:11px;padding:4px 10px;">
                       <i class="fa-solid fa-location-dot"></i> Location
                     </button>
+                    {% if r.has_coordinates %}
+                    <span style="font-size:10px;color:var(--rdr-green);margin-left:4px;">✓</span>
+                    {% endif %}
                   </td>
                   <td style="font-size:12px;color:var(--text-muted);">{{ r.created_at|date:"M d, Y" }}</td>
                 </tr>

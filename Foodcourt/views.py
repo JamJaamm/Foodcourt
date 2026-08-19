@@ -243,6 +243,15 @@ def restaurant_register_view(request):
         rest_phone = request.POST.get('restaurant_phone', '').strip()
         rest_email = request.POST.get('restaurant_email', '').strip()
 
+        country = request.POST.get('country', 'Nigeria').strip()
+        state = request.POST.get('state', '').strip()
+        city = request.POST.get('city', '').strip()
+        area = request.POST.get('area', '').strip()
+        street_address = request.POST.get('street_address', '').strip()
+        landmark = request.POST.get('landmark', '').strip()
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+
         form_data = {
             'first_name': first_name,
             'last_name': last_name,
@@ -253,6 +262,12 @@ def restaurant_register_view(request):
             'address': address,
             'restaurant_phone': rest_phone,
             'restaurant_email': rest_email,
+            'country': country,
+            'state': state,
+            'city': city,
+            'area': area,
+            'street_address': street_address,
+            'landmark': landmark,
         }
 
         if not first_name or not last_name or not email or not password or not rest_name:
@@ -264,6 +279,23 @@ def restaurant_register_view(request):
         elif User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
             error = "An account with this email already exists."
         else:
+            # Build combined address from structured fields
+            if not address:
+                parts = []
+                if street_address:
+                    parts.append(street_address)
+                if area:
+                    parts.append(area)
+                if landmark:
+                    parts.append(f"Near {landmark}")
+                if city:
+                    parts.append(city)
+                if state:
+                    parts.append(state)
+                if country:
+                    parts.append(country)
+                address = ', '.join(parts)
+
             user = User.objects.create_user(
                 username=email,
                 email=email,
@@ -274,11 +306,32 @@ def restaurant_register_view(request):
             )
             request.session['foodcourt_user_phone'] = phone
 
+            lat_val = None
+            lng_val = None
+            if latitude:
+                try:
+                    lat_val = Decimal(str(latitude))
+                except (InvalidOperation, ValueError):
+                    lat_val = None
+            if longitude:
+                try:
+                    lng_val = Decimal(str(longitude))
+                except (InvalidOperation, ValueError):
+                    lng_val = None
+
             Restaurant.objects.create(
                 owner=user,
                 name=rest_name,
                 cuisine=cuisine,
                 address=address,
+                country=country,
+                state=state,
+                city=city,
+                area=area,
+                street_address=street_address,
+                landmark=landmark,
+                latitude=lat_val,
+                longitude=lng_val,
                 phone=rest_phone or phone,
                 email=rest_email or email,
             )
@@ -1336,6 +1389,9 @@ def admin_dashboard_view(request, section=None):
                 'phone': r.phone or '—',
                 'email': r.email or '—',
                 'address': r.address or '—',
+                'latitude': float(r.latitude) if r.latitude is not None else None,
+                'longitude': float(r.longitude) if r.longitude is not None else None,
+                'has_coordinates': r.has_coordinates,
                 'owner': r.owner.get_full_name() or r.owner.username,
                 'owner_email': r.owner.email,
                 'rating': float(r.rating or 0),
@@ -1835,6 +1891,19 @@ def delivery_fee_api(request):
         'error': result['error'],
         'outside_range': result['outside_range'],
     })
+
+
+def geocode_api(request):
+    """AJAX endpoint: geocode an address string to lat/lng using Nominatim."""
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({'error': 'Query required'}, status=400)
+
+    from .geocoding import geocode_address
+    lat, lon = geocode_address(query)
+    if lat is not None and lon is not None:
+        return JsonResponse({'latitude': lat, 'longitude': lon})
+    return JsonResponse({'error': 'Could not find location for this address.'}, status=404)
 
 
 @login_required(login_url='login')
@@ -2524,8 +2593,15 @@ def restaurant_api_view(request):
     # === SETTINGS ===
     elif action == 'update_settings':
         for field in ['name', 'description', 'cuisine', 'address', 'phone', 'email', 'logo', 'cover_image',
-                       'delivery_fee', 'delivery_radius', 'tax_rate', 'min_order', 'is_open']:
+                       'delivery_fee', 'delivery_radius', 'tax_rate', 'min_order', 'is_open',
+                       'country', 'state', 'city', 'area', 'street_address', 'landmark']:
             if field in data: setattr(restaurant, field, data[field])
+        if 'latitude' in data:
+            val = data['latitude']
+            restaurant.latitude = Decimal(str(val)) if val not in (None, '') else None
+        if 'longitude' in data:
+            val = data['longitude']
+            restaurant.longitude = Decimal(str(val)) if val not in (None, '') else None
         if data.get('opening_time'): restaurant.opening_time = data['opening_time']
         if data.get('closing_time'): restaurant.closing_time = data['closing_time']
         if request.FILES.get('logo_file'):

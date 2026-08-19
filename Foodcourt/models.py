@@ -117,6 +117,12 @@ class Restaurant(models.Model):
     description = models.TextField(blank=True, default='')
     cuisine = models.CharField(max_length=100, blank=True, default='')
     address = models.TextField(blank=True, default='')
+    country = models.CharField(max_length=100, blank=True, default='Nigeria')
+    state = models.CharField(max_length=100, blank=True, default='')
+    city = models.CharField(max_length=100, blank=True, default='')
+    area = models.CharField(max_length=100, blank=True, default='')
+    street_address = models.CharField(max_length=255, blank=True, default='')
+    landmark = models.CharField(max_length=255, blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True, default='')
@@ -137,6 +143,23 @@ class Restaurant(models.Model):
     @property
     def has_coordinates(self):
         return self.latitude is not None and self.longitude is not None
+
+    @property
+    def structured_address(self):
+        parts = []
+        if self.street_address:
+            parts.append(self.street_address)
+        if self.area:
+            parts.append(self.area)
+        if self.landmark:
+            parts.append(f"Near {self.landmark}")
+        if self.city:
+            parts.append(self.city)
+        if self.state:
+            parts.append(self.state)
+        if self.country:
+            parts.append(self.country)
+        return ', '.join(parts)
 
     def __str__(self):
         return self.name

@@ -482,7 +482,47 @@
             <div style="grid-column:span 2"><label>Description</label><textarea id="set-desc" rows="2">{{ restaurant.description }}</textarea></div>
             <div><label>Cuisine</label><input type="text" id="set-cuisine" value="{{ restaurant.cuisine }}"></div>
             <div><label>Phone</label><input type="text" id="set-phone" value="{{ restaurant.phone }}"></div>
-            <div style="grid-column:span 2"><label>Address</label><input type="text" id="set-address" value="{{ restaurant.address }}"></div>
+
+            <div style="grid-column:span 2;margin-top:12px;padding-bottom:4px;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--primary);display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-location-dot"></i> Address Information
+              </div>
+            </div>
+
+            <div style="grid-column:span 2"><label>Country</label><select id="set-country"><option value="Nigeria" {% if restaurant.country == 'Nigeria' %}selected{% endif %}>Nigeria</option></select></div>
+            <div><label>State</label><input type="text" id="set-state" value="{{ restaurant.state }}"></div>
+            <div><label>City</label><input type="text" id="set-city" value="{{ restaurant.city }}"></div>
+            <div style="grid-column:span 2"><label>Area / Locality</label><input type="text" id="set-area" value="{{ restaurant.area }}" placeholder="e.g. Lekki Phase 1"></div>
+            <div style="grid-column:span 2"><label>Street Address</label><input type="text" id="set-street" value="{{ restaurant.street_address }}" placeholder="e.g. 12 Admiralty Way"></div>
+            <div style="grid-column:span 2"><label>Landmark</label><input type="text" id="set-landmark" value="{{ restaurant.landmark }}" placeholder="Optional"></div>
+
+            <!-- Location confirmation -->
+            <div style="grid-column:span 2;background:var(--bg-secondary,#f8f9fa);border-radius:var(--radius-md);padding:14px 16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:14px;">📍</span>
+                  <span style="font-size:13px;font-weight:600;">Restaurant Location</span>
+                  {% if restaurant.has_coordinates %}
+                  <span style="font-size:11px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:2px 8px;border-radius:10px;">✓ Confirmed</span>
+                  {% else %}
+                  <span style="font-size:11px;color:var(--danger);background:#ffebee;padding:2px 8px;border-radius:10px;">⚠ Not confirmed</span>
+                  {% endif %}
+                </div>
+                <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="set-confirm-location-btn" onclick="confirmSettingsLocation()" style="white-space:nowrap;font-size:12px;padding:6px 14px;">
+                  <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+                </button>
+              </div>
+              <div id="set-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
+              <input type="hidden" id="set-latitude" value="{{ restaurant.latitude|default_if_none:'' }}">
+              <input type="hidden" id="set-longitude" value="{{ restaurant.longitude|default_if_none:'' }}">
+            </div>
+
+            <div style="grid-column:span 2;margin-top:12px;padding-bottom:4px;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--primary);display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-sliders"></i> Delivery Settings
+              </div>
+            </div>
+
             <div><label>Delivery Fee (₦)</label><input type="number" step="0.01" id="set-dfee" value="{{ restaurant.delivery_fee }}"></div>
             <div><label>Delivery Radius (km)</label><input type="number" step="0.1" id="set-dradius" value="{{ restaurant.delivery_radius }}"></div>
             <div><label>Tax Rate (%)</label><input type="number" step="0.01" id="set-tax" value="{{ restaurant.tax_rate }}"></div>
@@ -757,16 +797,76 @@ function previewLogoFile(input){
   const preview=document.getElementById('set-logo-preview');
   if(input.files&&input.files[0]){preview.style.display='block';preview.src=URL.createObjectURL(input.files[0])}
 }
+
+function buildSettingsAddress(){
+  const parts=[];
+  const street=document.getElementById('set-street').value.trim();
+  const area=document.getElementById('set-area').value.trim();
+  const landmark=document.getElementById('set-landmark').value.trim();
+  const city=document.getElementById('set-city').value.trim();
+  const state=document.getElementById('set-state').value.trim();
+  const country=document.getElementById('set-country').value.trim();
+  if(street)parts.push(street);
+  if(area)parts.push(area);
+  if(landmark)parts.push('Near '+landmark);
+  if(city)parts.push(city);
+  if(state)parts.push(state);
+  if(country)parts.push(country);
+  return parts.join(', ');
+}
+
+function confirmSettingsLocation(){
+  const btn=document.getElementById('set-confirm-location-btn');
+  const statusEl=document.getElementById('set-location-status');
+  const combined=buildSettingsAddress();
+  if(!combined||combined.length<10){
+    statusEl.style.display='block';
+    statusEl.style.color='var(--danger)';
+    statusEl.innerHTML='<i class="fa-solid fa-circle-exclamation me-1"></i> Please fill in your address details first.';
+    return;
+  }
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin me-1"></i> Locating...';
+  statusEl.style.display='block';
+  statusEl.style.color='var(--text-secondary)';
+  statusEl.innerHTML='<i class="fa-solid fa-spinner fa-spin me-1"></i> Searching for location...';
+  fetch('/api/geocode/?q='+encodeURIComponent(combined))
+  .then(r=>r.json()).then(data=>{
+    if(data.latitude&&data.longitude){
+      document.getElementById('set-latitude').value=data.latitude;
+      document.getElementById('set-longitude').value=data.longitude;
+      statusEl.style.color='var(--rdr-green)';
+      statusEl.innerHTML='<i class="fa-solid fa-circle-check me-1"></i> <strong>Location confirmed!</strong> ('+data.latitude.toFixed(4)+', '+data.longitude.toFixed(4)+')';
+      toast('Location confirmed!');
+    }else{
+      statusEl.style.color='var(--danger)';
+      statusEl.innerHTML='<i class="fa-solid fa-circle-exclamation me-1"></i> We couldn\'t confirm this address. Please check the address and try again.';
+    }
+  }).catch(()=>{
+    statusEl.style.color='var(--danger)';
+    statusEl.innerHTML='<i class="fa-solid fa-circle-exclamation me-1"></i> Location service unavailable. Please try again.';
+  }).finally(()=>{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-crosshairs me-1"></i> Confirm'});
+}
+
 function saveSettings(e){
   e.preventDefault();const btn=e.target.querySelector('button[type="submit"]');
   const orig=btn.innerHTML;btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin me-1"></i>Saving...';
+  const combined=buildSettingsAddress();
   const formData=new FormData();
   formData.append('action','update_settings');
   formData.append('name',document.getElementById('set-name').value);
   formData.append('description',document.getElementById('set-desc').value);
   formData.append('cuisine',document.getElementById('set-cuisine').value);
   formData.append('phone',document.getElementById('set-phone').value);
-  formData.append('address',document.getElementById('set-address').value);
+  formData.append('address',combined);
+  formData.append('country',document.getElementById('set-country').value);
+  formData.append('state',document.getElementById('set-state').value);
+  formData.append('city',document.getElementById('set-city').value);
+  formData.append('area',document.getElementById('set-area').value);
+  formData.append('street_address',document.getElementById('set-street').value);
+  formData.append('landmark',document.getElementById('set-landmark').value);
+  formData.append('latitude',document.getElementById('set-latitude').value);
+  formData.append('longitude',document.getElementById('set-longitude').value);
   formData.append('delivery_fee',parseFloat(document.getElementById('set-dfee').value)||0);
   formData.append('delivery_radius',parseFloat(document.getElementById('set-dradius').value)||0);
   formData.append('tax_rate',parseFloat(document.getElementById('set-tax').value)||0);
