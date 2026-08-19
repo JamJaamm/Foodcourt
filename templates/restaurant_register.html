@@ -160,17 +160,24 @@
           <input type="text" class="auth-input" name="landmark" id="reg-landmark" placeholder="Landmark (optional)" value="{{ form_data.landmark|default:'' }}" style="padding-left:40px;">
         </div>
 
-        <!-- Location confirmation -->
+        <!-- Location section -->
         <div id="reg-location-section" style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-size:14px;">📍</span>
-              <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Confirm Restaurant Location</span>
+              <span style="font-size:13px;font-weight:600;color:var(--text-primary);">Location</span>
             </div>
-            <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="reg-confirm-location-btn" onclick="confirmRegistrationLocation()" style="white-space:nowrap;font-size:12px;padding:6px 14px;">
-              <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+            <div id="reg-location-badge"></div>
+          </div>
+          <div id="reg-location-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="regUseCurrentLocation()" style="font-size:12px;padding:6px 14px;">
+              <i class="fa-solid fa-location-crosshairs me-1"></i> Use My Current Location
+            </button>
+            <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="regOpenMap()" style="font-size:12px;padding:6px 14px;">
+              <i class="fa-solid fa-map me-1"></i> Select on Map
             </button>
           </div>
+          <div id="reg-map-container" style="margin-top:10px;display:none;"></div>
           <div id="reg-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
           <input type="hidden" name="latitude" id="reg-latitude" value="">
           <input type="hidden" name="longitude" id="reg-longitude" value="">
@@ -225,6 +232,7 @@
 
 {% block extra_js %}
 <script src="{% static 'js/locations_data.js' %}"></script>
+<script src="{% static 'js/map-picker.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     setupCountryStateCascade('reg-country', 'reg-state', '{{ form_data.state|default:"" }}', '{{ form_data.country|default:"Nigeria" }}');
@@ -262,47 +270,25 @@
     return parts.join(', ');
   }
 
-  function confirmRegistrationLocation() {
-    const btn = document.getElementById('reg-confirm-location-btn');
-    const statusEl = document.getElementById('reg-location-status');
-    const combined = buildRegistrationAddress();
+  function regUseCurrentLocation() {
+    LocationPicker.getCurrentLocation({
+      latInputId: 'reg-latitude', lngInputId: 'reg-longitude',
+      statusId: 'reg-location-status', badgeId: 'reg-location-badge',
+      actionsId: 'reg-location-actions',
+      state: document.getElementById('reg-state').value,
+    });
+  }
 
-    if (!combined || combined.length < 10) {
-      statusEl.style.display = 'block';
-      statusEl.style.color = 'var(--danger)';
-      statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Please fill in your address details first.';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Locating...';
-    statusEl.style.display = 'block';
-    statusEl.style.color = 'var(--text-secondary)';
-    statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Searching for location...';
-
-    fetch('/api/geocode/?q=' + encodeURIComponent(combined))
-      .then(r => r.json())
-      .then(data => {
-        if (data.latitude && data.longitude) {
-          document.getElementById('reg-latitude').value = data.latitude;
-          document.getElementById('reg-longitude').value = data.longitude;
-          document.getElementById('reg-combined-address').value = combined;
-          statusEl.style.color = 'var(--rdr-green)';
-          statusEl.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> <strong>Location confirmed!</strong>';
-          Toast.show('Location confirmed!', 'success');
-        } else {
-          statusEl.style.color = 'var(--danger)';
-          statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> We couldn\'t confirm this address. Please check the address and try again.';
-        }
-      })
-      .catch(() => {
-        statusEl.style.color = 'var(--danger)';
-        statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Location service unavailable. Please try again.';
-      })
-      .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-crosshairs me-1"></i> Confirm';
-      });
+  function regOpenMap() {
+    LocationPicker.open({
+      containerId: 'reg-map-container',
+      latInputId: 'reg-latitude', lngInputId: 'reg-longitude',
+      statusId: 'reg-location-status', badgeId: 'reg-location-badge',
+      actionsId: 'reg-location-actions',
+      defaultLat: parseFloat(document.getElementById('reg-latitude').value) || null,
+      defaultLng: parseFloat(document.getElementById('reg-longitude').value) || null,
+      state: document.getElementById('reg-state').value,
+    });
   }
 
   function handleRegisterFormSubmit(event) {

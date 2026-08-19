@@ -197,12 +197,19 @@
                 <div class="d-flex align-items-center justify-content-between">
                   <div class="d-flex align-items-center gap-2">
                     <span>📍</span>
-                    <span style="font-size:13px;font-weight:600;">Confirm Delivery Location</span>
+                    <span style="font-size:13px;font-weight:600;">Location</span>
+                    <span id="new-location-badge"></span>
                   </div>
-                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="new-confirm-location-btn" onclick="confirmNewAddressLocation()" style="font-size:12px;padding:4px 12px;">
-                    <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+                </div>
+                <div id="new-location-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="newAddrUseCurrentLocation()" style="font-size:12px;padding:6px 14px;">
+                    <i class="fa-solid fa-location-crosshairs me-1"></i> Use My Current Location
+                  </button>
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="newAddrOpenMap()" style="font-size:12px;padding:6px 14px;">
+                    <i class="fa-solid fa-map me-1"></i> Select on Map
                   </button>
                 </div>
+                <div id="new-map-container" style="margin-top:10px;display:none;"></div>
                 <div id="new-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
                 <input type="hidden" id="new-addr-latitude" value="">
                 <input type="hidden" id="new-addr-longitude" value="">
@@ -267,13 +274,19 @@
                 <div class="d-flex align-items-center justify-content-between">
                   <div class="d-flex align-items-center gap-2">
                     <span>📍</span>
-                    <span style="font-size:13px;font-weight:600;">Confirm Delivery Location</span>
+                    <span style="font-size:13px;font-weight:600;">Location</span>
                     <span id="edit-location-badge"></span>
                   </div>
-                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="edit-confirm-location-btn" onclick="confirmEditAddressLocation()" style="font-size:12px;padding:4px 12px;">
-                    <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+                </div>
+                <div id="edit-location-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="editAddrUseCurrentLocation()" style="font-size:12px;padding:6px 14px;">
+                    <i class="fa-solid fa-location-crosshairs me-1"></i> Use My Current Location
+                  </button>
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="editAddrOpenMap()" style="font-size:12px;padding:6px 14px;">
+                    <i class="fa-solid fa-map me-1"></i> Select on Map
                   </button>
                 </div>
+                <div id="edit-map-container" style="margin-top:10px;display:none;"></div>
                 <div id="edit-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
                 <input type="hidden" id="edit-addr-latitude" value="">
                 <input type="hidden" id="edit-addr-longitude" value="">
@@ -388,6 +401,7 @@
 {{ user_addresses|json_script:"db-user-addresses" }}
 {{ db_restaurants|json_script:"db-restaurants-data" }}
 <script src="{% static 'js/locations_data.js' %}"></script>
+<script src="{% static 'js/map-picker.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -395,68 +409,44 @@ document.addEventListener('DOMContentLoaded', function() {
   setupStateLGACascade('new-addr-state', 'new-addr-lga', '', '');
 });
 
-function buildAddressString(prefix) {
-  var parts = [];
-  var street = (document.getElementById(prefix + '-street') || {}).value || '';
-  var landmark = (document.getElementById(prefix + '-landmark') || {}).value || '';
-  var lga = (document.getElementById(prefix + '-lga') || {}).value || '';
-  var city = (document.getElementById(prefix + '-city') || {}).value || '';
-  var state = (document.getElementById(prefix + '-state') || {}).value || '';
-  var country = (document.getElementById(prefix + '-country') || {}).value || '';
-  if (street) parts.push(street.trim());
-  if (landmark) parts.push('Near ' + landmark.trim());
-  if (lga) parts.push(lga.trim());
-  if (city) parts.push(city.trim());
-  if (state) parts.push(state.trim());
-  if (country) parts.push(country.trim());
-  return parts.join(', ');
+function newAddrUseCurrentLocation() {
+  LocationPicker.getCurrentLocation({
+    latInputId: 'new-addr-latitude', lngInputId: 'new-addr-longitude',
+    statusId: 'new-location-status', badgeId: 'new-location-badge',
+    actionsId: 'new-location-actions',
+    state: document.getElementById('new-addr-state').value,
+  });
+}
+function newAddrOpenMap() {
+  LocationPicker.open({
+    containerId: 'new-map-container',
+    latInputId: 'new-addr-latitude', lngInputId: 'new-addr-longitude',
+    statusId: 'new-location-status', badgeId: 'new-location-badge',
+    actionsId: 'new-location-actions',
+    defaultLat: parseFloat(document.getElementById('new-addr-latitude').value) || null,
+    defaultLng: parseFloat(document.getElementById('new-addr-longitude').value) || null,
+    state: document.getElementById('new-addr-state').value,
+  });
 }
 
-function confirmAddressLocation(prefix, statusId, latId, lngId, btnId) {
-  var btn = document.getElementById(btnId);
-  var statusEl = document.getElementById(statusId);
-  var combined = buildAddressString(prefix);
-  if (!combined || combined.length < 10) {
-    statusEl.style.display = 'block';
-    statusEl.style.color = 'var(--danger)';
-    statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Please fill in your address details first.';
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Locating...';
-  statusEl.style.display = 'block';
-  statusEl.style.color = 'var(--text-secondary)';
-  statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Searching for location...';
-  fetch('/api/geocode/?q=' + encodeURIComponent(combined))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.latitude && data.longitude) {
-        document.getElementById(latId).value = data.latitude;
-        document.getElementById(lngId).value = data.longitude;
-        statusEl.style.color = 'var(--rdr-green)';
-        statusEl.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> <strong>Location confirmed!</strong>';
-        Toast.show('Location confirmed!', 'success');
-      } else {
-        statusEl.style.color = 'var(--danger)';
-        statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> We couldn\'t confirm this address. Please check and try again.';
-      }
-    })
-    .catch(function() {
-      statusEl.style.color = 'var(--danger)';
-      statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Location service unavailable. Please try again.';
-    })
-    .finally(function() {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-crosshairs me-1"></i> Confirm';
-    });
+function editAddrUseCurrentLocation() {
+  LocationPicker.getCurrentLocation({
+    latInputId: 'edit-addr-latitude', lngInputId: 'edit-addr-longitude',
+    statusId: 'edit-location-status', badgeId: 'edit-location-badge',
+    actionsId: 'edit-location-actions',
+    state: document.getElementById('edit-addr-state').value,
+  });
 }
-
-function confirmNewAddressLocation() {
-  confirmAddressLocation('new-addr', 'new-location-status', 'new-addr-latitude', 'new-addr-longitude', 'new-confirm-location-btn');
-}
-
-function confirmEditAddressLocation() {
-  confirmAddressLocation('edit-addr', 'edit-location-status', 'edit-addr-latitude', 'edit-addr-longitude', 'edit-confirm-location-btn');
+function editAddrOpenMap() {
+  LocationPicker.open({
+    containerId: 'edit-map-container',
+    latInputId: 'edit-addr-latitude', lngInputId: 'edit-addr-longitude',
+    statusId: 'edit-location-status', badgeId: 'edit-location-badge',
+    actionsId: 'edit-location-actions',
+    defaultLat: parseFloat(document.getElementById('edit-addr-latitude').value) || null,
+    defaultLng: parseFloat(document.getElementById('edit-addr-longitude').value) || null,
+    state: document.getElementById('edit-addr-state').value,
+  });
 }
 </script>
 {% endblock %}

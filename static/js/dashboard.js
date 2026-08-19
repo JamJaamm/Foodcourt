@@ -284,12 +284,22 @@ window.editAddressCard = function(id) {
   document.getElementById('edit-addr-city').value = addr.city || '';
   document.getElementById('edit-addr-latitude').value = addr.latitude || '';
   document.getElementById('edit-addr-longitude').value = addr.longitude || '';
-  const editLocBadge = document.getElementById('edit-location-badge');
+  var editLocBadge = document.getElementById('edit-location-badge');
   if (editLocBadge) {
-    editLocBadge.innerHTML = addr.location_confirmed
-      ? '<span style="font-size:11px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:2px 8px;border-radius:10px;">✓ Confirmed</span>'
-      : '<span style="font-size:11px;color:var(--danger);background:#ffebee;padding:2px 8px;border-radius:10px;">⚠ Not confirmed</span>';
+    if (addr.location_confirmed) {
+      editLocBadge.innerHTML = '<span style="font-size:11px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:2px 8px;border-radius:10px;">✓ Location selected</span>';
+    } else if (addr.latitude && addr.longitude) {
+      editLocBadge.innerHTML = '<span style="font-size:11px;color:#f9a825;background:rgba(249,168,37,.12);padding:2px 8px;border-radius:10px;">⚠ Not confirmed</span>';
+    } else {
+      editLocBadge.innerHTML = '<span style="font-size:11px;color:var(--danger);background:#ffebee;padding:2px 8px;border-radius:10px;">⚠ Not selected</span>';
+    }
   }
+  var editLocActions = document.getElementById('edit-location-actions');
+  if (editLocActions) editLocActions.style.display = 'flex';
+  var editMapContainer = document.getElementById('edit-map-container');
+  if (editMapContainer) { editMapContainer.style.display = 'none'; editMapContainer.innerHTML = ''; }
+  var editLocStatus = document.getElementById('edit-location-status');
+  if (editLocStatus) editLocStatus.style.display = 'none';
   populateCountries(document.getElementById('edit-addr-country'), addr.country || '').then(function() {
     populateStates(addr.country || '', document.getElementById('edit-addr-state'), addr.state || '').then(function() {
       populateLGAs(addr.state || '', document.getElementById('edit-addr-lga'), addr.lga || '');

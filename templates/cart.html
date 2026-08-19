@@ -121,12 +121,19 @@
                 <div class="d-flex align-items-center justify-content-between">
                   <div class="d-flex align-items-center gap-2">
                     <span>📍</span>
-                    <span style="font-size:13px;font-weight:600;">Confirm Delivery Location</span>
+                    <span style="font-size:13px;font-weight:600;">Location</span>
+                    <span id="naddr-location-badge"></span>
                   </div>
-                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="naddr-confirm-location-btn" onclick="confirmCartAddressLocation()" style="font-size:12px;padding:4px 12px;">
-                    <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+                </div>
+                <div id="naddr-location-actions" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="cartUseCurrentLocation()" style="font-size:12px;padding:6px 14px;">
+                    <i class="fa-solid fa-location-crosshairs me-1"></i> Use My Current Location
+                  </button>
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="cartOpenMap()" style="font-size:12px;padding:6px 14px;">
+                    <i class="fa-solid fa-map me-1"></i> Select on Map
                   </button>
                 </div>
+                <div id="naddr-map-container" style="margin-top:10px;display:none;"></div>
                 <div id="naddr-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
                 <input type="hidden" id="naddr-latitude" value="">
                 <input type="hidden" id="naddr-longitude" value="">
@@ -261,6 +268,7 @@ window.FOODCOURT_USER = {
 {{ user_addresses_json|json_script:"db-user-addresses" }}
 {{ coupons_json|json_script:"db-promo-data" }}
 <script src="{% static 'js/locations_data.js' %}"></script>
+<script src="{% static 'js/map-picker.js' %}"></script>
 <script src="{% static 'js/cart.js' %}?v=5"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -268,56 +276,24 @@ document.addEventListener('DOMContentLoaded', function() {
   setupStateLGACascade('naddr-state', 'naddr-lga', '', '');
 });
 
-function confirmCartAddressLocation() {
-  var btn = document.getElementById('naddr-confirm-location-btn');
-  var statusEl = document.getElementById('naddr-location-status');
-  var parts = [];
-  var street = document.getElementById('naddr-street').value.trim();
-  var landmark = document.getElementById('naddr-landmark').value.trim();
-  var lga = document.getElementById('naddr-lga').value.trim();
-  var city = document.getElementById('naddr-city').value.trim();
-  var state = document.getElementById('naddr-state').value.trim();
-  var country = document.getElementById('naddr-country').value.trim();
-  if (street) parts.push(street);
-  if (landmark) parts.push('Near ' + landmark);
-  if (lga) parts.push(lga);
-  if (city) parts.push(city);
-  if (state) parts.push(state);
-  if (country) parts.push(country);
-  var combined = parts.join(', ');
-  if (!combined || combined.length < 10) {
-    statusEl.style.display = 'block';
-    statusEl.style.color = 'var(--danger)';
-    statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Please fill in your address details first.';
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Locating...';
-  statusEl.style.display = 'block';
-  statusEl.style.color = 'var(--text-secondary)';
-  statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Searching for location...';
-  fetch('/api/geocode/?q=' + encodeURIComponent(combined))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.latitude && data.longitude) {
-        document.getElementById('naddr-latitude').value = data.latitude;
-        document.getElementById('naddr-longitude').value = data.longitude;
-        statusEl.style.color = 'var(--rdr-green)';
-        statusEl.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> <strong>Location confirmed!</strong>';
-        Toast.show('Location confirmed!', 'success');
-      } else {
-        statusEl.style.color = 'var(--danger)';
-        statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> We couldn\'t confirm this address. Please check and try again.';
-      }
-    })
-    .catch(function() {
-      statusEl.style.color = 'var(--danger)';
-      statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Location service unavailable. Please try again.';
-    })
-    .finally(function() {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-crosshairs me-1"></i> Confirm';
-    });
+function cartUseCurrentLocation() {
+  LocationPicker.getCurrentLocation({
+    latInputId: 'naddr-latitude', lngInputId: 'naddr-longitude',
+    statusId: 'naddr-location-status', badgeId: 'naddr-location-badge',
+    actionsId: 'naddr-location-actions',
+    state: document.getElementById('naddr-state').value,
+  });
+}
+function cartOpenMap() {
+  LocationPicker.open({
+    containerId: 'naddr-map-container',
+    latInputId: 'naddr-latitude', lngInputId: 'naddr-longitude',
+    statusId: 'naddr-location-status', badgeId: 'naddr-location-badge',
+    actionsId: 'naddr-location-actions',
+    defaultLat: parseFloat(document.getElementById('naddr-latitude').value) || null,
+    defaultLng: parseFloat(document.getElementById('naddr-longitude').value) || null,
+    state: document.getElementById('naddr-state').value,
+  });
 }
 </script>
 {% endblock %}
