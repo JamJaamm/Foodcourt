@@ -1,12 +1,14 @@
 /**
- * Location data service — fetches countries & states from Django API
+ * Location data service — fetches countries, states & LGAs from Django API
  * backed by pycountry + nigeria_states_lgas.
  *
- * Provides: populateCountries(), populateStates(), setupCountryStateCascade()
+ * Provides: populateCountries(), populateStates(), populateLGAs(),
+ *           setupCountryStateCascade(), setupStateLGACascade()
  */
 (function() {
   var _data = null;
   var _promise = null;
+  var _ngLgas = {};
 
   function fetchLocations() {
     if (_data) return Promise.resolve(_data);
@@ -15,8 +17,22 @@
       .then(function(r) { return r.json(); })
       .then(function(json) {
         _data = {};
+        _ngLgas = {};
         (json.countries || []).forEach(function(c) {
-          _data[c.name] = c.states || [];
+          if (c.name === 'Nigeria') {
+            var stateNames = [];
+            (c.states || []).forEach(function(s) {
+              if (typeof s === 'object') {
+                stateNames.push(s.name);
+                _ngLgas[s.name] = s.lgas || [];
+              } else {
+                stateNames.push(s);
+              }
+            });
+            _data['Nigeria'] = stateNames;
+          } else {
+            _data[c.name] = c.states || [];
+          }
         });
         return _data;
       })
@@ -76,6 +92,39 @@
     });
   }
 
+  function populateLGAs(state, lgaSelect, currentValue) {
+    if (!lgaSelect) return Promise.resolve();
+    lgaSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+    return fetchLocations().then(function() {
+      var lgas = _ngLgas[state] || [];
+      lgaSelect.innerHTML = '';
+      if (lgas.length === 0) {
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- No LGAs available --';
+        opt.disabled = true;
+        lgaSelect.appendChild(opt);
+        return;
+      }
+      var defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'Select LGA';
+      defaultOpt.disabled = true;
+      lgaSelect.appendChild(defaultOpt);
+      lgas.forEach(function(l) {
+        var o = document.createElement('option');
+        o.value = l;
+        o.textContent = l;
+        lgaSelect.appendChild(o);
+      });
+      if (currentValue && lgas.indexOf(currentValue) !== -1) {
+        lgaSelect.value = currentValue;
+      } else {
+        lgaSelect.selectedIndex = 0;
+      }
+    });
+  }
+
   function setupCountryStateCascade(countryId, stateId, currentStateValue, currentCountryValue) {
     var countryEl = document.getElementById(countryId);
     var stateEl = document.getElementById(stateId);
@@ -90,7 +139,23 @@
     });
   }
 
+  function setupStateLGACascade(stateId, lgaId, currentLgaValue, currentStateValue) {
+    var stateEl = document.getElementById(stateId);
+    var lgaEl = document.getElementById(lgaId);
+    if (!stateEl || !lgaEl) return;
+
+    if (currentStateValue) {
+      populateLGAs(currentStateValue, lgaEl, currentLgaValue);
+    }
+
+    stateEl.addEventListener('change', function() {
+      populateLGAs(this.value, lgaEl, '');
+    });
+  }
+
   window.populateCountries = populateCountries;
   window.populateStates = populateStates;
+  window.populateLGAs = populateLGAs;
   window.setupCountryStateCascade = setupCountryStateCascade;
+  window.setupStateLGACascade = setupStateLGACascade;
 })();

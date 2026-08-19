@@ -122,7 +122,7 @@
         </div>
 
         <div class="row g-2 mb-3">
-          <div class="col-6">
+          <div class="col-4">
             <div class="auth-form-group">
               <i class="fa-solid fa-map auth-input-icon"></i>
               <select class="auth-input" name="state" id="reg-state" style="padding-left:40px;" required>
@@ -130,7 +130,15 @@
               </select>
             </div>
           </div>
-          <div class="col-6">
+          <div class="col-4">
+            <div class="auth-form-group">
+              <i class="fa-solid fa-map auth-input-icon"></i>
+              <select class="auth-input" name="lga" id="reg-lga" style="padding-left:40px;" required>
+                <option value="" disabled selected>Select LGA</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-4">
             <div class="auth-form-group">
               <input type="text" class="auth-input" name="city" id="reg-city" placeholder="City" value="{{ form_data.city|default:'' }}" required style="padding-left:16px;">
             </div>
@@ -220,6 +228,7 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     setupCountryStateCascade('reg-country', 'reg-state', '{{ form_data.state|default:"" }}', '{{ form_data.country|default:"Nigeria" }}');
+    setupStateLGACascade('reg-state', 'reg-lga', '{{ form_data.lga|default:"" }}', '{{ form_data.state|default:"" }}');
   });
 
   function togglePasswordVisibility(inputId, btn) {
@@ -241,12 +250,14 @@
     const landmark = document.getElementById('reg-landmark').value.trim();
     const city = document.getElementById('reg-city').value.trim();
     const state = document.getElementById('reg-state').value.trim();
+    const lga = document.getElementById('reg-lga').value.trim();
     const country = document.getElementById('reg-country').value.trim();
     if (street) parts.push(street);
     if (area) parts.push(area);
     if (landmark) parts.push('Near ' + landmark);
     if (city) parts.push(city);
     if (state) parts.push(state);
+    if (lga) parts.push(lga);
     if (country) parts.push(country);
     return parts.join(', ');
   }

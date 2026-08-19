@@ -313,16 +313,22 @@ function renderSavedAddresses() {
     const parts = [];
     if (addr.street) parts.push(addr.street);
     if (addr.landmark) parts.push(`Near ${addr.landmark}`);
+    if (addr.lga) parts.push(addr.lga);
     if (addr.city) parts.push(addr.city);
     if (addr.state) parts.push(addr.state);
     const detailLine = parts.join(', ') || addr.address || '';
+    const locBadge = addr.location_confirmed
+      ? '<span style="font-size:10px;color:var(--rdr-green);margin-left:6px;">✓ Location confirmed</span>'
+      : (addr.latitude && addr.longitude
+        ? '<span style="font-size:10px;color:#f9a825;margin-left:6px;">⚠ Unconfirmed</span>'
+        : '<span style="font-size:10px;color:var(--danger);margin-left:6px;">⚠ No location</span>');
     return `
       <div class="address-option-card ${isActive ? 'active' : ''}" 
            onclick="selectAddressCard(${addr.id})"
            id="address-card-${addr.id}">
         <input type="radio" name="saved-address-radio" class="address-option-radio" ${isActive ? 'checked' : ''}>
         <div>
-          <strong style="color:var(--text-primary)"><i class="fa-solid ${icon} me-1"></i> ${addr.label}</strong>
+          <strong style="color:var(--text-primary)"><i class="fa-solid ${icon} me-1"></i> ${addr.label}${locBadge}</strong>
           <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;line-height:1.5;">${detailLine}</div>
           ${addr.phone ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><i class="fa-solid fa-phone me-1"></i>${addr.phone}</div>` : ''}
         </div>
@@ -373,10 +379,13 @@ window.saveNewAddressFromCart = function() {
     label: label,
     street: street,
     landmark: document.getElementById('naddr-landmark').value.trim(),
+    lga: document.getElementById('naddr-lga').value.trim(),
     city: document.getElementById('naddr-city').value.trim(),
     state: document.getElementById('naddr-state').value.trim(),
     country: document.getElementById('naddr-country').value.trim(),
     phone: document.getElementById('naddr-phone').value.trim(),
+    latitude: document.getElementById('naddr-latitude').value.trim(),
+    longitude: document.getElementById('naddr-longitude').value.trim(),
   };
 
   const btn = document.getElementById('naddr-save-btn');

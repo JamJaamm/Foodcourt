@@ -491,6 +491,7 @@
 
             <div style="grid-column:span 2"><label>Country</label><select id="set-country" style="width:100%;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--border);font-size:14px;"></select></div>
             <div><label>State</label><select id="set-state" style="width:100%;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--border);font-size:14px;"><option value="" disabled>Select State / Region</option></select></div>
+            <div><label>LGA</label><select id="set-lga" style="width:100%;padding:10px 12px;border-radius:var(--radius-md);border:1px solid var(--border);font-size:14px;"><option value="" disabled>Select LGA</option></select></div>
             <div><label>City</label><input type="text" id="set-city" value="{{ restaurant.city }}"></div>
             <div style="grid-column:span 2"><label>Area / Locality</label><input type="text" id="set-area" value="{{ restaurant.area }}" placeholder="e.g. Lekki Phase 1"></div>
             <div style="grid-column:span 2"><label>Street Address</label><input type="text" id="set-street" value="{{ restaurant.street_address }}" placeholder="e.g. 12 Admiralty Way"></div>
@@ -502,6 +503,7 @@
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="font-size:14px;">📍</span>
                   <span style="font-size:13px;font-weight:600;">Restaurant Location</span>
+                  {% if restaurant.lga %}<span style="font-size:12px;color:var(--text-secondary);font-weight:400;">&mdash; {{ restaurant.lga }}</span>{% endif %}
                   {% if restaurant.has_coordinates %}
                   <span style="font-size:11px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:2px 8px;border-radius:10px;">✓ Confirmed</span>
                   {% else %}
@@ -558,6 +560,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setupCountryStateCascade('set-country', 'set-state', '{{ restaurant.state|default:"" }}', '{{ restaurant.country|default:"Nigeria" }}');
+  setupStateLGACascade('set-state', 'set-lga', '{{ restaurant.lga|default:"" }}', '{{ restaurant.state|default:"" }}');
 });
 
 const CSRF_TOKEN = getCookie('csrftoken');
@@ -810,12 +813,14 @@ function buildSettingsAddress(){
   const landmark=document.getElementById('set-landmark').value.trim();
   const city=document.getElementById('set-city').value.trim();
   const state=document.getElementById('set-state').value.trim();
+  const lga=document.getElementById('set-lga').value.trim();
   const country=document.getElementById('set-country').value.trim();
   if(street)parts.push(street);
   if(area)parts.push(area);
   if(landmark)parts.push('Near '+landmark);
   if(city)parts.push(city);
   if(state)parts.push(state);
+  if(lga)parts.push(lga);
   if(country)parts.push(country);
   return parts.join(', ');
 }
@@ -866,6 +871,7 @@ function saveSettings(e){
   formData.append('address',combined);
   formData.append('country',document.getElementById('set-country').value);
   formData.append('state',document.getElementById('set-state').value);
+  formData.append('lga',document.getElementById('set-lga').value);
   formData.append('city',document.getElementById('set-city').value);
   formData.append('area',document.getElementById('set-area').value);
   formData.append('street_address',document.getElementById('set-street').value);

@@ -172,20 +172,40 @@
                 <input type="text" id="new-addr-landmark" class="auth-input" placeholder="E.g. Near Central Park, Opposite City Mall" style="padding:12px 16px;">
               </div>
               <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label class="addr-form-label">City</label>
-                  <input type="text" id="new-addr-city" class="auth-input" placeholder="City" required style="padding:12px 16px;">
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="addr-form-label">State</label>
                   <select id="new-addr-state" class="auth-input" required style="padding:12px 16px;">
-                    <option value="" disabled selected>Select State / Region</option>
+                    <option value="" disabled selected>Select State</option>
                   </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="addr-form-label">LGA</label>
+                  <select id="new-addr-lga" class="auth-input" style="padding:12px 16px;">
+                    <option value="" disabled selected>Select LGA</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="addr-form-label">City</label>
+                  <input type="text" id="new-addr-city" class="auth-input" placeholder="City" style="padding:12px 16px;">
                 </div>
               </div>
               <div class="mb-3">
                 <label class="addr-form-label">Country</label>
                 <select id="new-addr-country" class="auth-input" required style="padding:12px 16px;"></select>
+              </div>
+              <div class="mt-3 p-3" style="background:var(--bg-secondary);border-radius:12px;">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center gap-2">
+                    <span>📍</span>
+                    <span style="font-size:13px;font-weight:600;">Confirm Delivery Location</span>
+                  </div>
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="new-confirm-location-btn" onclick="confirmNewAddressLocation()" style="font-size:12px;padding:4px 12px;">
+                    <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+                  </button>
+                </div>
+                <div id="new-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
+                <input type="hidden" id="new-addr-latitude" value="">
+                <input type="hidden" id="new-addr-longitude" value="">
               </div>
               <div class="d-flex justify-content-end gap-2 mt-4">
                 <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="toggleAddAddressForm()">Cancel</button>
@@ -222,20 +242,41 @@
                 <input type="text" id="edit-addr-landmark" class="auth-input" placeholder="E.g. Near Central Park, Opposite City Mall" style="padding:12px 16px;">
               </div>
               <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label class="addr-form-label">City</label>
-                  <input type="text" id="edit-addr-city" class="auth-input" placeholder="City" required style="padding:12px 16px;">
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="addr-form-label">State</label>
                   <select id="edit-addr-state" class="auth-input" required style="padding:12px 16px;">
-                    <option value="" disabled selected>Select State / Region</option>
+                    <option value="" disabled selected>Select State</option>
                   </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="addr-form-label">LGA</label>
+                  <select id="edit-addr-lga" class="auth-input" style="padding:12px 16px;">
+                    <option value="" disabled selected>Select LGA</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="addr-form-label">City</label>
+                  <input type="text" id="edit-addr-city" class="auth-input" placeholder="City" style="padding:12px 16px;">
                 </div>
               </div>
               <div class="mb-3">
                 <label class="addr-form-label">Country</label>
                 <select id="edit-addr-country" class="auth-input" required style="padding:12px 16px;"></select>
+              </div>
+              <div class="mt-3 p-3" style="background:var(--bg-secondary);border-radius:12px;">
+                <div class="d-flex align-items-center justify-content-between">
+                  <div class="d-flex align-items-center gap-2">
+                    <span>📍</span>
+                    <span style="font-size:13px;font-weight:600;">Confirm Delivery Location</span>
+                    <span id="edit-location-badge"></span>
+                  </div>
+                  <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" id="edit-confirm-location-btn" onclick="confirmEditAddressLocation()" style="font-size:12px;padding:4px 12px;">
+                    <i class="fa-solid fa-crosshairs me-1"></i> Confirm
+                  </button>
+                </div>
+                <div id="edit-location-status" style="font-size:12px;margin-top:8px;display:none;"></div>
+                <input type="hidden" id="edit-addr-latitude" value="">
+                <input type="hidden" id="edit-addr-longitude" value="">
               </div>
               <div class="d-flex justify-content-end gap-2 mt-4">
                 <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="toggleEditAddressForm()">Cancel</button>
@@ -351,6 +392,71 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setupCountryStateCascade('new-addr-country', 'new-addr-state', '', 'Nigeria');
+  setupStateLGACascade('new-addr-state', 'new-addr-lga', '', '');
 });
+
+function buildAddressString(prefix) {
+  var parts = [];
+  var street = (document.getElementById(prefix + '-street') || {}).value || '';
+  var landmark = (document.getElementById(prefix + '-landmark') || {}).value || '';
+  var lga = (document.getElementById(prefix + '-lga') || {}).value || '';
+  var city = (document.getElementById(prefix + '-city') || {}).value || '';
+  var state = (document.getElementById(prefix + '-state') || {}).value || '';
+  var country = (document.getElementById(prefix + '-country') || {}).value || '';
+  if (street) parts.push(street.trim());
+  if (landmark) parts.push('Near ' + landmark.trim());
+  if (lga) parts.push(lga.trim());
+  if (city) parts.push(city.trim());
+  if (state) parts.push(state.trim());
+  if (country) parts.push(country.trim());
+  return parts.join(', ');
+}
+
+function confirmAddressLocation(prefix, statusId, latId, lngId, btnId) {
+  var btn = document.getElementById(btnId);
+  var statusEl = document.getElementById(statusId);
+  var combined = buildAddressString(prefix);
+  if (!combined || combined.length < 10) {
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--danger)';
+    statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Please fill in your address details first.';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Locating...';
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--text-secondary)';
+  statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Searching for location...';
+  fetch('/api/geocode/?q=' + encodeURIComponent(combined))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.latitude && data.longitude) {
+        document.getElementById(latId).value = data.latitude;
+        document.getElementById(lngId).value = data.longitude;
+        statusEl.style.color = 'var(--rdr-green)';
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> <strong>Location confirmed!</strong>';
+        Toast.show('Location confirmed!', 'success');
+      } else {
+        statusEl.style.color = 'var(--danger)';
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> We couldn\'t confirm this address. Please check and try again.';
+      }
+    })
+    .catch(function() {
+      statusEl.style.color = 'var(--danger)';
+      statusEl.innerHTML = '<i class="fa-solid fa-circle-exclamation me-1"></i> Location service unavailable. Please try again.';
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-crosshairs me-1"></i> Confirm';
+    });
+}
+
+function confirmNewAddressLocation() {
+  confirmAddressLocation('new-addr', 'new-location-status', 'new-addr-latitude', 'new-addr-longitude', 'new-confirm-location-btn');
+}
+
+function confirmEditAddressLocation() {
+  confirmAddressLocation('edit-addr', 'edit-location-status', 'edit-addr-latitude', 'edit-addr-longitude', 'edit-confirm-location-btn');
+}
 </script>
 {% endblock %}

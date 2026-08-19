@@ -174,19 +174,27 @@ function renderAddresses() {
   container.innerHTML = list.map(addr => {
     const icon = addr.label && addr.label.toLowerCase().includes('work') ? 'fa-building' : 'fa-house';
     const landmarkHtml = addr.landmark ? `<div class="addr-detail-line"><i class="fa-solid fa-location-dot"></i><span>Near ${addr.landmark}</span></div>` : '';
+    const lgaLine = addr.lga ? `<div class="addr-detail-line"><i class="fa-solid fa-map-location-dot"></i><span>${addr.lga}</span></div>` : '';
     const cityState = [addr.city, addr.state].filter(Boolean).join(', ');
     const countryHtml = addr.country ? `<div class="addr-detail-line"><i class="fa-solid fa-globe"></i><span>${addr.country}</span></div>` : '';
     const phoneHtml = addr.phone ? `<div class="addr-detail-line"><i class="fa-solid fa-phone"></i><span>${addr.phone}</span></div>` : '';
+    const locBadge = addr.location_confirmed
+      ? '<span style="font-size:10px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:1px 6px;border-radius:8px;margin-left:6px;">✓ Confirmed</span>'
+      : (addr.latitude && addr.longitude
+        ? '<span style="font-size:10px;color:#f9a825;background:#fff8e1;padding:1px 6px;border-radius:8px;margin-left:6px;">⚠ Unconfirmed</span>'
+        : '<span style="font-size:10px;color:var(--danger);background:#ffebee;padding:1px 6px;border-radius:8px;margin-left:6px;">⚠ No location</span>');
     return `
     <div class="db-address-card reveal" id="db-addr-${addr.id}">
       <div class="db-address-header">
         <span class="db-address-label">
           <i class="fa-solid ${icon} text-primary"></i> ${addr.label}
           ${addr.is_default ? '<span class="fc-badge fc-badge-accent text-xxs scale-90" style="padding:1px 6px;">Default</span>' : ''}
+          ${locBadge}
         </span>
       </div>
       <div class="addr-detail-line"><i class="fa-solid fa-house"></i><span>${addr.street}</span></div>
       ${landmarkHtml}
+      ${lgaLine}
       <div class="addr-detail-line"><i class="fa-solid fa-city"></i><span>${cityState || addr.city}</span></div>
       ${countryHtml}
       ${phoneHtml}
@@ -218,10 +226,13 @@ window.saveNewAddress = function(event) {
     label: document.getElementById('new-addr-label').value,
     street: document.getElementById('new-addr-street').value.trim(),
     landmark: document.getElementById('new-addr-landmark').value.trim(),
+    lga: document.getElementById('new-addr-lga').value.trim(),
     city: document.getElementById('new-addr-city').value.trim(),
     state: document.getElementById('new-addr-state').value.trim(),
     country: document.getElementById('new-addr-country').value.trim(),
     phone: document.getElementById('new-addr-phone').value.trim(),
+    latitude: document.getElementById('new-addr-latitude').value.trim(),
+    longitude: document.getElementById('new-addr-longitude').value.trim(),
   };
   if (!data.label || !data.street) { Toast.show('Label and street address are required', 'error'); return; }
 
@@ -269,8 +280,18 @@ window.editAddressCard = function(id) {
   document.getElementById('edit-addr-street').value = addr.street || '';
   document.getElementById('edit-addr-landmark').value = addr.landmark || '';
   document.getElementById('edit-addr-city').value = addr.city || '';
+  document.getElementById('edit-addr-latitude').value = addr.latitude || '';
+  document.getElementById('edit-addr-longitude').value = addr.longitude || '';
+  const editLocBadge = document.getElementById('edit-location-badge');
+  if (editLocBadge) {
+    editLocBadge.innerHTML = addr.location_confirmed
+      ? '<span style="font-size:11px;color:var(--rdr-green);background:var(--rdr-green-subtle);padding:2px 8px;border-radius:10px;">✓ Confirmed</span>'
+      : '<span style="font-size:11px;color:var(--danger);background:#ffebee;padding:2px 8px;border-radius:10px;">⚠ Not confirmed</span>';
+  }
   populateCountries(document.getElementById('edit-addr-country'), addr.country || '').then(function() {
-    populateStates(addr.country || '', document.getElementById('edit-addr-state'), addr.state || '');
+    populateStates(addr.country || '', document.getElementById('edit-addr-state'), addr.state || '').then(function() {
+      populateLGAs(addr.state || '', document.getElementById('edit-addr-lga'), addr.lga || '');
+    });
   });
   document.getElementById('edit-addr-phone').value = addr.phone || '';
 
@@ -294,10 +315,13 @@ window.saveEditAddress = function(event) {
     label: document.getElementById('edit-addr-label').value,
     street: document.getElementById('edit-addr-street').value.trim(),
     landmark: document.getElementById('edit-addr-landmark').value.trim(),
+    lga: document.getElementById('edit-addr-lga').value.trim(),
     city: document.getElementById('edit-addr-city').value.trim(),
     state: document.getElementById('edit-addr-state').value.trim(),
     country: document.getElementById('edit-addr-country').value.trim(),
     phone: document.getElementById('edit-addr-phone').value.trim(),
+    latitude: document.getElementById('edit-addr-latitude').value.trim(),
+    longitude: document.getElementById('edit-addr-longitude').value.trim(),
   };
   if (!data.label || !data.street || !id) { Toast.show('Label and street address are required', 'error'); return; }
 

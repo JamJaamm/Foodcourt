@@ -245,6 +245,7 @@ def restaurant_register_view(request):
 
         country = request.POST.get('country', 'Nigeria').strip()
         state = request.POST.get('state', '').strip()
+        lga = request.POST.get('lga', '').strip()
         city = request.POST.get('city', '').strip()
         area = request.POST.get('area', '').strip()
         street_address = request.POST.get('street_address', '').strip()
@@ -264,6 +265,7 @@ def restaurant_register_view(request):
             'restaurant_email': rest_email,
             'country': country,
             'state': state,
+            'lga': lga,
             'city': city,
             'area': area,
             'street_address': street_address,
@@ -319,6 +321,7 @@ def restaurant_register_view(request):
                 except (InvalidOperation, ValueError):
                     lng_val = None
 
+            loc_confirmed = bool(lat_val and lng_val)
             Restaurant.objects.create(
                 owner=user,
                 name=rest_name,
@@ -326,12 +329,14 @@ def restaurant_register_view(request):
                 address=address,
                 country=country,
                 state=state,
+                lga=lga,
                 city=city,
                 area=area,
                 street_address=street_address,
                 landmark=landmark,
                 latitude=lat_val,
                 longitude=lng_val,
+                location_confirmed=loc_confirmed,
                 phone=rest_phone or phone,
                 email=rest_email or email,
             )
@@ -1392,6 +1397,9 @@ def admin_dashboard_view(request, section=None):
                 'latitude': float(r.latitude) if r.latitude is not None else None,
                 'longitude': float(r.longitude) if r.longitude is not None else None,
                 'has_coordinates': r.has_coordinates,
+                'lga': r.lga or '—',
+                'state': r.state or '—',
+                'location_confirmed': r.location_confirmed,
                 'owner': r.owner.get_full_name() or r.owner.username,
                 'owner_email': r.owner.email,
                 'rating': float(r.rating or 0),
@@ -1909,16 +1917,16 @@ def geocode_api(request):
 def locations_api(request):
     """
     AJAX endpoint: return countries and their states/regions.
-    Nigeria uses nigeria_states_lgas for accurate state data.
+    Nigeria uses nigeria_states_lgas for accurate state + LGA data.
     All other countries use pycountry subdivisions.
     Cached in-memory after first call.
     """
     from django.core.cache import cache
-    cached = cache.get('locations_data')
+    cached = cache.get('locations_data_v2')
     if cached:
         return JsonResponse(cached)
 
-    from nigeria_states_lgas import get_states as get_ng_states
+    from nigeria_states_lgas import get_states as get_ng_states, get_lgas as get_ng_lgas
     import pycountry
 
     priority_order = [
@@ -1927,6 +1935,14 @@ def locations_api(request):
     ]
 
     ng_states = sorted(get_ng_states())
+
+    ng_lgas = {}
+    for state_name in ng_states:
+        try:
+            lgas = get_ng_lgas(state_name)
+            ng_lgas[state_name] = sorted(lgas) if lgas else []
+        except Exception:
+            ng_lgas[state_name] = []
 
     countries_map = {}
     for c in pycountry.countries:
@@ -1944,8 +1960,8 @@ def locations_api(request):
 
     result_countries = []
 
-    ng_code = countries_map.get('Nigeria', 'NG')
-    result_countries.append({'name': 'Nigeria', 'states': ng_states})
+    ng_state_dicts = [{'name': s, 'lgas': ng_lgas.get(s, [])} for s in ng_states]
+    result_countries.append({'name': 'Nigeria', 'states': ng_state_dicts})
 
     for cname in priority_order:
         if cname == 'Nigeria':
@@ -1962,7 +1978,7 @@ def locations_api(request):
         result_countries.append({'name': cname, 'states': states})
 
     data = {'countries': result_countries}
-    cache.set('locations_data', data, 3600)
+    cache.set('locations_data_v2', data, 3600)
     return JsonResponse(data)
 
 
@@ -2238,10 +2254,11 @@ def address_api(request):
             result.append({
                 'id': a.id, 'label': a.label, 'address': a.full_address,
                 'street': a.street, 'landmark': a.landmark,
-                'city': a.city, 'state': a.state, 'country': a.country,
+                'lga': a.lga, 'city': a.city, 'state': a.state, 'country': a.country,
                 'phone': a.phone, 'is_default': a.is_default,
                 'latitude': float(a.latitude) if a.latitude is not None else None,
                 'longitude': float(a.longitude) if a.longitude is not None else None,
+                'location_confirmed': a.location_confirmed,
             })
         return JsonResponse({'addresses': result})
 
@@ -2260,15 +2277,18 @@ def address_api(request):
                 return JsonResponse({'error': 'Label and street address are required'}, status=400)
             lat_val = data.get('latitude')
             lng_val = data.get('longitude')
+            loc_confirmed = bool(lat_val and lng_val)
             addr = Address.objects.create(
                 user=request.user, label=label, street=street,
                 landmark=data.get('landmark', '').strip(),
+                lga=data.get('lga', '').strip(),
                 city=data.get('city', '').strip(),
                 state=data.get('state', '').strip(),
                 country=data.get('country', '').strip(),
                 phone=data.get('phone', '').strip(),
                 latitude=Decimal(str(lat_val)) if lat_val not in (None, '') else None,
                 longitude=Decimal(str(lng_val)) if lng_val not in (None, '') else None,
+                location_confirmed=loc_confirmed,
             )
             return JsonResponse({'success': True, 'id': addr.id, 'address': addr.full_address, 'is_default': addr.is_default})
 
@@ -2277,15 +2297,28 @@ def address_api(request):
                 addr = Address.objects.get(id=data.get('id'), user=request.user)
             except Address.DoesNotExist:
                 return JsonResponse({'error': 'Address not found'}, status=404)
+            address_fields_changed = False
             if data.get('label'):
                 addr.label = data['label'].strip()
             if data.get('street'):
+                if addr.street != data['street'].strip():
+                    address_fields_changed = True
                 addr.street = data['street'].strip()
             if 'landmark' in data:
+                if addr.landmark != data['landmark'].strip():
+                    address_fields_changed = True
                 addr.landmark = data['landmark'].strip()
+            if 'lga' in data:
+                if addr.lga != data['lga'].strip():
+                    address_fields_changed = True
+                addr.lga = data['lga'].strip()
             if 'city' in data:
+                if addr.city != data['city'].strip():
+                    address_fields_changed = True
                 addr.city = data['city'].strip()
             if 'state' in data:
+                if addr.state != data['state'].strip():
+                    address_fields_changed = True
                 addr.state = data['state'].strip()
             if 'country' in data:
                 addr.country = data['country'].strip()
@@ -2297,6 +2330,12 @@ def address_api(request):
             if 'longitude' in data:
                 val = data['longitude']
                 addr.longitude = Decimal(str(val)) if val not in (None, '') else None
+            if 'location_confirmed' in data:
+                addr.location_confirmed = bool(data['location_confirmed'])
+            if address_fields_changed:
+                addr.location_confirmed = False
+                addr.latitude = None
+                addr.longitude = None
             addr.save()
             return JsonResponse({'success': True, 'id': addr.id, 'address': addr.full_address, 'is_default': addr.is_default})
 
@@ -2652,16 +2691,30 @@ def restaurant_api_view(request):
 
     # === SETTINGS ===
     elif action == 'update_settings':
+        address_fields_changed = False
         for field in ['name', 'description', 'cuisine', 'address', 'phone', 'email', 'logo', 'cover_image',
-                       'delivery_fee', 'delivery_radius', 'tax_rate', 'min_order', 'is_open',
-                       'country', 'state', 'city', 'area', 'street_address', 'landmark']:
+                       'delivery_fee', 'delivery_radius', 'tax_rate', 'min_order', 'is_open']:
             if field in data: setattr(restaurant, field, data[field])
+        for addr_field in ['state', 'lga', 'city', 'area', 'street_address', 'landmark']:
+            if addr_field in data:
+                new_val = str(data[addr_field]).strip() if data[addr_field] else ''
+                if getattr(restaurant, addr_field, '') != new_val:
+                    address_fields_changed = True
+                setattr(restaurant, addr_field, new_val)
+        if 'country' in data:
+            restaurant.country = str(data['country']).strip() if data['country'] else ''
         if 'latitude' in data:
             val = data['latitude']
             restaurant.latitude = Decimal(str(val)) if val not in (None, '') else None
         if 'longitude' in data:
             val = data['longitude']
             restaurant.longitude = Decimal(str(val)) if val not in (None, '') else None
+        if 'location_confirmed' in data:
+            restaurant.location_confirmed = bool(data['location_confirmed'])
+        if address_fields_changed:
+            restaurant.location_confirmed = False
+            restaurant.latitude = None
+            restaurant.longitude = None
         if data.get('opening_time'): restaurant.opening_time = data['opening_time']
         if data.get('closing_time'): restaurant.closing_time = data['closing_time']
         if request.FILES.get('logo_file'):
@@ -2746,10 +2799,11 @@ def cart_view(request):
             addresses.append({
                 'id': a.id, 'label': a.label, 'address': a.full_address,
                 'street': a.street, 'landmark': a.landmark,
-                'city': a.city, 'state': a.state, 'country': a.country,
+                'lga': a.lga, 'city': a.city, 'state': a.state, 'country': a.country,
                 'phone': a.phone, 'is_default': a.is_default,
                 'latitude': float(a.latitude) if a.latitude is not None else None,
                 'longitude': float(a.longitude) if a.longitude is not None else None,
+                'location_confirmed': a.location_confirmed,
             })
     coupons = [{
         'code': c.code,

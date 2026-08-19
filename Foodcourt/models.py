@@ -80,12 +80,14 @@ class Address(models.Model):
     label = models.CharField(max_length=100)
     street = models.CharField(max_length=255, default='')
     landmark = models.CharField(max_length=255, blank=True, default='')
+    lga = models.CharField(max_length=100, blank=True, default='')
     city = models.CharField(max_length=100, default='')
     state = models.CharField(max_length=100, default='')
     country = models.CharField(max_length=100, default='')
     phone = models.CharField(max_length=20, blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_confirmed = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -95,6 +97,8 @@ class Address(models.Model):
         parts = [self.street]
         if self.landmark:
             parts.append(f"Near {self.landmark}")
+        if self.lga:
+            parts.append(self.lga)
         if self.city:
             parts.append(self.city)
         if self.state:
@@ -119,12 +123,14 @@ class Restaurant(models.Model):
     address = models.TextField(blank=True, default='')
     country = models.CharField(max_length=100, blank=True, default='Nigeria')
     state = models.CharField(max_length=100, blank=True, default='')
+    lga = models.CharField(max_length=100, blank=True, default='')
     city = models.CharField(max_length=100, blank=True, default='')
     area = models.CharField(max_length=100, blank=True, default='')
     street_address = models.CharField(max_length=255, blank=True, default='')
     landmark = models.CharField(max_length=255, blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_confirmed = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, blank=True, default='')
     email = models.EmailField(blank=True, default='')
     logo = models.URLField(blank=True, default='')

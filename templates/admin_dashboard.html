@@ -642,6 +642,7 @@
                   <td>
                     <div style="font-weight:700;">{{ r.name }}</div>
                     <div style="font-size:11px;color:var(--text-muted);">{{ r.address }}</div>
+                    {% if r.lga != '—' %}<div style="font-size:10px;color:var(--text-muted);">{{ r.lga }}, {{ r.state }}</div>{% endif %}
                   </td>
                   <td>{{ r.cuisine }}</td>
                   <td>
@@ -656,9 +657,10 @@
                     {% endif %}
                   </td>
                   <td>
-                    {% if r.latitude and r.longitude %}
-                    <span style="color:var(--rdr-green);font-size:11px;"><i class="fa-solid fa-check-circle me-1"></i>Set</span>
-                    <div style="font-size:10px;color:var(--text-muted);">{{ r.latitude|floatformat:4 }}, {{ r.longitude|floatformat:4 }}</div>
+                    {% if r.location_confirmed %}
+                    <span style="color:var(--rdr-green);font-size:11px;"><i class="fa-solid fa-check-circle me-1"></i>Confirmed</span>
+                    {% elif r.has_coordinates %}
+                    <span style="color:#f9a825;font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>Unconfirmed</span>
                     {% else %}
                     <span style="color:var(--danger);font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>Missing</span>
                     {% endif %}
@@ -674,7 +676,7 @@
                     <button class="fc-btn fc-btn-outline fc-btn-sm" onclick="openRestaurantLocationModal({{ r.id }}, '{{ r.name|escapejs }}', '{{ r.address|escapejs }}', '{{ r.latitude|default_if_none:'' }}', '{{ r.longitude|default_if_none:'' }}')" style="font-size:11px;padding:4px 10px;">
                       <i class="fa-solid fa-location-dot"></i> Location
                     </button>
-                    {% if r.has_coordinates %}
+                    {% if r.location_confirmed %}
                     <span style="font-size:10px;color:var(--rdr-green);margin-left:4px;">✓</span>
                     {% endif %}
                   </td>
