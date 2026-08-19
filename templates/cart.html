@@ -245,10 +245,7 @@ window.FOODCOURT_USER = {
 <script src="{% static 'js/cart.js' %}?v=5"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  populateCountries(document.getElementById('naddr-country'), 'Nigeria');
-  document.getElementById('naddr-country').addEventListener('change', function() {
-    populateStates(this.value, document.getElementById('naddr-state'), '');
-  });
+  setupCountryStateCascade('naddr-country', 'naddr-state', '', 'Nigeria');
 });
 </script>
 {% endblock %}

@@ -557,11 +557,7 @@
 <script src="{% static 'js/locations_data.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  populateCountries(document.getElementById('set-country'), '{{ restaurant.country|default:"Nigeria" }}');
-  populateStates(document.getElementById('set-country').value, document.getElementById('set-state'), '{{ restaurant.state|default:"" }}');
-  document.getElementById('set-country').addEventListener('change', function() {
-    populateStates(this.value, document.getElementById('set-state'), '');
-  });
+  setupCountryStateCascade('set-country', 'set-state', '{{ restaurant.state|default:"" }}', '{{ restaurant.country|default:"Nigeria" }}');
 });
 
 const CSRF_TOKEN = getCookie('csrftoken');

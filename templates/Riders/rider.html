@@ -792,10 +792,7 @@
 <script src="{% static 'js/locations_data.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  populateCountries(document.getElementById('rdrCountry'), 'Nigeria');
-  document.getElementById('rdrCountry').addEventListener('change', function() {
-    populateStates(this.value, document.getElementById('rdrState'), '');
-  });
+  setupCountryStateCascade('rdrCountry', 'rdrState', '', 'Nigeria');
 });
 </script>
 <script src="{% static 'js/rider.js' %}?v=5"></script>

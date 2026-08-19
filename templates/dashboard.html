@@ -350,10 +350,7 @@
 <script src="{% static 'js/dashboard.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  populateCountries(document.getElementById('new-addr-country'), 'Nigeria');
-  document.getElementById('new-addr-country').addEventListener('change', function() {
-    populateStates(this.value, document.getElementById('new-addr-state'), '');
-  });
+  setupCountryStateCascade('new-addr-country', 'new-addr-state', '', 'Nigeria');
 });
 </script>
 {% endblock %}

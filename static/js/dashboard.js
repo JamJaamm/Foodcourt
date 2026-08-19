@@ -269,8 +269,9 @@ window.editAddressCard = function(id) {
   document.getElementById('edit-addr-street').value = addr.street || '';
   document.getElementById('edit-addr-landmark').value = addr.landmark || '';
   document.getElementById('edit-addr-city').value = addr.city || '';
-  document.getElementById('edit-addr-country').value = addr.country || '';
-  populateStates(addr.country || '', document.getElementById('edit-addr-state'), addr.state || '');
+  populateCountries(document.getElementById('edit-addr-country'), addr.country || '').then(function() {
+    populateStates(addr.country || '', document.getElementById('edit-addr-state'), addr.state || '');
+  });
   document.getElementById('edit-addr-phone').value = addr.phone || '';
 
   const card = document.getElementById('edit-address-form-card');

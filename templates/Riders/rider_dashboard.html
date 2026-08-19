@@ -698,11 +698,7 @@
 <script src="{% static 'js/locations_data.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  populateCountries(document.getElementById('dash-country'), '{{ rider.country|default:"Nigeria" }}');
-  populateStates('{{ rider.country|default:"Nigeria" }}', document.getElementById('dash-state'), '{{ rider.state|default:"" }}');
-  document.getElementById('dash-country').addEventListener('change', function() {
-    populateStates(this.value, document.getElementById('dash-state'), '');
-  });
+  setupCountryStateCascade('dash-country', 'dash-state', '{{ rider.state|default:"" }}', '{{ rider.country|default:"Nigeria" }}');
 });
 </script>
 <script>

@@ -28,8 +28,8 @@
   }
 
   function populateCountries(countrySelect, currentValue) {
-    if (!countrySelect) return;
-    fetchLocations().then(function(data) {
+    if (!countrySelect) return Promise.resolve();
+    return fetchLocations().then(function(data) {
       countrySelect.innerHTML = '';
       Object.keys(data).forEach(function(c) {
         var o = document.createElement('option');
@@ -44,10 +44,11 @@
   }
 
   function populateStates(country, stateSelect, currentValue) {
-    if (!stateSelect) return;
-    stateSelect.innerHTML = '';
-    fetchLocations().then(function(data) {
+    if (!stateSelect) return Promise.resolve();
+    stateSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+    return fetchLocations().then(function(data) {
       var states = data[country] || [];
+      stateSelect.innerHTML = '';
       if (states.length === 0) {
         var opt = document.createElement('option');
         opt.value = '';
@@ -80,8 +81,7 @@
     var stateEl = document.getElementById(stateId);
     if (!countryEl || !stateEl) return;
 
-    fetchLocations().then(function() {
-      if (currentCountryValue) countryEl.value = currentCountryValue;
+    populateCountries(countryEl, currentCountryValue).then(function() {
       populateStates(countryEl.value, stateEl, currentStateValue);
     });
 

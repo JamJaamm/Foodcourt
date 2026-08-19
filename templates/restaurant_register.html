@@ -219,8 +219,7 @@
 <script src="{% static 'js/locations_data.js' %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    populateCountries(document.getElementById('reg-country'), '{{ form_data.country|default:"Nigeria" }}');
-    populateStates(document.getElementById('reg-country').value, document.getElementById('reg-state'), '{{ form_data.state|default:"" }}');
+    setupCountryStateCascade('reg-country', 'reg-state', '{{ form_data.state|default:"" }}', '{{ form_data.country|default:"Nigeria" }}');
   });
 
   function togglePasswordVisibility(inputId, btn) {
