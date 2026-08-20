@@ -2321,6 +2321,29 @@ def address_api(request):
                 return JsonResponse({'error': 'Label is required'}, status=400)
             lat_val = data.get('latitude')
             lng_val = data.get('longitude')
+
+            if lat_val not in (None, '') and lng_val not in (None, ''):
+                try:
+                    lat_val = Decimal(str(lat_val))
+                    lng_val = Decimal(str(lng_val))
+                except (InvalidOperation, ValueError):
+                    lat_val, lng_val = None, None
+            else:
+                lat_val, lng_val = None, None
+
+            if lat_val is None or lng_val is None:
+                geo_lat, geo_lng = geocode_restaurant(
+                    street=street,
+                    area=data.get('landmark', '').strip() or data.get('lga', '').strip(),
+                    city=data.get('city', '').strip(),
+                    state=data.get('state', '').strip(),
+                    country=data.get('country', '').strip() or 'Nigeria',
+                    fallback_address=label,
+                )
+                if geo_lat is not None and geo_lng is not None:
+                    lat_val = Decimal(str(geo_lat))
+                    lng_val = Decimal(str(geo_lng))
+
             loc_confirmed = bool(lat_val and lng_val)
             addr = Address.objects.create(
                 user=request.user, label=label, street=street,
@@ -2330,8 +2353,8 @@ def address_api(request):
                 state=data.get('state', '').strip(),
                 country=data.get('country', '').strip(),
                 phone=data.get('phone', '').strip(),
-                latitude=Decimal(str(lat_val)) if lat_val not in (None, '') else None,
-                longitude=Decimal(str(lng_val)) if lng_val not in (None, '') else None,
+                latitude=lat_val,
+                longitude=lng_val,
                 location_confirmed=loc_confirmed,
             )
             return JsonResponse({'success': True, 'id': addr.id, 'address': addr.full_address, 'is_default': addr.is_default})
@@ -2377,9 +2400,35 @@ def address_api(request):
             if 'location_confirmed' in data:
                 addr.location_confirmed = bool(data['location_confirmed'])
             if address_fields_changed:
-                addr.location_confirmed = False
-                addr.latitude = None
-                addr.longitude = None
+                new_lat = data.get('latitude')
+                new_lng = data.get('longitude')
+                has_new_coords = bool(new_lat not in (None, '') and new_lng not in (None, ''))
+                if has_new_coords:
+                    try:
+                        addr.latitude = Decimal(str(new_lat))
+                        addr.longitude = Decimal(str(new_lng))
+                        addr.location_confirmed = True
+                    except (InvalidOperation, ValueError):
+                        addr.location_confirmed = False
+                        addr.latitude = None
+                        addr.longitude = None
+                else:
+                    geo_lat, geo_lng = geocode_restaurant(
+                        street=addr.street or '',
+                        area=addr.landmark or addr.lga or '',
+                        city=addr.city or '',
+                        state=addr.state or '',
+                        country=addr.country or 'Nigeria',
+                        fallback_address=addr.label or '',
+                    )
+                    if geo_lat is not None and geo_lng is not None:
+                        addr.latitude = Decimal(str(geo_lat))
+                        addr.longitude = Decimal(str(geo_lng))
+                        addr.location_confirmed = True
+                    else:
+                        addr.location_confirmed = False
+                        addr.latitude = None
+                        addr.longitude = None
             addr.save()
             return JsonResponse({'success': True, 'id': addr.id, 'address': addr.full_address, 'is_default': addr.is_default})
 
