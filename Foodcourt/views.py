@@ -3,7 +3,7 @@ import json
 import functools
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from .geocoding import geocode_address, build_geocoding_query
+from .geocoding import geocode_restaurant, geocode_address, build_geocoding_query
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login, logout
@@ -323,18 +323,17 @@ def restaurant_register_view(request):
                     lng_val = None
 
             if not lat_val or not lng_val:
-                query = build_geocoding_query(
+                geo_lat, geo_lng = geocode_restaurant(
                     street=street_address,
                     area=area,
                     city=city,
                     state=state,
                     country=country or 'Nigeria',
+                    fallback_address=address,
                 )
-                if query.strip():
-                    geo_lat, geo_lng = geocode_address(query)
-                    if geo_lat is not None and geo_lng is not None:
-                        lat_val = Decimal(str(geo_lat))
-                        lng_val = Decimal(str(geo_lng))
+                if geo_lat is not None and geo_lng is not None:
+                    lat_val = Decimal(str(geo_lat))
+                    lng_val = Decimal(str(geo_lng))
 
             loc_confirmed = bool(lat_val and lng_val)
             Restaurant.objects.create(
@@ -1893,27 +1892,19 @@ def delivery_fee_api(request):
         return JsonResponse({'error': 'Address not found'}, status=404)
 
     if not restaurant.has_coordinates:
-        query = build_geocoding_query(
+        geo_lat, geo_lng = geocode_restaurant(
             street=restaurant.street_address or '',
             area=restaurant.area or '',
             city=restaurant.city or '',
             state=restaurant.state or '',
             country=restaurant.country or 'Nigeria',
+            fallback_address=restaurant.address or '',
         )
-        if not query.strip():
-            query = restaurant.address or ''
-        if query.strip():
-            geo_lat, geo_lng = geocode_address(query)
-            if geo_lat is not None and geo_lng is not None:
-                restaurant.latitude = Decimal(str(geo_lat))
-                restaurant.longitude = Decimal(str(geo_lng))
-                restaurant.location_confirmed = True
-                restaurant.save()
-            else:
-                return JsonResponse({
-                    'error': 'Delivery location for this restaurant is currently unavailable.',
-                    'outside_range': True,
-                })
+        if geo_lat is not None and geo_lng is not None:
+            restaurant.latitude = Decimal(str(geo_lat))
+            restaurant.longitude = Decimal(str(geo_lng))
+            restaurant.location_confirmed = True
+            restaurant.save()
         else:
             return JsonResponse({
                 'error': 'Delivery location for this restaurant is currently unavailable.',
@@ -2128,22 +2119,19 @@ def place_order_view(request):
     distance_km = None
     if restaurant and address_id:
         if not restaurant.has_coordinates:
-            query = build_geocoding_query(
+            geo_lat, geo_lng = geocode_restaurant(
                 street=restaurant.street_address or '',
                 area=restaurant.area or '',
                 city=restaurant.city or '',
                 state=restaurant.state or '',
                 country=restaurant.country or 'Nigeria',
+                fallback_address=restaurant.address or '',
             )
-            if not query.strip():
-                query = restaurant.address or ''
-            if query.strip():
-                geo_lat, geo_lng = geocode_address(query)
-                if geo_lat is not None and geo_lng is not None:
-                    restaurant.latitude = Decimal(str(geo_lat))
-                    restaurant.longitude = Decimal(str(geo_lng))
-                    restaurant.location_confirmed = True
-                    restaurant.save()
+            if geo_lat is not None and geo_lng is not None:
+                restaurant.latitude = Decimal(str(geo_lat))
+                restaurant.longitude = Decimal(str(geo_lng))
+                restaurant.location_confirmed = True
+                restaurant.save()
         if restaurant.has_coordinates:
             try:
                 address_obj = Address.objects.get(pk=int(address_id), user=request.user)
@@ -2767,23 +2755,18 @@ def restaurant_api_view(request):
             restaurant.longitude = Decimal(str(new_lng))
             restaurant.location_confirmed = True
         elif address_fields_changed:
-            query = build_geocoding_query(
+            geo_lat, geo_lng = geocode_restaurant(
                 street=restaurant.street_address or '',
                 area=restaurant.area or '',
                 city=restaurant.city or '',
                 state=restaurant.state or '',
                 country=restaurant.country or 'Nigeria',
+                fallback_address=restaurant.address or '',
             )
-            if query.strip():
-                geo_lat, geo_lng = geocode_address(query)
-                if geo_lat is not None and geo_lng is not None:
-                    restaurant.latitude = Decimal(str(geo_lat))
-                    restaurant.longitude = Decimal(str(geo_lng))
-                    restaurant.location_confirmed = True
-                else:
-                    restaurant.location_confirmed = False
-                    restaurant.latitude = None
-                    restaurant.longitude = None
+            if geo_lat is not None and geo_lng is not None:
+                restaurant.latitude = Decimal(str(geo_lat))
+                restaurant.longitude = Decimal(str(geo_lng))
+                restaurant.location_confirmed = True
             else:
                 restaurant.location_confirmed = False
                 restaurant.latitude = None
