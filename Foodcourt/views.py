@@ -2703,18 +2703,23 @@ def restaurant_api_view(request):
                 setattr(restaurant, addr_field, new_val)
         if 'country' in data:
             restaurant.country = str(data['country']).strip() if data['country'] else ''
-        if 'latitude' in data:
-            val = data['latitude']
-            restaurant.latitude = Decimal(str(val)) if val not in (None, '') else None
-        if 'longitude' in data:
-            val = data['longitude']
-            restaurant.longitude = Decimal(str(val)) if val not in (None, '') else None
-        if 'location_confirmed' in data:
-            restaurant.location_confirmed = bool(data['location_confirmed'])
-        if address_fields_changed:
+        new_lat = data.get('latitude')
+        new_lng = data.get('longitude')
+        has_new_coords = bool(new_lat not in (None, '') and new_lng not in (None, ''))
+        if has_new_coords:
+            restaurant.latitude = Decimal(str(new_lat))
+            restaurant.longitude = Decimal(str(new_lng))
+            restaurant.location_confirmed = True
+        elif address_fields_changed:
             restaurant.location_confirmed = False
             restaurant.latitude = None
             restaurant.longitude = None
+        elif 'latitude' in data:
+            restaurant.latitude = Decimal(str(new_lat)) if new_lat not in (None, '') else None
+        elif 'longitude' in data:
+            restaurant.longitude = Decimal(str(new_lng)) if new_lng not in (None, '') else None
+        if 'location_confirmed' in data and not has_new_coords:
+            restaurant.location_confirmed = bool(data['location_confirmed'])
         if data.get('opening_time'): restaurant.opening_time = data['opening_time']
         if data.get('closing_time'): restaurant.closing_time = data['closing_time']
         if request.FILES.get('logo_file'):
