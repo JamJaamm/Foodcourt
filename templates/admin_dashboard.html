@@ -819,40 +819,89 @@
           <a href="/admin-dashboard/orders/?status=cancelled" class="status-badge status-cancelled" style="padding:7px 14px;text-decoration:none;{% if order_status_filter == 'cancelled' %}box-shadow:0 0 0 2px #c62828;{% endif %}">Cancelled</a>
         </div>
 
-        <!-- Orders table -->
-        <div class="db-card">
-          <div class="db-table-wrap">
-            <table class="db-table">
-              <thead>
-                <tr><th>Order</th><th>Customer</th><th>Restaurant</th><th>Items</th><th>Delivery</th><th>Total</th><th>Status</th><th>Date</th></tr>
-              </thead>
-              <tbody>
-                {% for o in orders %}
-                <tr>
-                  <td><strong>{{ o.order_id }}</strong></td>
-                  <td>{{ o.user.get_full_name|default:o.user.email }}</td>
-                  <td>
-                    <div>{{ o.restaurant.name|default:'—' }}</div>
-                    <div style="font-size:11px;color:var(--text-muted);">{{ o.delivery_address|truncatechars:40 }}</div>
-                  </td>
-                  <td>{{ o.items.count }}</td>
-                  <td>
-                    {% if o.delivery_distance_km %}
-                    <div style="font-size:12px;font-weight:600;">{{ o.delivery_distance_km|floatformat:1 }} km</div>
-                    {% endif %}
-                    <div style="font-size:12px;">₦{{ o.delivery_fee|money }}</div>
-                  </td>
-                  <td>₦{{ o.total|money }}</td>
-                  <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
-                  <td style="font-size:12px;color:var(--text-muted);">{{ o.created_at|date:"M d, Y H:i" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="8" class="text-center text-muted py-4">No orders found.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
+        <!-- Orders grouped by restaurant -->
+        {% if restaurant_groups %}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:12px;">
+          <div style="font-weight:600;font-size:14px;color:var(--text-muted);">{{ restaurant_groups|length }} restaurant{{ restaurant_groups|length|pluralize }}</div>
+          <div class="d-flex gap-2">
+            <button onclick="expandAll()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border-color);background:transparent;cursor:pointer;font-size:12px;color:var(--text-muted);">Expand All</button>
+            <button onclick="collapseAll()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border-color);background:transparent;cursor:pointer;font-size:12px;color:var(--text-muted);">Collapse All</button>
           </div>
         </div>
+        <div class="restaurant-orders-list">
+          {% for group in restaurant_groups %}
+          <div class="db-card" style="margin-bottom:16px;overflow:visible;">
+            <div class="restaurant-group-header" onclick="toggleRestaurantOrders(this)" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border-color);">
+              <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:42px;height:42px;border-radius:10px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;">
+                  {{ group.display_name|first|upper }}
+                </div>
+                <div>
+                  <div style="font-weight:700;font-size:15px;">{{ group.display_name }}</div>
+                  <div style="font-size:12px;color:var(--text-muted);">{{ group.order_count }} order{{ group.order_count|pluralize }} &middot; &#8358;{{ group.total_revenue|money }}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span class="fa-solid fa-chevron-down" style="font-size:12px;color:var(--text-muted);transition:transform .2s;"></span>
+              </div>
+            </div>
+            <div class="restaurant-group-body" style="display:none;">
+              <div class="db-table-wrap">
+                <table class="db-table">
+                  <thead>
+                    <tr><th>Order</th><th>Customer</th><th>Items</th><th>Delivery</th><th>Total</th><th>Status</th><th>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for o in group.orders %}
+                    <tr>
+                      <td><strong>{{ o.order_id }}</strong></td>
+                      <td>{{ o.user.get_full_name|default:o.user.email }}</td>
+                      <td>{{ o.items.count }}</td>
+                      <td>
+                        {% if o.delivery_distance_km %}
+                        <div style="font-size:12px;font-weight:600;">{{ o.delivery_distance_km|floatformat:1 }} km</div>
+                        {% endif %}
+                        <div style="font-size:12px;">&#8358;{{ o.delivery_fee|money }}</div>
+                      </td>
+                      <td style="font-weight:600;">&#8358;{{ o.total|money }}</td>
+                      <td><span class="status-badge status-{{ o.status }}">{{ o.get_status_display }}</span></td>
+                      <td style="font-size:12px;color:var(--text-muted);">{{ o.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="db-card" style="margin-top:24px;">
+          <div class="text-center text-muted py-5">No orders found.</div>
+        </div>
+        {% endif %}
+
+        <script>
+        function toggleRestaurantOrders(header) {
+          const body = header.nextElementSibling;
+          const icon = header.querySelector('.fa-chevron-down, .fa-chevron-up');
+          if (body.style.display === 'none' || body.style.display === '') {
+            body.style.display = 'block';
+            icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+          } else {
+            body.style.display = 'none';
+            icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+          }
+        }
+        function expandAll() {
+          document.querySelectorAll('.restaurant-group-body').forEach(b => b.style.display = 'block');
+          document.querySelectorAll('.restaurant-group-header .fa-chevron-down').forEach(i => i.classList.replace('fa-chevron-down', 'fa-chevron-up'));
+        }
+        function collapseAll() {
+          document.querySelectorAll('.restaurant-group-body').forEach(b => b.style.display = 'none');
+          document.querySelectorAll('.restaurant-group-header .fa-chevron-up').forEach(i => i.classList.replace('fa-chevron-up', 'fa-chevron-down'));
+        }
+        </script>
 
         {% elif section == 'payments' %}
 

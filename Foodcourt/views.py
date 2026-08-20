@@ -1439,9 +1439,29 @@ def admin_dashboard_view(request, section=None):
         order_status_filter = request.GET.get('status', '').strip()
         if order_status_filter:
             orders = orders.filter(status=order_status_filter)
+
+        from collections import OrderedDict
+        restaurant_order_map = OrderedDict()
+        for o in orders:
+            rname = o.restaurant.name if o.restaurant else (o.restaurant_name or 'Unknown')
+            if rname not in restaurant_order_map:
+                restaurant_order_map[rname] = {
+                    'restaurant': o.restaurant,
+                    'display_name': rname,
+                    'orders': [],
+                    'total_revenue': Decimal('0'),
+                    'order_count': 0,
+                }
+            restaurant_order_map[rname]['orders'].append(o)
+            restaurant_order_map[rname]['total_revenue'] += o.total
+            restaurant_order_map[rname]['order_count'] += 1
+
+        restaurant_groups = list(restaurant_order_map.values())
+
         return render(request, 'admin_dashboard.html', {
             'section': 'orders',
             'orders': orders,
+            'restaurant_groups': restaurant_groups,
             'order_status_filter': order_status_filter,
             'platform_stats': build_platform_stats(),
             'hide_navbar': True,
