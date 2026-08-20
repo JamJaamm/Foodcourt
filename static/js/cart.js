@@ -371,7 +371,6 @@ window.toggleNewAddressForm = function() {
 
 window.saveNewAddressFromCart = function() {
   const street = document.getElementById('naddr-street').value.trim();
-  if (!street) { Toast.show('Street address is required', 'error'); return; }
   const label = document.getElementById('naddr-label').value.trim() || 'Delivery';
 
   const data = {

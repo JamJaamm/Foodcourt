@@ -236,7 +236,7 @@ window.saveNewAddress = function(event) {
     latitude: document.getElementById('new-addr-latitude').value.trim(),
     longitude: document.getElementById('new-addr-longitude').value.trim(),
   };
-  if (!data.label || !data.street) { Toast.show('Label and street address are required', 'error'); return; }
+  if (!data.label) { Toast.show('Label is required', 'error'); return; }
 
   const btn = event.target.querySelector('button[type="submit"]');
   const orig = btn.innerHTML;
@@ -335,7 +335,7 @@ window.saveEditAddress = function(event) {
     latitude: document.getElementById('edit-addr-latitude').value.trim(),
     longitude: document.getElementById('edit-addr-longitude').value.trim(),
   };
-  if (!data.label || !data.street || !id) { Toast.show('Label and street address are required', 'error'); return; }
+  if (!data.label || !id) { Toast.show('Label is required', 'error'); return; }
 
   const btn = event.target.querySelector('button[type="submit"]');
   const orig = btn.innerHTML;

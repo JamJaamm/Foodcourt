@@ -2273,8 +2273,8 @@ def address_api(request):
         if action == 'create':
             label = data.get('label', '').strip()
             street = data.get('street', '').strip()
-            if not label or not street:
-                return JsonResponse({'error': 'Label and street address are required'}, status=400)
+            if not label:
+                return JsonResponse({'error': 'Label is required'}, status=400)
             lat_val = data.get('latitude')
             lng_val = data.get('longitude')
             loc_confirmed = bool(lat_val and lng_val)

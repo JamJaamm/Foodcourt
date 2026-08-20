@@ -94,7 +94,9 @@ class Address(models.Model):
 
     @property
     def full_address(self):
-        parts = [self.street]
+        parts = []
+        if self.street:
+            parts.append(self.street)
         if self.landmark:
             parts.append(f"Near {self.landmark}")
         if self.lga:
@@ -105,7 +107,7 @@ class Address(models.Model):
             parts.append(self.state)
         if self.country:
             parts.append(self.country)
-        return ', '.join(parts)
+        return ', '.join(parts) if parts else self.label
 
     @property
     def has_coordinates(self):
