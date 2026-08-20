@@ -661,8 +661,10 @@
                     <span style="color:var(--rdr-green);font-size:11px;"><i class="fa-solid fa-check-circle me-1"></i>Confirmed</span>
                     {% elif r.has_coordinates %}
                     <span style="color:#f9a825;font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>Unconfirmed</span>
+                    {% elif r.has_address %}
+                    <span style="color:#f9a825;font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>Not pinned</span>
                     {% else %}
-                    <span style="color:var(--danger);font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>Missing</span>
+                    <span style="color:var(--danger);font-size:11px;"><i class="fa-solid fa-exclamation-circle me-1"></i>No address</span>
                     {% endif %}
                   </td>
                   <td>

@@ -3,6 +3,7 @@ import json
 import functools
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from .geocoding import geocode_address, build_geocoding_query
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login, logout
@@ -320,6 +321,20 @@ def restaurant_register_view(request):
                     lng_val = Decimal(str(longitude))
                 except (InvalidOperation, ValueError):
                     lng_val = None
+
+            if not lat_val or not lng_val:
+                query = build_geocoding_query(
+                    street=street_address,
+                    area=area,
+                    city=city,
+                    state=state,
+                    country=country or 'Nigeria',
+                )
+                if query.strip():
+                    geo_lat, geo_lng = geocode_address(query)
+                    if geo_lat is not None and geo_lng is not None:
+                        lat_val = Decimal(str(geo_lat))
+                        lng_val = Decimal(str(geo_lng))
 
             loc_confirmed = bool(lat_val and lng_val)
             Restaurant.objects.create(
@@ -1397,6 +1412,7 @@ def admin_dashboard_view(request, section=None):
                 'latitude': float(r.latitude) if r.latitude is not None else None,
                 'longitude': float(r.longitude) if r.longitude is not None else None,
                 'has_coordinates': r.has_coordinates,
+                'has_address': bool(r.address or r.street_address or r.lga or r.state),
                 'lga': r.lga or '—',
                 'state': r.state or '—',
                 'location_confirmed': r.location_confirmed,
@@ -1877,10 +1893,32 @@ def delivery_fee_api(request):
         return JsonResponse({'error': 'Address not found'}, status=404)
 
     if not restaurant.has_coordinates:
-        return JsonResponse({
-            'error': 'Delivery location for this restaurant is currently unavailable.',
-            'outside_range': True,
-        })
+        query = build_geocoding_query(
+            street=restaurant.street_address or '',
+            area=restaurant.area or '',
+            city=restaurant.city or '',
+            state=restaurant.state or '',
+            country=restaurant.country or 'Nigeria',
+        )
+        if not query.strip():
+            query = restaurant.address or ''
+        if query.strip():
+            geo_lat, geo_lng = geocode_address(query)
+            if geo_lat is not None and geo_lng is not None:
+                restaurant.latitude = Decimal(str(geo_lat))
+                restaurant.longitude = Decimal(str(geo_lng))
+                restaurant.location_confirmed = True
+                restaurant.save()
+            else:
+                return JsonResponse({
+                    'error': 'Delivery location for this restaurant is currently unavailable.',
+                    'outside_range': True,
+                })
+        else:
+            return JsonResponse({
+                'error': 'Delivery location for this restaurant is currently unavailable.',
+                'outside_range': True,
+            })
     if not address.has_coordinates:
         return JsonResponse({
             'error': 'Please select or confirm your delivery location with coordinates.',
@@ -2088,25 +2126,43 @@ def place_order_view(request):
     # Server-side delivery fee calculation
     delivery_fee = Decimal('0')
     distance_km = None
-    if restaurant and restaurant.has_coordinates and address_id:
-        try:
-            address_obj = Address.objects.get(pk=int(address_id), user=request.user)
-            if address_obj.has_coordinates:
-                from .delivery_service import calculate_delivery_fee
-                fee_result = calculate_delivery_fee(
-                    float(restaurant.latitude), float(restaurant.longitude),
-                    float(address_obj.latitude), float(address_obj.longitude),
-                )
-                if fee_result['error']:
-                    return JsonResponse({'error': fee_result['error']}, status=400)
-                delivery_fee = fee_result['delivery_fee']
-                distance_km = fee_result['distance_km']
-            else:
+    if restaurant and address_id:
+        if not restaurant.has_coordinates:
+            query = build_geocoding_query(
+                street=restaurant.street_address or '',
+                area=restaurant.area or '',
+                city=restaurant.city or '',
+                state=restaurant.state or '',
+                country=restaurant.country or 'Nigeria',
+            )
+            if not query.strip():
+                query = restaurant.address or ''
+            if query.strip():
+                geo_lat, geo_lng = geocode_address(query)
+                if geo_lat is not None and geo_lng is not None:
+                    restaurant.latitude = Decimal(str(geo_lat))
+                    restaurant.longitude = Decimal(str(geo_lng))
+                    restaurant.location_confirmed = True
+                    restaurant.save()
+        if restaurant.has_coordinates:
+            try:
+                address_obj = Address.objects.get(pk=int(address_id), user=request.user)
+                if address_obj.has_coordinates:
+                    from .delivery_service import calculate_delivery_fee
+                    fee_result = calculate_delivery_fee(
+                        float(restaurant.latitude), float(restaurant.longitude),
+                        float(address_obj.latitude), float(address_obj.longitude),
+                    )
+                    if fee_result['error']:
+                        return JsonResponse({'error': fee_result['error']}, status=400)
+                    delivery_fee = fee_result['delivery_fee']
+                    distance_km = fee_result['distance_km']
+                else:
+                    delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
+            except (TypeError, ValueError, Address.DoesNotExist):
                 delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
-        except (TypeError, ValueError, Address.DoesNotExist):
+        else:
             delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
-    else:
-        delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
 
     # Ensure discount doesn't exceed subtotal
     if discount > subtotal:
@@ -2711,9 +2767,27 @@ def restaurant_api_view(request):
             restaurant.longitude = Decimal(str(new_lng))
             restaurant.location_confirmed = True
         elif address_fields_changed:
-            restaurant.location_confirmed = False
-            restaurant.latitude = None
-            restaurant.longitude = None
+            query = build_geocoding_query(
+                street=restaurant.street_address or '',
+                area=restaurant.area or '',
+                city=restaurant.city or '',
+                state=restaurant.state or '',
+                country=restaurant.country or 'Nigeria',
+            )
+            if query.strip():
+                geo_lat, geo_lng = geocode_address(query)
+                if geo_lat is not None and geo_lng is not None:
+                    restaurant.latitude = Decimal(str(geo_lat))
+                    restaurant.longitude = Decimal(str(geo_lng))
+                    restaurant.location_confirmed = True
+                else:
+                    restaurant.location_confirmed = False
+                    restaurant.latitude = None
+                    restaurant.longitude = None
+            else:
+                restaurant.location_confirmed = False
+                restaurant.latitude = None
+                restaurant.longitude = None
         elif 'latitude' in data:
             restaurant.latitude = Decimal(str(new_lat)) if new_lat not in (None, '') else None
         elif 'longitude' in data:
