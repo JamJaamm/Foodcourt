@@ -555,7 +555,9 @@ window.submitOrder = function() {
   }
   if (discount > subtotal) discount = subtotal;
 
-  const orderBtn = document.getElementById('place-order-btn');
+    const grandTotal = subtotal + deliveryFee - discount;
+
+    const orderBtn = document.getElementById('place-order-btn');
   const originalText = orderBtn.innerHTML;
   orderBtn.disabled = true;
   orderBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Placing Order...';
