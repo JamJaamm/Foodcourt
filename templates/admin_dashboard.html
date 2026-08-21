@@ -102,27 +102,27 @@
         <!-- Platform stats -->
         <div class="db-stats-row" style="margin-top:18px;">
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.pending_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.pending_riders|compact }}</div>
             <div class="db-stat-label">Awaiting Approval</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.new_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.new_riders|compact }}</div>
             <div class="db-stat-label">New Applications</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.total_riders|compact }}</div>
             <div class="db-stat-label">Approved Riders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
+            <div class="db-stat-num">{{ platform_stats.restaurants|compact }}</div>
             <div class="db-stat-label">Restaurants</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-num">{{ platform_stats.users|compact }}</div>
             <div class="db-stat-label">Total Users</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-num">{{ platform_stats.orders|compact }}</div>
             <div class="db-stat-label">Total Orders</div>
           </div>
         </div>
@@ -215,19 +215,19 @@
         <!-- User Stats Cards -->
         <div class="db-stats-row" style="margin-top:18px;">
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ user_stats.total }}</div>
+            <div class="db-stat-num">{{ user_stats.total|compact }}</div>
             <div class="db-stat-label">Total Users</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num" style="color:var(--success);">{{ user_stats.active }}</div>
+            <div class="db-stat-num" style="color:var(--success);">{{ user_stats.active|compact }}</div>
             <div class="db-stat-label">Active</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num" style="color:var(--danger);">{{ user_stats.blocked }}</div>
+            <div class="db-stat-num" style="color:var(--danger);">{{ user_stats.blocked|compact }}</div>
             <div class="db-stat-label">Blocked</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num" style="color:var(--primary);">{{ user_stats.new_today }}</div>
+            <div class="db-stat-num" style="color:var(--primary);">{{ user_stats.new_today|compact }}</div>
             <div class="db-stat-label">New Today</div>
           </div>
         </div>
@@ -602,23 +602,23 @@
         <!-- Platform stats -->
         <div class="db-stats-row" style="margin-top:18px;">
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
+            <div class="db-stat-num">{{ platform_stats.restaurants|compact }}</div>
             <div class="db-stat-label">Restaurants</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-num">{{ platform_stats.orders|compact }}</div>
             <div class="db-stat-label">Total Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.total_riders|compact }}</div>
             <div class="db-stat-label">Approved Riders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.pending_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.pending_riders|compact }}</div>
             <div class="db-stat-label">Riders Awaiting Approval</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-num">{{ platform_stats.users|compact }}</div>
             <div class="db-stat-label">Total Users</div>
           </div>
         </div>
@@ -790,15 +790,15 @@
         <!-- Platform stats -->
         <div class="db-stats-row" style="margin-top:18px;">
           <div class="db-stat-card">
-            <div class="db-stat-num">₦{{ platform_stats.total_revenue|money }}</div>
+            <div class="db-stat-num">₦{{ platform_stats.total_revenue|compact }}</div>
             <div class="db-stat-label">Total Made</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-num">{{ platform_stats.orders|compact }}</div>
             <div class="db-stat-label">Total Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.delivered_orders }}</div>
+            <div class="db-stat-num">{{ platform_stats.delivered_orders|compact }}</div>
             <div class="db-stat-label">Delivered Orders</div>
           </div>
           <div class="db-stat-card">
@@ -969,35 +969,35 @@
         <!-- Platform stats -->
         <div class="db-stats-row" style="margin-top:18px;">
           <div class="db-stat-card">
-            <div class="db-stat-num">₦{{ platform_stats.total_revenue|money }}</div>
+<div class="db-stat-num">₦{{ platform_stats.total_revenue|compact }}</div>
             <div class="db-stat-label">Total Made</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.orders }}</div>
+            <div class="db-stat-num">{{ platform_stats.orders|compact }}</div>
             <div class="db-stat-label">Total Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.delivered_orders }}</div>
+            <div class="db-stat-num">{{ platform_stats.delivered_orders|compact }}</div>
             <div class="db-stat-label">Delivered Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.restaurants }}</div>
-            <div class="db-stat-label">Restaurants Registered</div>
+            <div class="db-stat-num">{{ platform_stats.restaurants|compact }}</div>
+            <div class="db-stat-label">Restaurants</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.total_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.total_riders|compact }}</div>
             <div class="db-stat-label">Approved Riders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.pending_riders }}</div>
+            <div class="db-stat-num">{{ platform_stats.pending_riders|compact }}</div>
             <div class="db-stat-label">Riders Awaiting Approval</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.new_riders }}</div>
-            <div class="db-stat-label">New Rider Applications</div>
+            <div class="db-stat-num">{{ platform_stats.new_riders|compact }}</div>
+            <div class="db-stat-label">New Applications</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ platform_stats.users }}</div>
+            <div class="db-stat-num">{{ platform_stats.users|compact }}</div>
             <div class="db-stat-label">Total Users</div>
           </div>
         </div>
@@ -1111,27 +1111,27 @@
         <!-- Stat cards -->
         <div class="db-stats-row">
           <div class="db-stat-card">
-            <div class="db-stat-num">₦{{ stats.today_revenue|money }}</div>
+            <div class="db-stat-num">₦{{ stats.today_revenue|compact }}</div>
             <div class="db-stat-label">Today's Revenue</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ stats.total_orders }}</div>
+            <div class="db-stat-num">{{ stats.total_orders|compact }}</div>
             <div class="db-stat-label">Total Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ stats.pending_orders }}</div>
+            <div class="db-stat-num">{{ stats.pending_orders|compact }}</div>
             <div class="db-stat-label">Pending Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ stats.completed_orders }}</div>
+            <div class="db-stat-num">{{ stats.completed_orders|compact }}</div>
             <div class="db-stat-label">Completed Orders</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ stats.customers }}</div>
+            <div class="db-stat-num">{{ stats.customers|compact }}</div>
             <div class="db-stat-label">Customers</div>
           </div>
           <div class="db-stat-card">
-            <div class="db-stat-num">{{ stats.menu_items }}</div>
+            <div class="db-stat-num">{{ stats.menu_items|compact }}</div>
             <div class="db-stat-label">Menu Items</div>
           </div>
         </div>

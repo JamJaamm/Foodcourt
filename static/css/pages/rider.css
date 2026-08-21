@@ -337,7 +337,7 @@ img { max-width: 100%; }
 .rdr-cta p { color: rgba(255,255,255,.7); margin: 0; max-width: 520px; }
 
 /* ── Footer ── */
-.rdr-footer { background: var(--rdr-ink); color: rgba(255,255,255,.66); padding: 70px 0 0; }
+.rdr-footer { background: #13131F; color: rgba(255,255,255,.66); padding: 70px 0 0; }
 .rdr-footer .rdr-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr; gap: 40px; padding-bottom: 50px; }
 .rdr-footer h5 { color: #fff; font-size: 15px; margin-bottom: 20px; }
 .rdr-footer a { color: rgba(255,255,255,.66); font-size: 14px; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; transition: color .2s, transform .2s; }

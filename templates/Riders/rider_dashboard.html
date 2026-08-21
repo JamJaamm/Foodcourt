@@ -190,22 +190,22 @@
       <div class="rdr-dash-stats">
         <div class="rdr-dash-stat">
           <div class="ic g"><i class="fa-solid fa-motorcycle"></i></div>
-          <div class="val">{{ rider_stats.active }}</div>
+          <div class="val">{{ rider_stats.active|compact }}</div>
           <div class="lbl">Active deliveries</div>
         </div>
         <div class="rdr-dash-stat">
           <div class="ic o"><i class="fa-solid fa-boxes-stacked"></i></div>
-          <div class="val">{{ rider_stats.available }}</div>
+          <div class="val">{{ rider_stats.available|compact }}</div>
           <div class="lbl">Available orders</div>
         </div>
         <div class="rdr-dash-stat">
           <div class="ic g"><i class="fa-solid fa-circle-check"></i></div>
-          <div class="val">{{ rider_stats.delivered }}</div>
+          <div class="val">{{ rider_stats.delivered|compact }}</div>
           <div class="lbl">Deliveries completed</div>
         </div>
         <div class="rdr-dash-stat">
           <div class="ic o"><i class="fa-solid fa-sack-dollar"></i></div>
-          <div class="val cur">₦{{ rider_stats.earned|money }}</div>
+          <div class="val cur">₦{{ rider_stats.earned|compact }}</div>
           <div class="lbl">Total earned</div>
         </div>
       </div>
@@ -430,22 +430,22 @@
       <div class="rdr-dash-stats">
         <div class="rdr-dash-stat">
           <div class="ic o"><i class="fa-solid fa-sack-dollar"></i></div>
-          <div class="val cur">₦{{ rider_stats.earned|money }}</div>
+          <div class="val cur">₦{{ rider_stats.earned|compact }}</div>
           <div class="lbl">Total earned</div>
         </div>
         <div class="rdr-dash-stat">
           <div class="ic g"><i class="fa-solid fa-circle-check"></i></div>
-          <div class="val">{{ rider_stats.delivered }}</div>
+          <div class="val">{{ rider_stats.delivered|compact }}</div>
           <div class="lbl">Completed</div>
         </div>
         <div class="rdr-dash-stat">
           <div class="ic g"><i class="fa-solid fa-motorcycle"></i></div>
-          <div class="val">{{ rider_stats.active }}</div>
+          <div class="val">{{ rider_stats.active|compact }}</div>
           <div class="lbl">Active now</div>
         </div>
         <div class="rdr-dash-stat">
           <div class="ic o"><i class="fa-solid fa-boxes-stacked"></i></div>
-          <div class="val">{{ rider_stats.available }}</div>
+          <div class="val">{{ rider_stats.available|compact }}</div>
           <div class="lbl">Available</div>
         </div>
       </div>

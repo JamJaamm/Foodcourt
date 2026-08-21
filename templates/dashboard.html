@@ -98,16 +98,16 @@
           <!-- Stat cards row -->
           <div class="db-stats-row">
             <div class="db-stat-card">
-              <div class="db-stat-num">{{ stats.total_orders }}</div>
-              <div class="db-stat-label">Total Orders</div>
-            </div>
-            <div class="db-stat-card">
-              <div class="db-stat-num">₦{{ stats.total_spent|money }}</div>
-              <div class="db-stat-label">Total Spent</div>
-            </div>
-            <div class="db-stat-card">
-              <div class="db-stat-num">{{ stats.total_orders|default:0 }}</div>
-              <div class="db-stat-label">Loyalty Points</div>
+            <div class="db-stat-num">{{ stats.total_orders|compact }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">₦{{ stats.total_spent|compact }}</div>
+            <div class="db-stat-label">Total Spent</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ stats.total_orders|default:0|compact }}</div>
+            <div class="db-stat-label">Loyalty Points</div>
             </div>
             <div class="db-stat-card">
               <div class="db-stat-num">4.9 ★</div>
