@@ -60,7 +60,12 @@
           <!-- Profile header info -->
           <div class="db-profile-header">
             <div class="db-avatar-container">
-              <div class="db-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
+              {% if restaurant.logo %}
+              <img src="{{ restaurant.logo }}" alt="{{ restaurant.name }}" class="db-avatar"
+                   onerror="this.style.display='none'; document.getElementById('db-avatar-fallback').style.display='flex';">
+              {% endif %}
+              <div class="db-avatar" id="db-avatar-fallback"
+                   style="display:{% if restaurant.logo %}none{% else %}flex{% endif %};align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
                 <i class="fa-solid fa-utensils" style="font-size:34px;color:var(--primary);"></i>
               </div>
             </div>
@@ -498,7 +503,7 @@
             <div style="grid-column:span 2"><label>Landmark</label><input type="text" id="set-landmark" value="{{ restaurant.landmark }}" placeholder="Optional"></div>
 
     <!-- Location section -->
-    <div style="grid-column:span 2;background:var(--bg-secondary,#f8f9fa);border-radius:var(--radius-md);padding:14px 16px;">
+    <div style="grid-column:span 2;background:var(--bg-elevated);border-radius:var(--radius-md);padding:14px 16px;border:1px solid var(--border);">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:14px;">📍</span>
@@ -812,7 +817,12 @@ function toggleCustomer(id,active){
 // ═══ SETTINGS ═══
 function previewLogoFile(input){
   const preview=document.getElementById('set-logo-preview');
-  if(input.files&&input.files[0]){preview.style.display='block';preview.src=URL.createObjectURL(input.files[0])}
+  if(input.files&&input.files[0]){
+    const url=URL.createObjectURL(input.files[0]);
+    preview.style.display='block';preview.src=url;
+    const sbImg=document.querySelector('.db-avatar-container img');
+    if(sbImg){sbImg.src=url;sbImg.style.display='block';const fb=document.getElementById('db-avatar-fallback');if(fb)fb.style.display='none';}
+  }
 }
 
 function buildSettingsAddress(){
@@ -884,7 +894,7 @@ function saveSettings(e){
   const logoFile=document.getElementById('set-logo-file');
   if(logoFile.files&&logoFile.files[0])formData.append('logo_file',logoFile.files[0]);
   fetch('/restaurant-admin/api/',{method:'POST',headers:{'X-CSRFToken':CSRF_TOKEN},body:formData})
-  .then(r=>r.json()).then(d=>{if(d.success){toast('Settings saved!');if(d.logo&&document.getElementById('set-logo-preview'))document.getElementById('set-logo-preview').src=d.logo}else toast(d.error,'error')}).catch(()=>toast('Failed to save','error'))
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Settings saved!');if(d.logo){if(document.getElementById('set-logo-preview'))document.getElementById('set-logo-preview').src=d.logo;const sbImg=document.querySelector('.db-avatar-container img');if(sbImg){sbImg.src=d.logo;sbImg.style.display='block';const fb=document.getElementById('db-avatar-fallback');if(fb)fb.style.display='none';}}}else{toast(d.error,'error')}}).catch(()=>toast('Failed to save','error'))
   .finally(()=>{btn.disabled=false;btn.innerHTML=orig});
 }
 </script>
