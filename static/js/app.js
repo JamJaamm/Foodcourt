@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — Core App JS (Theme, Cart, Toast, Navbar, Reveals)
+   Choply — Core App JS (Theme, Cart, Toast, Navbar, Reveals)
    ============================================================ */
 'use strict';
 

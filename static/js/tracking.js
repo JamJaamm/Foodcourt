@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — Order Tracking Page JS (tracking.js)
+   Choply — Order Tracking Page JS (tracking.js)
    Complete order tracking with 10-step timeline, rider info,
    OTP, notifications, support actions, and delivery completion.
    ============================================================ */
@@ -39,7 +39,7 @@ const TRACK = {
     picked_up:            { msg: 'Your rider has picked up your order.',              sub: 'Your food is on its way to you!',                icon: 'fa-solid fa-box',               variant: '' },
     on_the_way:           { msg: 'Your rider is on the way!',                        sub: 'Almost there — get ready to enjoy your meal.',   icon: 'fa-solid fa-motorcycle',        variant: '' },
     arrived:              { msg: 'Your rider has arrived!',                           sub: 'Meet your rider at the delivery location.',      icon: 'fa-solid fa-location-dot',      variant: 'status-success' },
-    delivered:            { msg: 'Your order has been delivered successfully!',        sub: 'Thank you for ordering with FoodCourt!',         icon: 'fa-solid fa-circle-check',      variant: 'status-delivered' },
+    delivered:            { msg: 'Your order has been delivered successfully!',        sub: 'Thank you for ordering with Choply!',         icon: 'fa-solid fa-circle-check',      variant: 'status-delivered' },
     cancelled:            { msg: 'Your delivery has been cancelled.',                 sub: 'Contact support if you need assistance.',        icon: 'fa-solid fa-circle-xmark',      variant: '' },
   },
 
@@ -971,7 +971,7 @@ window.handleCancelOrder = function () {
 window.downloadReceipt = function () {
   if (!orderData) return;
 
-  let receipt = `FoodCourt Receipt\n`;
+  let receipt = `Choply Receipt\n`;
   receipt += `${'═'.repeat(40)}\n`;
   receipt += `Order: #${orderData.id}\n`;
   receipt += `Restaurant: ${orderData.restaurant || '--'}\n`;
@@ -991,13 +991,13 @@ window.downloadReceipt = function () {
   receipt += `${'TOTAL'.padEnd(30)} ${formatPrice(orderData.total || 0).padStart(8)}\n`;
   receipt += `${'═'.repeat(40)}\n`;
   receipt += `Payment: ${orderData.payment || '--'}\n`;
-  receipt += `Thank you for ordering with FoodCourt!\n`;
+  receipt += `Thank you for ordering with Choply!\n`;
 
   const blob = new Blob([receipt], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `FoodCourt-Receipt-${orderData.id}.txt`;
+  a.download = `Choply-Receipt-${orderData.id}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 };

@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — Landing Page JavaScript (index.js)
+   Choply — Landing Page JavaScript (index.js)
    ============================================================ */
 'use strict';
 

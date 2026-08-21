@@ -2,7 +2,7 @@
 {% load static %}
 {% load money_tags %}
 
-{% block title %}FoodCourt — Admin Dashboard{% endblock %}
+{% block title %}Choply — Admin Dashboard{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
@@ -587,7 +587,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
           <div>
             <h2 class="db-header-title" style="margin-bottom:4px;">Registered Restaurants 🏪</h2>
-            <p class="text-secondary mb-0">All restaurants currently on the FoodCourt platform.</p>
+            <p class="text-secondary mb-0">All restaurants currently on the Choply platform.</p>
           </div>
           <div class="d-flex gap-2">
             <button class="db-menu-btn" style="text-decoration:none;padding:10px 18px;" onclick="openDeliverySettings()">
@@ -780,7 +780,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
           <div>
             <h2 class="db-header-title" style="margin-bottom:4px;">Platform Orders 📋</h2>
-            <p class="text-secondary mb-0">Every order placed across the FoodCourt platform.</p>
+            <p class="text-secondary mb-0">Every order placed across the Choply platform.</p>
           </div>
           <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
             <i class="fa-solid fa-arrow-left"></i> Back to Overview
@@ -962,7 +962,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
           <div>
             <h2 class="db-header-title" style="margin-bottom:4px;">Platform Overview 🌐</h2>
-            <p class="text-secondary mb-0">Welcome back, {{ request.user.first_name|default:request.user.username }}! Here's what's happening on FoodCourt.</p>
+            <p class="text-secondary mb-0">Welcome back, {{ request.user.first_name|default:request.user.username }}! Here's what's happening on Choply.</p>
           </div>
         </div>
 

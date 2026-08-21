@@ -539,7 +539,7 @@ window.submitOrder = function() {
   }
 
   const firstItem = cart[0];
-  let restaurantName = 'FoodCourt Order';
+  let restaurantName = 'Choply Order';
   if (firstItem.restaurantId && window.FOODCOURT_DATA && window.FOODCOURT_DATA.restaurants) {
     const rest = window.FOODCOURT_DATA.restaurants.find(r => r.id === firstItem.restaurantId);
     if (rest) restaurantName = rest.name;

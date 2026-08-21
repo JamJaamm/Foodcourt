@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — Rider Landing / Registration Modal (rider.js)
+   Choply — Rider Landing / Registration Modal (rider.js)
    ============================================================ */
 'use strict';
 

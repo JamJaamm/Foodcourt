@@ -211,7 +211,7 @@ def register_view(request):
             VerificationCode.objects.create(user=user, code=code)
 
             email_sent = send_email(
-                subject="Verify your FoodCourt account",
+                subject="Verify your Choply account",
                 template_name="emails/verify_email.html",
                 context={"code": code},
                 recipient_list=[email]
@@ -359,7 +359,7 @@ def restaurant_register_view(request):
             VerificationCode.objects.create(user=user, code=code)
 
             email_sent = send_email(
-                subject="Verify your FoodCourt restaurant account",
+                subject="Verify your Choply restaurant account",
                 template_name="emails/verify_email.html",
                 context={"code": code},
                 recipient_list=[email]
@@ -407,7 +407,7 @@ def verify_view(request):
             request.session.pop('verification_user_id', None)
 
             send_email(
-                subject="Welcome to FoodCourt!",
+                subject="Welcome to Choply!",
                 template_name="emails/welcome_email.html",
                 context={
                     "name": user.first_name,
@@ -416,7 +416,7 @@ def verify_view(request):
                 recipient_list=[user.email]
             )
 
-            messages.success(request, f"Welcome to FoodCourt, {user.first_name}!")
+            messages.success(request, f"Welcome to Choply, {user.first_name}!")
             return get_dashboard_redirect(user)
 
     email_sent = request.session.get('verification_email_sent', True)
@@ -453,7 +453,7 @@ def resend_verification_code(request):
     VerificationCode.objects.create(user=user, code=code)
 
     email_sent = send_email(
-        subject="Verify your FoodCourt account",
+        subject="Verify your Choply account",
         template_name="emails/verify_email.html",
         context={"code": code},
         recipient_list=[user.email],
@@ -491,7 +491,7 @@ def forgot_password_view(request):
                 token = default_token_generator.make_token(user)
                 reset_link = f"{settings.SITE_URL.rstrip('/')}{reverse('reset_password_confirm', args=[uid, token])}"
                 email_sent = send_email(
-                    subject="Reset your FoodCourt password",
+                    subject="Reset your Choply password",
                     template_name="emails/password_reset_email.html",
                     context={"user": user, "reset_link": reset_link},
                     recipient_list=[user.email]
@@ -718,7 +718,7 @@ def rider_forgot_password_view(request):
                 code = f"{random.randint(100000, 999999)}"
                 VerificationCode.objects.create(rider=rider, code=code)
                 send_email(
-                    subject="Reset your FoodCourt Rider password",
+                    subject="Reset your Choply Rider password",
                     template_name="emails/verify_email.html",
                     context={"code": code},
                     recipient_list=[rider.email],
@@ -856,7 +856,7 @@ def rider_register_view(request):
     VerificationCode.objects.create(rider=rider, code=code)
 
     email_sent = send_email(
-        subject="Verify your FoodCourt rider account",
+        subject="Verify your Choply rider account",
         template_name="emails/rider_verify_email.html",
         context={"code": code, "name": first_name},
         recipient_list=[email],
@@ -902,7 +902,7 @@ def rider_verify_view(request):
             request.session.pop('rider_verification_email_sent', None)
 
             send_email(
-                subject="Welcome to FoodCourt Riders!",
+                subject="Welcome to Choply Riders!",
                 template_name="emails/rider_welcome_email.html",
                 context={
                     "name": rider.first_name,
@@ -948,7 +948,7 @@ def rider_resend_verification_code(request):
     VerificationCode.objects.create(rider=rider, code=code)
 
     email_sent = send_email(
-        subject="Verify your FoodCourt Riders account",
+        subject="Verify your Choply Riders account",
         template_name="emails/rider_verify_email.html",
         context={"code": code, "name": rider.first_name},
         recipient_list=[rider.email],
@@ -1587,7 +1587,7 @@ def admin_resend_verification_view(request, pk):
     code = f"{random.randint(100000, 999999)}"
     VerificationCode.objects.create(user=user, code=code)
     email_sent = send_email(
-        subject="Verify your FoodCourt account",
+        subject="Verify your Choply account",
         template_name="emails/verify_email.html",
         context={"code": code},
         recipient_list=[user.email],
@@ -1730,7 +1730,7 @@ def approve_rider_view(request, pk):
         rider.is_active = True
         rider.save(update_fields=['status', 'is_active'])
         send_email(
-            subject="You're approved — Welcome to FoodCourt Riders!",
+            subject="You're approved — Welcome to Choply Riders!",
             template_name="emails/rider_approved_email.html",
             context={
                 "name": rider.first_name,
@@ -1751,7 +1751,7 @@ def reject_rider_view(request, pk):
         rider.is_active = False
         rider.save(update_fields=['status', 'is_active'])
         send_email(
-            subject="Update on your FoodCourt rider application",
+            subject="Update on your Choply rider application",
             template_name="emails/rider_rejected_email.html",
             context={
                 "name": rider.first_name,
@@ -2115,7 +2115,7 @@ def place_order_view(request):
     payment_method = data.get('payment_method', 'cash')
     subtotal = Decimal(str(data.get('subtotal', 0)))
     discount = Decimal(str(data.get('discount', 0)))
-    restaurant_name = data.get('restaurant_name', 'FoodCourt Order')
+    restaurant_name = data.get('restaurant_name', 'Choply Order')
     address_id = data.get('address_id')
 
     if not items_data:

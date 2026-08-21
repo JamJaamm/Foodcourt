@@ -1,4 +1,4 @@
-"""Shared email helpers for FoodCourt.
+"""Shared email helpers for Choply.
 
 Kept out of ``Foodcourt.views`` so the payments service layer can send
 order-confirmation emails without creating a circular import.

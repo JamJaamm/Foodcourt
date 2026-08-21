@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — User Dashboard Page JS (dashboard.js)
+   Choply — User Dashboard Page JS (dashboard.js)
    ============================================================ */
 'use strict';
 

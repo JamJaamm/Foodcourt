@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — Loading Animation System (JS)
+   Choply — Loading Animation System (JS)
    ============================================================ */
 (function () {
   'use strict';

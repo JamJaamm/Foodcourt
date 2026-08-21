@@ -1,5 +1,5 @@
 /* ============================================================
-   FoodCourt — Restaurants Page JavaScript (restaurants.js)
+   Choply — Restaurants Page JavaScript (restaurants.js)
    ============================================================ */
 'use strict';
 
