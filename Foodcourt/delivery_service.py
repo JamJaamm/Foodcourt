@@ -19,7 +19,7 @@ HAVERSINE_TO_ROAD_FACTOR = Decimal('1.3')
 
 
 def haversine_distance_km(lat1, lon1, lat2, lon2):
-    """Calculate straight-line distance between two points in km."""
+
     R = 6371.0
     dlat = math.radians(float(lat2) - float(lat1))
     dlon = math.radians(float(lon2) - float(lon1))
@@ -31,10 +31,7 @@ def haversine_distance_km(lat1, lon1, lat2, lon2):
 
 
 def get_road_distance_km(lat1, lon1, lat2, lon2):
-    """
-    Try OSRM public demo server for road distance.
-    Returns distance in km or None on failure.
-    """
+
     coords = f"{float(lon1)},{float(lat1)};{float(lon2)},{float(lat2)}"
     url = f"http://router.project-osrm.org/route/v1/driving/{coords}?overview=false"
     try:
@@ -61,7 +58,7 @@ def calculate_distance_km(restaurant_lat, restaurant_lon, customer_lat, customer
         restaurant_lat, restaurant_lon, customer_lat, customer_lon
     )))
     corrected = (haversine_km * HAVERSINE_TO_ROAD_FACTOR).quantize(Decimal('0.1'))
-    return corrected, 'estimated'
+    return corrected, 'estimated' 
 
 
 def calculate_delivery_fee(restaurant_lat, restaurant_lon, customer_lat, customer_lon):
