@@ -2253,6 +2253,7 @@ def dashboard_view(request):
             'id': o.order_id,
             'restaurantName': o.restaurant_name,
             'restaurantImage': o.items.first().image if o.items.exists() and o.items.first().image else 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100&q=80',
+            'restaurantLogo': o.restaurant.logo if o.restaurant and o.restaurant.logo else '',
             'items': items,
             'subtotal': float(o.subtotal),
             'deliveryFee': float(o.delivery_fee),
@@ -2487,6 +2488,7 @@ def restaurant_dashboard_view(request, section='overview'):
 
     stats = {
         'today_revenue': sum(o.total for o in orders_today if o.status == 'delivered'),
+        'total_revenue': sum(float(o.total) for o in all_orders if o.status == 'delivered'),
         'total_orders': all_orders.count(),
         'pending_orders': all_orders.filter(status='pending').count(),
         'completed_orders': all_orders.filter(status='delivered').count(),

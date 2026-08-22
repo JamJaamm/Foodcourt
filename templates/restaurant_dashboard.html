@@ -130,8 +130,9 @@
         {% if active_section == 'overview' %}
         <!-- ═══════════════ OVERVIEW ═══════════════ -->
         <div class="rd-header"><div><h2>Dashboard Overview</h2><p>Welcome back, {{ request.user.first_name }}!</p></div></div>
-        <div class="stats-grid">
-          <div class="stat-card"><div class="icon">💰</div><div class="num">₦{{ stats.today_revenue|compact }}</div><div class="label">Today's Revenue</div></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-card"><div class="icon">💰</div><div class="num">₦{{ stats.total_revenue|compact }}</div><div class="label">Total Revenue</div></div>
+          <div class="stat-card"><div class="icon">📈</div><div class="num">₦{{ stats.today_revenue|compact }}</div><div class="label">Today's Revenue</div></div>
           <div class="stat-card"><div class="icon">📦</div><div class="num">{{ stats.total_orders }}</div><div class="label">Total Orders</div></div>
           <div class="stat-card"><div class="icon">⏳</div><div class="num">{{ stats.pending_orders }}</div><div class="label">Pending Orders</div></div>
           <div class="stat-card"><div class="icon">✅</div><div class="num">{{ stats.completed_orders }}</div><div class="label">Completed Orders</div></div>
