@@ -5,74 +5,209 @@
 
 {% block extra_css %}
 <style>
-  .legal-page { max-width: 800px; margin: 0 auto; padding: 60px 24px 80px; }
-  .legal-page h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--text-primary); margin-bottom: 8px; }
-  .legal-page .legal-date { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
-  .legal-page h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--text-primary); margin-top: 36px; margin-bottom: 12px; }
-  .legal-page p, .legal-page li { font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
-  .legal-page ul { padding-left: 20px; margin-bottom: 16px; }
-  .legal-page li { margin-bottom: 8px; }
-  .legal-page a { color: var(--primary); text-decoration: none; font-weight: 600; }
-  .legal-page a:hover { text-decoration: underline; }
-  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
-  .contact-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-align: center; transition: transform .2s; }
+  .contact-page { max-width: 900px; margin: 0 auto; padding: 60px 24px 80px; }
+  .contact-page h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--text-primary); margin-bottom: 6px; }
+  .contact-page .subtitle { font-size: 15px; color: var(--text-muted); margin-bottom: 36px; }
+
+  .contact-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 40px; }
+  .contact-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 16px; text-align: center; transition: transform .2s; text-decoration: none; }
   .contact-card:hover { transform: translateY(-2px); }
-  .contact-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 14px; }
-  .contact-card h3 { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 6px; }
-  .contact-card p { font-size: 14px; color: var(--text-secondary); margin: 0; }
+  .contact-icon { width: 48px; height: 48px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 10px; }
+  .contact-card h3 { font-family: var(--font-display); font-weight: 700; font-size: .9rem; color: var(--text-primary); margin-bottom: 4px; }
+  .contact-card p { font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
   .contact-card a { color: var(--primary); text-decoration: none; font-weight: 600; }
-  @media (max-width: 600px) { .contact-grid { grid-template-columns: 1fr; } }
+
+  .contact-body { display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: start; }
+  .form-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; }
+  .form-section h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 14px; font-size: 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--border); background: var(--bg-elevated, #f9fafb); color: var(--text-primary);
+    font-family: inherit; resize: vertical; box-sizing: border-box;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,107,53,.12);
+  }
+  .form-group textarea { min-height: 120px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-success { display:none; text-align:center; padding:40px 20px; }
+  .form-success i { font-size:48px; color:var(--success); margin-bottom:16px; }
+  .form-success h3 { font-family:var(--font-display); font-weight:700; color:var(--text-primary); margin-bottom:8px; }
+  .form-success p { font-size:14px; color:var(--text-secondary); }
+  .info-section h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text-primary); margin-bottom: 16px; }
+  .info-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 14px; }
+  .info-card h3 { font-family: var(--font-display); font-weight: 700; font-size: .95rem; color: var(--text-primary); margin-bottom: 6px; }
+  .info-card p { font-size: 13px; line-height: 1.65; color: var(--text-secondary); margin: 0; }
+  .info-card a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  .info-card a:hover { text-decoration: underline; }
+  .info-icon { display:inline-flex; width:32px; height:32px; border-radius:8px; align-items:center; justify-content:center; font-size:14px; margin-bottom:8px; }
+
+  @media (max-width: 768px) {
+    .contact-grid { grid-template-columns: 1fr 1fr; }
+    .contact-body { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) { .contact-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="legal-page">
+<div class="contact-page">
   <h1>Contact Us</h1>
-  <p class="legal-date">We'd love to hear from you. Here's how to reach us.</p>
+  <p class="subtitle">Have a question, issue, or feedback? We're here to help.</p>
 
+  <!-- Quick contact cards -->
   <div class="contact-grid">
-    <div class="contact-card">
+    <a href="mailto:support@choply.app" class="contact-card">
       <div class="contact-icon" style="background:rgba(255,107,53,.12);">📧</div>
-      <h3>Email Support</h3>
-      <p><a href="mailto:support@choply.app">support@choply.app</a></p>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Replies within 24 hours</p>
-    </div>
-    <div class="contact-card">
+      <h3>Email</h3>
+      <p>support@choply.app</p>
+    </a>
+    <a href="tel:+234800CHOPLY" class="contact-card">
       <div class="contact-icon" style="background:rgba(6,214,160,.12);">📞</div>
       <h3>Phone</h3>
-      <p><a href="tel:+234800CHOPLY">+234 800 CHOPLY</a></p>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Mon–Sat, 8am–8pm WAT</p>
-    </div>
-    <div class="contact-card">
-      <div class="contact-icon" style="background:rgba(21,101,192,.12);">🏢</div>
-      <h3>Head Office</h3>
-      <p>Lagos, Nigeria</p>
-    </div>
-    <div class="contact-card">
+      <p>+234 800 CHOPLY</p>
+    </a>
+    <a href="mailto:safety@choply.app" class="contact-card">
       <div class="contact-icon" style="background:rgba(198,40,40,.12);">🚨</div>
-      <h3>Safety Issues</h3>
-      <p><a href="mailto:safety@choply.app">safety@choply.app</a></p>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Priority response</p>
-    </div>
+      <h3>Safety</h3>
+      <p>safety@choply.app</p>
+    </a>
+    <a href="/help/" class="contact-card">
+      <div class="contact-icon" style="background:rgba(21,101,192,.12);">❓</div>
+      <h3>Help Center</h3>
+      <p>FAQs &amp; guides</p>
+    </a>
   </div>
 
-  <h2>General Enquiries</h2>
-  <p>For general questions, feedback, or partnership opportunities, email us at <a href="mailto:hello@choply.app">hello@choply.app</a>.</p>
+  <!-- Form + Info -->
+  <div class="contact-body">
+    <div class="form-section">
+      <h2>Send Us a Message</h2>
+      <form id="contactForm" onsubmit="submitContact(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contact-name">Full Name</label>
+            <input type="text" id="contact-name" placeholder="Your name" required>
+          </div>
+          <div class="form-group">
+            <label for="contact-email">Email Address</label>
+            <input type="email" id="contact-email" placeholder="you@example.com" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contact-category">Category</label>
+            <select id="contact-category">
+              <option value="general">General Enquiry</option>
+              <option value="order">Order Issue</option>
+              <option value="account">Account Help</option>
+              <option value="restaurant">Restaurant Partnership</option>
+              <option value="rider">Rider Application</option>
+              <option value="safety">Safety Concern</option>
+              <option value="feedback">Feedback</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="contact-subject">Subject</label>
+            <input type="text" id="contact-subject" placeholder="Brief subject" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="contact-message">Message</label>
+          <textarea id="contact-message" placeholder="Tell us what's on your mind…" required></textarea>
+        </div>
+        <button type="submit" class="fc-btn fc-btn-primary" style="width:100%;padding:12px 24px;" id="contact-submit">
+          <i class="fa-solid fa-paper-plane me-2"></i> Send Message
+        </button>
+      </form>
+      <div class="form-success" id="contactSuccess">
+        <i class="fa-solid fa-circle-check"></i>
+        <h3>Message Sent!</h3>
+        <p>Thanks for reaching out. We'll get back to you within 24 hours.</p>
+        <button class="fc-btn fc-btn-primary" style="margin-top:16px;" onclick="resetContactForm()">Send Another</button>
+      </div>
+    </div>
 
-  <h2>For Restaurants</h2>
-  <p>Want to list your restaurant on Choply? Visit <a href="/restaurant/register/">Register Your Restaurant</a> or email <a href="mailto:restaurants@choply.app">restaurants@choply.app</a>.</p>
-
-  <h2>For Riders</h2>
-  <p>Ready to start delivering? Visit <a href="/riders/">Become a Rider</a> or email <a href="mailto:riders@choply.app">riders@choply.app</a>.</p>
-
-  <h2>Report a Problem</h2>
-  <p>If you're having issues with an order, your account, or anything else, please include:</p>
-  <ul>
-    <li>Your account email address</li>
-    <li>Order ID (if applicable)</li>
-    <li>A clear description of the issue</li>
-    <li>Any relevant screenshots</li>
-  </ul>
-  <p>This helps us resolve your issue as quickly as possible.</p>
+    <div class="info-section">
+      <h2>Other Ways to Reach Us</h2>
+      <div class="info-card">
+        <div class="info-icon" style="background:rgba(255,107,53,.12);">🏢</div>
+        <h3>Head Office</h3>
+        <p>Lagos, Nigeria</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon" style="background:rgba(6,214,160,.12);">🕐</div>
+        <h3>Support Hours</h3>
+        <p>Monday – Saturday, 8:00 AM – 8:00 PM WAT<br>Sunday: 10:00 AM – 4:00 PM WAT</p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon" style="background:rgba(21,101,192,.12);">🏪</div>
+        <h3>Restaurants</h3>
+        <p>Want to list your restaurant on Choply? <a href="/restaurant/register/">Register here</a> or email <a href="mailto:restaurants@choply.app">restaurants@choply.app</a></p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon" style="background:rgba(123,31,162,.12);">🛵</div>
+        <h3>Riders</h3>
+        <p>Ready to deliver? <a href="/riders/">Apply now</a> or email <a href="mailto:riders@choply.app">riders@choply.app</a></p>
+      </div>
+      <div class="info-card">
+        <div class="info-icon" style="background:rgba(198,40,40,.12);">🛡️</div>
+        <h3>Safety</h3>
+        <p>Report safety concerns to <a href="mailto:safety@choply.app">safety@choply.app</a> for a priority response.</p>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+function submitContact(e) {
+  e.preventDefault();
+  const btn = document.getElementById('contact-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Sending…';
+
+  fetch('/contact/api/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+    body: JSON.stringify({
+      name: document.getElementById('contact-name').value.trim(),
+      email: document.getElementById('contact-email').value.trim(),
+      category: document.getElementById('contact-category').value,
+      subject: document.getElementById('contact-subject').value.trim(),
+      message: document.getElementById('contact-message').value.trim()
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      document.getElementById('contactForm').style.display = 'none';
+      document.getElementById('contactSuccess').style.display = 'block';
+    } else {
+      alert(d.error || 'Something went wrong. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Send Message';
+    }
+  })
+  .catch(() => {
+    alert('Network error. Please try again.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Send Message';
+  });
+}
+
+function resetContactForm() {
+  document.getElementById('contactForm').reset();
+  document.getElementById('contactForm').style.display = 'block';
+  document.getElementById('contactSuccess').style.display = 'none';
+  const btn = document.getElementById('contact-submit');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Send Message';
+}
+</script>
 {% endblock %}

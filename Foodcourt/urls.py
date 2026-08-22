@@ -15,6 +15,7 @@ urlpatterns = [
     path('help/', views.help_center_view, name='help_center'),
     path('safety/', views.safety_view, name='safety'),
     path('contact/', views.contact_us_view, name='contact_us'),
+    path('contact/api/', views.contact_us_api, name='contact_us_api'),
     path('riders/', views.rider_view, name='riders'),
     path('riders/api/banks/', views.rider_banks_api, name='rider_banks_api'),
     path('riders/api/banks/resolve/', views.rider_bank_resolve_api, name='rider_bank_resolve_api'),

@@ -25,7 +25,8 @@ from django.urls import reverse
 from .models import (
     VerificationCode, Order, OrderItem, Address,
     Restaurant, Category, MenuItem, InventoryItem, Coupon, Review, Profile,
-    Riders, Delivery, DeliveryStatusLog, Notification, RiderReview, AdminAction
+    Riders, Delivery, DeliveryStatusLog, Notification, RiderReview, AdminAction,
+    ContactMessage,
 )
 from .notifications import send_email, send_order_confirmation_emails
 from . import delivery_services
@@ -630,6 +631,32 @@ def safety_view(request):
 
 def contact_us_view(request):
     return render(request, 'contact_us.html')
+
+def contact_us_api(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
+    subject = data.get('subject', '').strip()
+    message = data.get('message', '').strip()
+    category = data.get('category', 'general')
+    if not all([name, email, subject, message]):
+        return JsonResponse({'error': 'All fields are required'}, status=400)
+    if '@' not in email:
+        return JsonResponse({'error': 'Please enter a valid email address'}, status=400)
+    ContactMessage.objects.create(
+        name=name, email=email, category=category,
+        subject=subject, message=message,
+    )
+    try:
+        send_support_notification(name, email, category, subject, message)
+    except Exception:
+        pass
+    return JsonResponse({'success': True})
 
 def rider_view(request):
     return render(request, 'Riders/rider.html')

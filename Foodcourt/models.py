@@ -468,3 +468,29 @@ class DeliverySettings(models.Model):
         return settings_obj
 
 
+class ContactMessage(models.Model):
+    CATEGORY_CHOICES = [
+        ('general', 'General Enquiry'),
+        ('order', 'Order Issue'),
+        ('account', 'Account Help'),
+        ('restaurant', 'Restaurant Partnership'),
+        ('rider', 'Rider Application'),
+        ('safety', 'Safety Concern'),
+        ('feedback', 'Feedback'),
+        ('other', 'Other'),
+    ]
+    name = models.CharField(max_length=150)
+    email = models.EmailField()
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='general')
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} — {self.subject}"
+
+

@@ -104,3 +104,27 @@ def send_order_confirmation_emails(order):
                 context={**context, 'dashboard_url': _site_url(reverse('restaurant_dashboard'))},
                 recipient_list=[restaurant_email],
             )
+
+
+def send_support_notification(name, sender_email, category, subject, message):
+    """Send contact form submission to the support inbox."""
+    CATEGORY_LABELS = {
+        'general': 'General Enquiry', 'order': 'Order Issue',
+        'account': 'Account Help', 'restaurant': 'Restaurant Partnership',
+        'rider': 'Rider Application', 'safety': 'Safety Concern',
+        'feedback': 'Feedback', 'other': 'Other',
+    }
+    support_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'onboarding@resend.dev')
+    category_label = CATEGORY_LABELS.get(category, category)
+    send_email(
+        subject=f"[Choply Support] {subject}",
+        template_name="emails/contact_form_notification.html",
+        context={
+            'name': name,
+            'sender_email': sender_email,
+            'category': category_label,
+            'subject': subject,
+            'message': message,
+        },
+        recipient_list=[support_email],
+    )
