@@ -622,6 +622,15 @@ def terms_view(request):
 def privacy_view(request):
     return render(request, 'privacy.html')
 
+def help_center_view(request):
+    return render(request, 'help_center.html')
+
+def safety_view(request):
+    return render(request, 'safety.html')
+
+def contact_us_view(request):
+    return render(request, 'contact_us.html')
+
 def rider_view(request):
     return render(request, 'Riders/rider.html')
 

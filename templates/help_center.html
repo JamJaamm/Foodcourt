@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choply — Help Center{% endblock %}
+
+{% block extra_css %}
+<style>
+  .legal-page { max-width: 800px; margin: 0 auto; padding: 60px 24px 80px; }
+  .legal-page h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--text-primary); margin-bottom: 8px; }
+  .legal-page .legal-date { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+  .legal-page h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--text-primary); margin-top: 36px; margin-bottom: 12px; }
+  .legal-page p, .legal-page li { font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
+  .legal-page ul { padding-left: 20px; margin-bottom: 16px; }
+  .legal-page li { margin-bottom: 8px; }
+  .legal-page a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  .legal-page a:hover { text-decoration: underline; }
+  .faq-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; overflow: hidden; }
+  .faq-q { padding: 16px 20px; cursor: pointer; font-weight: 600; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; }
+  .faq-q i { font-size: 12px; color: var(--text-muted); transition: transform .2s; }
+  .faq-a { padding: 0 20px 16px; font-size: 14px; line-height: 1.7; color: var(--text-secondary); display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="legal-page">
+  <h1>Help Center</h1>
+  <p class="legal-date">Find answers to common questions and get the help you need.</p>
+
+  <h2>Placing Orders</h2>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      How do I place an order? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Browse restaurants, select your items, add them to your cart, choose a delivery address and payment method, then tap "Place Order". You'll receive a confirmation and can track your order in real time.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      Can I modify or cancel my order? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>You can cancel your order as long as it hasn't been confirmed by the restaurant yet. Once the restaurant starts preparing your food, cancellation is no longer available. Contact support for assistance with special cases.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      What payment methods are accepted? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>We accept credit/debit cards (processed via Paystack), cash on delivery, and digital wallet payments. All card transactions are securely processed — we never store your card details.</p>
+    </div>
+  </div>
+
+  <h2>Delivery</h2>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      How is the delivery fee calculated? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Delivery fees are calculated based on the distance between the restaurant and your delivery address using real-time mapping data. The fee is displayed before you confirm your order so there are no surprises.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      Can I track my delivery in real time? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Yes! Once your order is out for delivery, you can track your rider's location on the order tracking page. You'll also receive status updates as your order progresses through preparation and delivery.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      My delivery is late — what should I do? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Delivery times are estimates and can vary due to weather, traffic, or restaurant prep time. If your order is significantly delayed, please contact our support team and we'll look into it immediately.</p>
+    </div>
+  </div>
+
+  <h2>Account &amp; Payments</h2>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      How do I reset my password? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Click "Forgot Password" on the login page, enter your email address, and we'll send you a reset link. The link expires after a short time for security.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      I was charged incorrectly — what do I do? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>If you believe you were charged incorrectly, please contact us at <a href="mailto:support@choply.app">support@choply.app</a> with your order ID. We'll investigate and process a refund if applicable.</p>
+    </div>
+  </div>
+
+  <h2>For Restaurants &amp; Riders</h2>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      How do I register my restaurant on Choply? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Visit <a href="/restaurant/register/">Register Your Restaurant</a> and fill in the required details. Our team will review your application and get back to you within a few business days.</p>
+    </div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('i').classList.toggle('fa-chevron-up');this.querySelector('i').classList.toggle('fa-chevron-down');">
+      How do I become a Choply rider? <i class="fa-solid fa-chevron-down"></i>
+    </div>
+    <div class="faq-a">
+      <p>Visit <a href="/riders/">Become a Rider</a>, complete the online application, and submit your documents. Once approved, you can start accepting deliveries right away.</p>
+    </div>
+  </div>
+
+  <h2>Still Need Help?</h2>
+  <p>If you couldn't find what you're looking for, reach out to us:</p>
+  <ul>
+    <li>Email: <a href="mailto:support@choply.app">support@choply.app</a></li>
+    <li>Phone: <a href="tel:+234800CHOPLY">+234 800 CHOPLY</a></li>
+  </ul>
+</div>
+{% endblock %}

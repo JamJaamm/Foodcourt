@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choply — Contact Us{% endblock %}
+
+{% block extra_css %}
+<style>
+  .legal-page { max-width: 800px; margin: 0 auto; padding: 60px 24px 80px; }
+  .legal-page h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--text-primary); margin-bottom: 8px; }
+  .legal-page .legal-date { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
+  .legal-page h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--text-primary); margin-top: 36px; margin-bottom: 12px; }
+  .legal-page p, .legal-page li { font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
+  .legal-page ul { padding-left: 20px; margin-bottom: 16px; }
+  .legal-page li { margin-bottom: 8px; }
+  .legal-page a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  .legal-page a:hover { text-decoration: underline; }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .contact-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; text-align: center; transition: transform .2s; }
+  .contact-card:hover { transform: translateY(-2px); }
+  .contact-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 14px; }
+  .contact-card h3 { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 6px; }
+  .contact-card p { font-size: 14px; color: var(--text-secondary); margin: 0; }
+  .contact-card a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  @media (max-width: 600px) { .contact-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="legal-page">
+  <h1>Contact Us</h1>
+  <p class="legal-date">We'd love to hear from you. Here's how to reach us.</p>
+
+  <div class="contact-grid">
+    <div class="contact-card">
+      <div class="contact-icon" style="background:rgba(255,107,53,.12);">📧</div>
+      <h3>Email Support</h3>
+      <p><a href="mailto:support@choply.app">support@choply.app</a></p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Replies within 24 hours</p>
+    </div>
+    <div class="contact-card">
+      <div class="contact-icon" style="background:rgba(6,214,160,.12);">📞</div>
+      <h3>Phone</h3>
+      <p><a href="tel:+234800CHOPLY">+234 800 CHOPLY</a></p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Mon–Sat, 8am–8pm WAT</p>
+    </div>
+    <div class="contact-card">
+      <div class="contact-icon" style="background:rgba(21,101,192,.12);">🏢</div>
+      <h3>Head Office</h3>
+      <p>Lagos, Nigeria</p>
+    </div>
+    <div class="contact-card">
+      <div class="contact-icon" style="background:rgba(198,40,40,.12);">🚨</div>
+      <h3>Safety Issues</h3>
+      <p><a href="mailto:safety@choply.app">safety@choply.app</a></p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">Priority response</p>
+    </div>
+  </div>
+
+  <h2>General Enquiries</h2>
+  <p>For general questions, feedback, or partnership opportunities, email us at <a href="mailto:hello@choply.app">hello@choply.app</a>.</p>
+
+  <h2>For Restaurants</h2>
+  <p>Want to list your restaurant on Choply? Visit <a href="/restaurant/register/">Register Your Restaurant</a> or email <a href="mailto:restaurants@choply.app">restaurants@choply.app</a>.</p>
+
+  <h2>For Riders</h2>
+  <p>Ready to start delivering? Visit <a href="/riders/">Become a Rider</a> or email <a href="mailto:riders@choply.app">riders@choply.app</a>.</p>
+
+  <h2>Report a Problem</h2>
+  <p>If you're having issues with an order, your account, or anything else, please include:</p>
+  <ul>
+    <li>Your account email address</li>
+    <li>Order ID (if applicable)</li>
+    <li>A clear description of the issue</li>
+    <li>Any relevant screenshots</li>
+  </ul>
+  <p>This helps us resolve your issue as quickly as possible.</p>
+</div>
+{% endblock %}
