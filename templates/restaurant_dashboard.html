@@ -388,11 +388,50 @@
           </div>
         </div>
         {% empty %}<div class="rd-card text-center text-muted py-5"><div class="icon" style="font-size:32px;">⭐</div>No reviews yet</div>{% endfor %}
+
+        {% if hidden_reviews %}
+        <div class="rd-card" style="margin-top:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('hidden-reviews-body').style.display=document.getElementById('hidden-reviews-body').style.display==='none'?'block':'none';this.querySelector('i').classList.toggle('fa-chevron-down');this.querySelector('i').classList.toggle('fa-chevron-up');">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <i class="fa-solid fa-eye-slash" style="color:var(--text-muted);"></i>
+              <strong style="font-size:14px;">Hidden Reviews</strong>
+              <span style="font-size:12px;color:var(--text-muted);">({{ hidden_reviews|length }})</span>
+            </div>
+            <i class="fa-solid fa-chevron-down" style="font-size:12px;color:var(--text-muted);"></i>
+          </div>
+          <div id="hidden-reviews-body" style="display:none;margin-top:14px;">
+            {% for r in hidden_reviews %}
+            <div class="rd-card" id="review-card-{{ r.id }}" style="border:1px dashed var(--border);background:var(--bg-elevated);">
+              <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;">
+                <div><strong>{{ r.user.get_full_name|default:r.user.email }}</strong> <span style="color:var(--warning);">{% for i in "12345"|make_list %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</span></div>
+                <small style="color:var(--text-muted)">{{ r.created_at|date:"M d, Y" }}</small>
+              </div>
+              <p style="margin:8px 0;font-size:13px;color:var(--text-secondary)">{{ r.comment }}</p>
+              {% if r.reply %}<div style="background:var(--bg-card);padding:12px;border-radius:var(--radius-md);font-size:13px;margin-top:8px;"><small style="color:var(--text-muted)">Your reply:</small><br>{{ r.reply }}</div>{% endif %}
+              <div style="margin-top:10px;display:flex;gap:8px;">
+                <button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--success)" onclick="unhideReview({{ r.id }})"><i class="fa-solid fa-eye me-1"></i> Unhide</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
         {% endif %}
 
         {% if active_section == 'inventory' %}
         <!-- ═══════════════ INVENTORY ═══════════════ -->
-        <div class="rd-header"><div><h2>Inventory Management</h2><p>Track ingredient stock levels</p></div></div>
+        <div class="rd-header"><div><h2>Inventory Management</h2><p>Track ingredient stock levels</p></div>
+          <button class="fc-btn fc-btn-primary" onclick="document.getElementById('add-inventory-form').style.display=document.getElementById('add-inventory-form').style.display==='none'?'block':'none'"><i class="fa-solid fa-plus me-1"></i> Add Item</button>
+        </div>
+        <div id="add-inventory-form" class="rd-card" style="display:none;margin-bottom:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+            <div><label style="font-size:12px;font-weight:600;">Name</label><input type="text" id="inv-new-name" class="form-control form-control-sm" placeholder="e.g. Tomatoes"></div>
+            <div><label style="font-size:12px;font-weight:600;">Stock</label><input type="number" step="0.1" id="inv-new-stock" class="form-control form-control-sm" placeholder="0" value="0"></div>
+            <div><label style="font-size:12px;font-weight:600;">Unit</label><input type="text" id="inv-new-unit" class="form-control form-control-sm" placeholder="kg" value="units"></div>
+            <div><label style="font-size:12px;font-weight:600;">Low Stock Alert</label><input type="number" step="0.1" id="inv-new-threshold" class="form-control form-control-sm" placeholder="10" value="10"></div>
+            <button class="fc-btn fc-btn-primary" onclick="createInventory()" style="height:38px;"><i class="fa-solid fa-check"></i></button>
+          </div>
+        </div>
         {% for item in low_stock %}<div class="alert alert-danger py-2" style="font-size:13px;border-radius:var(--radius-md);">⚠️ <strong>{{ item.name }}</strong> is low on stock ({{ item.stock|floatformat:1 }} {{ item.unit }})</div>{% endfor %}
         <div class="rd-table-wrap">
           <table class="rd-table">
@@ -407,7 +446,7 @@
                 <td>{% if item.stock <= item.low_stock_threshold %}<span class="status-badge status-cancelled">Low Stock</span>{% else %}<span class="status-badge status-delivered">In Stock</span>{% endif %}</td>
                 <td><input type="number" step="0.1" id="inv-input-{{ item.id }}" class="form-control form-control-sm" style="width:80px;display:inline-block;font-size:12px;" placeholder="Stock"><button class="fc-btn fc-btn-ghost fc-btn-xs ms-1" onclick="updateInventory({{ item.id }})"><i class="fa-solid fa-sync"></i></button></td>
               </tr>
-              {% empty %}<tr><td colspan="6" class="text-center py-4 text-muted">No inventory items</td></tr>{% endfor %}
+              {% empty %}<tr><td colspan="6" class="text-center py-4 text-muted">No inventory items — click "Add Item" to get started</td></tr>{% endfor %}
             </tbody>
           </table>
         </div>
@@ -783,6 +822,15 @@ function updateInventory(id){
   fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'update_inventory',id:id,stock:stock})})
   .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('inv-stock-'+id).textContent=d.stock;toast('Stock updated')}else toast(d.error,'error')});
 }
+function createInventory(){
+  const name=document.getElementById('inv-new-name').value.trim();
+  if(!name){toast('Name is required','error');return;}
+  const stock=parseFloat(document.getElementById('inv-new-stock').value)||0;
+  const unit=document.getElementById('inv-new-unit').value.trim()||'units';
+  const threshold=parseFloat(document.getElementById('inv-new-threshold').value)||10;
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'create_inventory',name:name,stock:stock,unit:unit,threshold:threshold})})
+  .then(r=>r.json()).then(d=>{if(d.success){toast('Item added');setTimeout(()=>location.reload(),600)}else toast(d.error,'error')});
+}
 
 // ═══ REVIEWS ═══
 function replyReview(id){
@@ -793,6 +841,10 @@ function replyReview(id){
 function hideReview(id){
   fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'hide_review',id:id})})
   .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('review-card-'+id)?.remove();toast('Review hidden')}else toast(d.error,'error')});
+}
+function unhideReview(id){
+  fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify({action:'unhide_review',id:id})})
+  .then(r=>r.json()).then(d=>{if(d.success){document.getElementById('review-card-'+id)?.remove();toast('Review restored')}else toast(d.error,'error')});
 }
 
 // ═══ COUPONS ═══

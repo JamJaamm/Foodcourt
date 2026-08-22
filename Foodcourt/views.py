@@ -2498,7 +2498,8 @@ def restaurant_dashboard_view(request, section='overview'):
     }
 
     low_stock = InventoryItem.objects.filter(restaurant=restaurant, stock__lte=db_models.F('low_stock_threshold'))
-    recent_reviews = Review.objects.filter(restaurant=restaurant, is_hidden=False).order_by('-created_at')[:5]
+    visible_reviews = Review.objects.filter(restaurant=restaurant, is_hidden=False).order_by('-created_at')
+    hidden_reviews = Review.objects.filter(restaurant=restaurant, is_hidden=True).order_by('-created_at')
 
     # Paginate orders
     page_number = request.GET.get('page', 1)
@@ -2545,7 +2546,8 @@ def restaurant_dashboard_view(request, section='overview'):
         'inventory': InventoryItem.objects.filter(restaurant=restaurant).order_by('name'),
         'low_stock': low_stock,
         'coupons': Coupon.objects.filter(restaurant=restaurant).order_by('-created_at'),
-        'reviews': recent_reviews,
+        'reviews': visible_reviews,
+        'hidden_reviews': hidden_reviews,
         'customers_list': customers[:20],
         'order_statuses': [s[0] for s in Order.STATUS_CHOICES],
         'active_section': section,
@@ -2795,6 +2797,19 @@ def restaurant_api_view(request):
             return JsonResponse({'error': 'Category not found'}, status=404)
 
     # === INVENTORY ACTIONS ===
+    elif action == 'create_inventory':
+        name = data.get('name', '').strip()
+        if not name:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+        stock = float(data.get('stock', 0))
+        unit = data.get('unit', 'units').strip()
+        threshold = float(data.get('threshold', 10))
+        inv = InventoryItem.objects.create(
+            restaurant=restaurant, name=name, stock=stock,
+            unit=unit, low_stock_threshold=threshold,
+        )
+        return JsonResponse({'success': True, 'id': inv.id, 'name': inv.name, 'stock': float(inv.stock), 'unit': inv.unit, 'threshold': float(inv.low_stock_threshold)})
+
     elif action == 'update_inventory':
         try:
             inv = InventoryItem.objects.get(id=data.get('id'), restaurant=restaurant)
@@ -2877,6 +2892,15 @@ def restaurant_api_view(request):
         try:
             rev = Review.objects.get(id=data.get('id'), restaurant=restaurant)
             rev.is_hidden = True
+            rev.save()
+            return JsonResponse({'success': True})
+        except Review.DoesNotExist:
+            return JsonResponse({'error': 'Review not found'}, status=404)
+
+    elif action == 'unhide_review':
+        try:
+            rev = Review.objects.get(id=data.get('id'), restaurant=restaurant)
+            rev.is_hidden = False
             rev.save()
             return JsonResponse({'success': True})
         except Review.DoesNotExist:
