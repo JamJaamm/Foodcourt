@@ -28,8 +28,13 @@ load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY", "")
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable is required. Set it in your .env or hosting dashboard.")
+if not SECRET_KEY and os.environ.get("RENDER"):
+    raise ValueError("SECRET_KEY environment variable is required. Set it in your Render dashboard.")
+elif not SECRET_KEY:
+    # Local dev fallback — never use this in production
+    SECRET_KEY = "django-insecure-local-dev-only-key-do-not-deploy"
+    import warnings as _warnings
+    _warnings.warn("SECRET_KEY not set — using insecure dev key. Do NOT deploy with this.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
