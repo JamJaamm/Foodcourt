@@ -101,7 +101,7 @@ window.FOODCOURT_DATA = {
       description: 'Rich tonkotsu and spicy miso ramen bowls, Korean BBQ bowls and crispy gyoza. Comfort food elevated.',
       category: 'ramen',
       tags: ['Ramen', 'Korean', 'Asian'],
-      rating: 4.8,
+      rating: 4.8,       
       reviewCount: 1203,
       deliveryTime: 30,
       deliveryFee: 1.49,

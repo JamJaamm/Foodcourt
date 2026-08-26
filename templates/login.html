@@ -38,24 +38,21 @@
     <div class="auth-card reveal">
       
       <div class="auth-header">
-        <h2 class="auth-title">Welcome Back</h2>
-        <p class="auth-subtitle">Enter your details to sign in</p>
+        <h2 class="auth-title">Welcome back to Choply</h2>
+        <p class="auth-subtitle">Sign in to continue ordering</p>
       </div>
 
-      <!-- Social Logins -->
-      <div class="auth-social-row">
-        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-          <i class="fa-brands fa-google text-danger"></i> Google
-        </button>
-        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-          <i class="fa-brands fa-apple text-dark"></i> Apple
-        </button>
-        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-          <i class="fa-brands fa-facebook text-primary"></i> Phone
-        </button>
-        <button class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-          <i class="fa-brands fa-x-twitter text-primary"></i> X
-        </button>
+      <!-- Google Sign-In -->
+      <div id="g_id_onload"
+           data-client_id="{{ google_client_id }}"
+           data-callback="handleGoogleCredential"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="rectangular" data-width="320" style="display:flex;justify-content:center;margin-bottom:4px;">
+      </div>
+
+      <div style="text-align:center;margin:12px 0;font-size:13px;color:var(--text-muted);font-weight:600;letter-spacing:0.05em;">
+        ───── OR ─────
       </div>
 
       {% if error %}
@@ -112,11 +109,31 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+  const CSRF_TOKEN = '{{ csrf_token }}';
+
+  function handleGoogleCredential(response) {
+    fetch('/google-auth/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify({ credential: response.credential })
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        window.location.href = d.redirect_url;
+      } else {
+        Toast.show(d.error || 'Google sign-in failed. Please try again.', 'error');
+      }
+    })
+    .catch(() => Toast.show('Network error. Please try again.', 'error'));
+  }
+
   function showLoadingSpinner(form) {
     const btn = document.getElementById('login-submit-btn');
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Signing In...`;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Signing In...';
   }
 </script>
 {% endblock %}

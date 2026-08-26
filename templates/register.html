@@ -36,8 +36,21 @@
     <div class="auth-card reveal">
       
       <div class="auth-header">
-        <h2 class="auth-title">Create Account</h2>
+        <h2 class="auth-title">Create your Choply account</h2>
         <p class="auth-subtitle">Join us to start ordering delicious food</p>
+      </div>
+
+      <!-- Google Sign-In -->
+      <div id="g_id_onload"
+           data-client_id="{{ google_client_id }}"
+           data-callback="handleGoogleCredential"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="rectangular" data-width="320" style="display:flex;justify-content:center;margin-bottom:4px;">
+      </div>
+
+      <div style="text-align:center;margin:12px 0;font-size:13px;color:var(--text-muted);font-weight:600;letter-spacing:0.05em;">
+        ───── OR ─────
       </div>
 
       {% if error %}
@@ -49,6 +62,10 @@
       <!-- Credentials Form -->
       <form method="POST" onsubmit="handleRegisterFormSubmit(event)">
         {% csrf_token %}
+        <!-- Honeypot — hidden from humans, filled by bots -->
+        <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;" aria-hidden="true">
+          <input type="text" name="website" tabindex="-1" autocomplete="off">
+        </div>
         <!-- Name row (2 columns) -->
         <div class="row g-2 mb-3">
           <div class="col-6" style="position:relative">
@@ -94,23 +111,6 @@
           <input type="password" class="auth-input" name="confirm_password" id="reg-confirm-password" placeholder="Confirm Password" required>
           <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)" tabindex="-1">
             <i class="fa-regular fa-eye"></i>
-          </button>
-        </div>
-
-        <hr>
-        <p style="text-align: center; font-family: 'Courier New', Courier, monospace, 'Times New Roman', Times, serif,cursive; margin-bottom: 12px;"><b>OR SIGN-UP WITH</b></p>
-        <div class="auth-social-row">
-          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-            <i class="fa-brands fa-google text-danger"></i> Google
-          </button>
-          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-            <i class="fa-brands fa-apple text-dark"></i> Apple
-          </button>
-          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-            <i class="fa-brands fa-facebook text-primary"></i> Facebook
-          </button>
-          <button type="button" class="auth-social-btn" onclick="Toast.show('Social login simulation successful!', 'success')">
-            <i class="fa-brands fa-x-twitter text-primary"></i> X
           </button>
         </div>
 
@@ -211,5 +211,25 @@
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Registering...`;
   }
+
+  const CSRF_TOKEN_REG = '{{ csrf_token }}';
+
+  function handleGoogleCredential(response) {
+    fetch('/google-auth/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN_REG },
+      body: JSON.stringify({ credential: response.credential })
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        window.location.href = d.redirect_url;
+      } else {
+        Toast.show(d.error || 'Google sign-in failed. Please try again.', 'error');
+      }
+    })
+    .catch(() => Toast.show('Network error. Please try again.', 'error'));
+  }
 </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 {% endblock %}

@@ -27,14 +27,12 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "django-insecure-local-development-key"
-)
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required. Set it in your .env or hosting dashboard.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.environ.get("DEBUG", "False") == "True"
-DEBUG = 'TRUE'
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
     "localhost",
@@ -74,6 +72,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'Foodcourt.security.SecurityHeadersMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -129,11 +128,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'foodcourt',
-            'USER': 'root',
-            'PASSWORD': '',
-            'HOST': '127.0.0.1',
-            'PORT': '3306',
+            'NAME': os.environ.get('DB_NAME', 'foodcourt'),
+            'USER': os.environ.get('DB_USER', 'root'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('DB_PORT', '3306'),
         }
     }
 
@@ -223,7 +222,58 @@ PAYSTACK_SECRET_KEY = os.environ.get('PAYSTACK_SECRET_KEY', '')
 PAYSTACK_CURRENCY = os.environ.get('PAYSTACK_CURRENCY', 'NGN')
 
 
-# ── Third-party patches ───────────────────────────────────────────────────
+# ── Security Hardening ──────────────────────────────────────────────────
+
+# Session Cookies
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7  # 7 days
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_NAME = 'choply_sessionid'
+
+# CSRF Cookies
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_NAME = 'choply_csrftoken'
+
+# Password hashing — PBKDF2 with SHA256 (Django default, 720k iterations)
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
+# Password validation (stricter)
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# Force HTTPS (in production)
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Security Headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = 'DENY'
+XContentSecurityPolicyOptions = {}
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+
+# Clickjacking protection (already in middleware, reinforced here)
+X_FRAME_OPTIONS = 'DENY'
+
+
+# ── Google OAuth ──────────────────────────────────────────────────────────
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
 # Must run at import time so Django's template context copying works on
 # Python 3.14 with Django 4.2.x (see Foodcourt/patches.py).
 from . import patches  # noqa: E402,F401

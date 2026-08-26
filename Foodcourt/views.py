@@ -1,6 +1,8 @@
 import random
 import json
 import functools
+import time
+from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from .geocoding import geocode_restaurant, geocode_address, build_geocoding_query
@@ -13,6 +15,39 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
+
+
+# ── Rate Limiter ─────────────────────────────────────────────────────────
+# Simple in-memory rate limiter for login brute-force protection.
+# Resets on server restart. For distributed deployments, use Redis/Django cache.
+_login_attempts = defaultdict(list)
+
+def _rate_limit(key, max_attempts=5, window=900):
+    """Return True if the request should be blocked (too many attempts).
+    `key` is usually the IP address. `window` is seconds (default 15 min)."""
+    now = time.time()
+    _login_attempts[key] = [t for t in _login_attempts[key] if now - t < window]
+    if len(_login_attempts[key]) >= max_attempts:
+        return True
+    return False
+
+def _record_attempt(key):
+    _login_attempts[key].append(time.time())
+
+def _clear_attempts(key):
+    _login_attempts.pop(key, None)
+
+
+# ── Input Sanitisation ──────────────────────────────────────────────────
+import re as _re
+_HTML_TAG_RE = _re.compile(r'<[^>]+>')
+
+def _sanitize(value, max_length=500):
+    """Strip HTML tags and truncate to max_length."""
+    if not isinstance(value, str):
+        return value
+    value = _HTML_TAG_RE.sub('', value).strip()
+    return value[:max_length]
 from django.conf import settings
 from django.http import JsonResponse
 from django.db import models as db_models
@@ -134,6 +169,10 @@ def login_view(request):
 
     error = None
     email_val = ""
+    ip = request.META.get('REMOTE_ADDR', 'unknown')
+
+    if _rate_limit(f'login:{ip}'):
+        return render(request, 'login.html', {'error': 'Too many login attempts. Please try again in 15 minutes.', 'email_val': ''})
 
     if request.method == "POST":
         email = request.POST.get('email', '').strip()
@@ -156,6 +195,7 @@ def login_view(request):
                 if not user.is_active:
                     error = "Please verify your email before logging in."
                 else:
+                    _clear_attempts(f'login:{ip}')
                     login(request, user)
                     if not remember_me:
                         request.session.set_expiry(0)
@@ -163,6 +203,7 @@ def login_view(request):
                         request.session.set_expiry(1209600)
                     return get_dashboard_redirect(user)
             else:
+                _record_attempt(f'login:{ip}')
                 error = "Invalid email or password."
 
     return render(request, 'login.html', {'error': error, 'email_val': email_val})
@@ -175,6 +216,10 @@ def register_view(request):
     form_data = {}
 
     if request.method == "POST":
+        # Honeypot bot trap — should always be empty
+        if request.POST.get('website'):
+            return redirect('register')
+
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email', '').strip()
@@ -193,7 +238,7 @@ def register_view(request):
             error = "All fields except phone number are required."
         elif password != confirm_password:
             error = "Passwords do not match."
-        elif len(password) < 6:
+        elif len(password) < 8:
             error = "Password must be at least 6 characters long."
         elif User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
             error = "An account with this email already exists."
@@ -232,6 +277,10 @@ def restaurant_register_view(request):
     form_data = {}
 
     if request.method == "POST":
+        # Honeypot bot trap
+        if request.POST.get('website'):
+            return redirect('restaurant_register')
+
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email', '').strip()
@@ -278,7 +327,7 @@ def restaurant_register_view(request):
             error = "All fields except optional restaurant details are required."
         elif password != confirm_password:
             error = "Passwords do not match."
-        elif len(password) < 6:
+        elif len(password) < 8:
             error = "Password must be at least 6 characters long."
         elif User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
             error = "An account with this email already exists."
@@ -470,6 +519,147 @@ def logout_view(request):
     logout(request)
     return redirect('home')
 
+
+# ── Google OAuth ─────────────────────────────────────────────────────────
+import logging as _logging
+from google.oauth2 import id_token as _google_id_token
+from google.auth.transport import requests as _google_requests
+
+_google_log = _logging.getLogger('google_auth')
+
+
+def _google_verify_credential(credential):
+    """Verify a Google ID token and return the decoded payload, or None."""
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
+    if not client_id:
+        _google_log.error('GOOGLE_CLIENT_ID is not configured.')
+        return None
+    try:
+        idinfo = _google_id_token.verify_oauth2_token(
+            credential, _google_requests.Request(), client_id,
+        )
+        if idinfo['iss'] not in ('accounts.google.com', 'https://accounts.google.com'):
+            _google_log.warning('Invalid Google issuer: %s', idinfo.get('iss'))
+            return None
+        return idinfo
+    except Exception as exc:
+        _google_log.warning('Google token verification failed: %s', exc)
+        return None
+
+
+def google_auth_callback(request):
+    """Handle the Google credential posted from the frontend."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request body'}, status=400)
+
+    credential = (data.get('credential') or '').strip()
+    if not credential:
+        return JsonResponse({'error': 'Missing Google credential'}, status=400)
+
+    idinfo = _google_verify_credential(credential)
+    if idinfo is None:
+        return JsonResponse({'error': 'Google authentication failed. Please try again.'}, status=401)
+
+    google_email = idinfo.get('email', '').strip().lower()
+    if not google_email:
+        return JsonResponse({'error': 'Google account has no email address'}, status=400)
+
+    email_verified = idinfo.get('email_verified', False)
+
+    first_name = idinfo.get('given_name', '').strip()
+    last_name = idinfo.get('family_name', '').strip()
+    picture = idinfo.get('picture', '')
+
+    # Check if user already exists (by email)
+    existing_user = User.objects.filter(email=google_email).first()
+
+    if existing_user:
+        # Existing Choply account — sign them in
+        user = existing_user
+        updated = False
+        if not user.first_name and first_name:
+            user.first_name = first_name
+            updated = True
+        if not user.last_name and last_name:
+            user.last_name = last_name
+            updated = True
+        if picture and not hasattr(user, 'profile'):
+            Profile.objects.create(user=user, profile_picture='')
+            updated = True
+        if updated:
+            user.save()
+    else:
+        # New Google user — create account
+        username_base = google_email.split('@')[0]
+        username = username_base
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f'{username_base}{counter}'
+            counter += 1
+
+        user = User.objects.create_user(
+            username=username,
+            email=google_email,
+            first_name=first_name or username_base.title(),
+            last_name=last_name or '',
+        )
+        # Generate an unusable password so nobody can log in with a password
+        user.set_unusable_password()
+        user.is_active = True  # Email is verified by Google
+        user.save()
+        Profile.objects.create(user=user, profile_picture='')
+
+    # Log the user in
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+    # Check if profile needs completion (phone number)
+    profile = getattr(user, 'profile', None)
+    needs_profile = profile and not (profile.phone or '').strip()
+
+    return JsonResponse({
+        'success': True,
+        'needs_profile': needs_profile,
+        'redirect_url': '/complete-profile/' if needs_profile else get_dashboard_redirect_url(user),
+    })
+
+
+def get_dashboard_redirect_url(user):
+    """Return the dashboard URL string for a user."""
+    from django.urls import reverse
+    if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
+        return reverse('admin_dashboard')
+    if hasattr(user, 'restaurant') or Restaurant.objects.filter(owner=user).exists():
+        return reverse('restaurant_dashboard')
+    return reverse('dashboard')
+
+
+@login_required(login_url='login')
+def complete_profile_view(request):
+    """Google signup completion — collect phone number if missing."""
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if (profile.phone or '').strip():
+        return redirect('dashboard')
+
+    error = None
+    if request.method == 'POST':
+        phone = request.POST.get('phone', '').strip()
+        if not phone:
+            error = 'Phone number is required.'
+        elif len(phone) < 8:
+            error = 'Please enter a valid phone number.'
+        else:
+            profile.phone = phone
+            profile.save(update_fields=['phone'])
+            return redirect('dashboard')
+
+    return render(request, 'complete_profile.html', {'error': error})
+
+
 def forgot_password_view(request):
     if request.user.is_authenticated:
         return get_dashboard_redirect(request.user)
@@ -568,6 +758,7 @@ def auth_context_processor(request):
     return {
         'is_admin_user': user.is_authenticated and (is_restaurant_admin(user) or is_platform_admin(user)),
         'dashboard_url': dashboard_url,
+        'google_client_id': getattr(settings, 'GOOGLE_CLIENT_ID', ''),
     }
 
 CATEGORY_KEYWORDS = {
@@ -702,6 +893,10 @@ def rider_login_view(request):
 
     error = None
     email_val = ""
+    ip = request.META.get('REMOTE_ADDR', 'unknown')
+
+    if _rate_limit(f'rider_login:{ip}'):
+        return render(request, 'Riders/rider_login.html', {'error': 'Too many login attempts. Please try again in 15 minutes.', 'email_val': ''})
 
     if request.method == "POST":
         email = request.POST.get('email', '').strip()
@@ -714,6 +909,7 @@ def rider_login_view(request):
             rider = None
 
         if rider is None or not rider.check_password(password):
+            _record_attempt(f'rider_login:{ip}')
             error = "Invalid email or password."
         elif rider.status == 'pending':
             error = "Please verify your email before logging in."
@@ -724,6 +920,8 @@ def rider_login_view(request):
         elif not rider.is_active:
             error = "Your rider account is not active yet."
         else:
+            _clear_attempts(f'rider_login:{ip}')
+            request.session.cycle_key()
             request.session['rider_id'] = rider.id
             rider.last_login = timezone.now()
             rider.save(update_fields=['last_login'])
@@ -822,6 +1020,7 @@ def rider_register_view(request):
     email = val('email').lower()
     phone = val('phone')
     password = str(data.get('password', '') or '')
+    confirm_password = str(data.get('confirm_password', '') or '')
     dob_raw = val('dob')
 
     errors = {}
@@ -837,6 +1036,8 @@ def rider_register_view(request):
         errors['phone'] = 'Phone number is required.'
     if len(password) < 8:
         errors['password'] = 'Password must be at least 8 characters.'
+    if confirm_password and password != confirm_password:
+        errors['password'] = 'Passwords do not match.'
 
     dob = None
     if dob_raw:
@@ -1087,7 +1288,7 @@ def rider_toggle_online_view(request):
 def rider_accept_delivery_view(request, delivery_id):
     rider = request.rider
     if request.method == 'POST':
-        delivery = get_object_or_404(Delivery, id=delivery_id)
+        delivery = get_object_or_404(Delivery, id=delivery_id, status='searching')
         ok, error = delivery_services.accept_delivery(delivery, rider)
         if ok:
             messages.success(request, "Delivery accepted. Head to the restaurant!")
@@ -1098,7 +1299,7 @@ def rider_accept_delivery_view(request, delivery_id):
 @rider_required
 def rider_decline_delivery_view(request, delivery_id):
     if request.method == 'POST':
-        delivery = get_object_or_404(Delivery, id=delivery_id)
+        delivery = get_object_or_404(Delivery, id=delivery_id, status='searching')
         delivery_services.decline_delivery(delivery, request.rider)
     return redirect('rider_dashboard')
 
@@ -1235,7 +1436,7 @@ def submit_review_view(request, pk):
         rating = int(data.get('rating', 0))
     except (TypeError, ValueError):
         rating = 0
-    comment = (data.get('comment') or '').strip()
+    comment = _sanitize(data.get('comment') or '', max_length=1000)
 
     if rating < 1 or rating > 5:
         return JsonResponse({'error': 'Please select a star rating between 1 and 5.'}, status=400)
@@ -1542,7 +1743,7 @@ def admin_dashboard_view(request, section=None):
             'restaurant': None,
             'hide_navbar': True,
             'platform_stats': build_platform_stats() if is_staff else None,
-            'platform_orders': Order.objects.order_by('-created_at')[:8],
+            'platform_orders': Order.objects.order_by('-created_at')[:8] if is_staff else [],
             'pending_approvals': pending_approvals,
         })
 
@@ -1590,6 +1791,12 @@ def admin_block_user_view(request, pk):
     user = get_object_or_404(User, pk=pk)
     if user.is_superuser and user == request.user:
         messages.error(request, 'You cannot block yourself.')
+        return redirect('admin_users')
+    if user.is_superuser and not request.user.is_superuser:
+        messages.error(request, 'Only superusers can block other superusers.')
+        return redirect('admin_users')
+    if user.is_staff and not request.user.is_superuser:
+        messages.error(request, 'Only superusers can block staff accounts.')
         return redirect('admin_users')
     user.is_active = False
     user.save(update_fields=['is_active'])
@@ -1697,7 +1904,12 @@ def admin_bulk_user_action_view(request):
     if not user_ids:
         messages.error(request, 'No users selected.')
         return redirect('admin_users')
+    if len(user_ids) > 50:
+        messages.error(request, 'Cannot perform bulk actions on more than 50 users at once.')
+        return redirect('admin_users')
     users = User.objects.filter(id__in=user_ids)
+    if not request.user.is_superuser:
+        users = users.filter(is_superuser=False, is_staff=False)
     count = users.count()
     if action == 'bulk_block':
         users.update(is_active=False)
@@ -1932,6 +2144,7 @@ def notifications_read_api(request):
     return JsonResponse({'error': 'POST required'}, status=405)
 
 
+@login_required(login_url='login')
 def delivery_fee_api(request):
     """AJAX endpoint: calculate delivery fee from restaurant + customer coordinates."""
     restaurant_id = request.GET.get('restaurant_id')
@@ -1943,7 +2156,7 @@ def delivery_fee_api(request):
     except (TypeError, ValueError, Restaurant.DoesNotExist):
         return JsonResponse({'error': 'Restaurant not found'}, status=404)
     try:
-        address = Address.objects.get(pk=int(address_id))
+        address = Address.objects.get(pk=int(address_id), user=request.user)
     except (TypeError, ValueError, Address.DoesNotExist):
         return JsonResponse({'error': 'Address not found'}, status=404)
 
@@ -2372,8 +2585,8 @@ def address_api(request):
         action = data.get('action', 'create')
 
         if action == 'create':
-            label = data.get('label', '').strip()
-            street = data.get('street', '').strip()
+            label = _sanitize(data.get('label', ''), max_length=100)
+            street = _sanitize(data.get('street', ''), max_length=255)
             if not label:
                 return JsonResponse({'error': 'Label is required'}, status=400)
             lat_val = data.get('latitude')
@@ -2391,10 +2604,10 @@ def address_api(request):
             if lat_val is None or lng_val is None:
                 geo_lat, geo_lng = geocode_restaurant(
                     street=street,
-                    area=data.get('landmark', '').strip() or data.get('lga', '').strip(),
-                    city=data.get('city', '').strip(),
-                    state=data.get('state', '').strip(),
-                    country=data.get('country', '').strip() or 'Nigeria',
+                    area=_sanitize(data.get('landmark', ''), max_length=100) or _sanitize(data.get('lga', ''), max_length=100),
+                    city=_sanitize(data.get('city', ''), max_length=100),
+                    state=_sanitize(data.get('state', ''), max_length=100),
+                    country=_sanitize(data.get('country', ''), max_length=100) or 'Nigeria',
                     fallback_address=label,
                 )
                 if geo_lat is not None and geo_lng is not None:
@@ -2404,12 +2617,12 @@ def address_api(request):
             loc_confirmed = bool(lat_val and lng_val)
             addr = Address.objects.create(
                 user=request.user, label=label, street=street,
-                landmark=data.get('landmark', '').strip(),
-                lga=data.get('lga', '').strip(),
-                city=data.get('city', '').strip(),
-                state=data.get('state', '').strip(),
-                country=data.get('country', '').strip(),
-                phone=data.get('phone', '').strip(),
+                landmark=_sanitize(data.get('landmark', ''), max_length=200),
+                lga=_sanitize(data.get('lga', ''), max_length=100),
+                city=_sanitize(data.get('city', ''), max_length=100),
+                state=_sanitize(data.get('state', ''), max_length=100),
+                country=_sanitize(data.get('country', ''), max_length=100),
+                phone=_sanitize(data.get('phone', ''), max_length=20),
                 latitude=lat_val,
                 longitude=lng_val,
                 location_confirmed=loc_confirmed,
@@ -2970,7 +3183,7 @@ def restaurant_api_view(request):
 
     elif action == 'customer_action':
         try:
-            user = User.objects.get(id=data.get('user_id'))
+            user = User.objects.get(id=data.get('user_id'), orders__restaurant=restaurant)
             if data.get('block') == 'true':
                 user.is_active = False
             else:

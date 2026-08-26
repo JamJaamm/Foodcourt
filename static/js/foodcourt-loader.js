@@ -7,7 +7,7 @@
   /* ── Messages that rotate while loading ── */
   var MESSAGES = [
     'Preparing your order',
-    'Adding the finishing touches',
+    'Order recieved',
     'Almost ready',
     'Your food is on its way'
   ];
