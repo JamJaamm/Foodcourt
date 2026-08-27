@@ -43,7 +43,10 @@ class SecurityHeadersMiddleware:
         response['X-Frame-Options'] = 'DENY'
         response['X-XSS-Protection'] = '1; mode=block'
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        response['Cross-Origin-Opener-Policy'] = 'same-origin'
+        # COOP must allow popups so Google's GIS sign-in popup can postMessage
+        # the credential back to the page. 'same-origin' severs the opener
+        # relationship, which hangs the GIS flow on accounts.google.com/gsi/transform.
+        response['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
         response['Cross-Origin-Resource-Policy'] = 'same-origin'
 
         return response
