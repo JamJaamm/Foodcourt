@@ -43,13 +43,7 @@
       <!-- Google Sign-In -->
       <div id="google-buttons-wrap">
         {% if google_client_id %}
-        <div id="g_id_onload"
-             data-client_id="{{ google_client_id }}"
-             data-callback="handleGoogleCredential"
-             data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with" data-shape="rectangular" data-width="320" style="display:flex;justify-content:center;margin-bottom:4px;">
-        </div>
+        <div id="google-gsi-btn" class="google-gsi-btn" style="display:flex;justify-content:center;margin-bottom:4px;"></div>
         {% else %}
         <div id="google-fallback-btn"></div>
         {% endif %}
@@ -166,7 +160,7 @@
     }
   })();
 </script>
-{{ google_client_id|yesno:'<script src="https://accounts.google.com/gsi/client" async defer></script>,'|safe }}
+{{ google_client_id|yesno:'<script src="https://accounts.google.com/gsi/client"></script>,'|safe }}
 <script>
   function checkPasswordStrength(password) {
     const bars = document.querySelectorAll('#pw-strength-meter .pw-strength-bar');
@@ -233,22 +227,54 @@
   }
 
   const CSRF_TOKEN_REG = '{{ csrf_token }}';
+  const GOOGLE_CLIENT_ID_REG = '{{ google_client_id }}';
+
+  // Robust GIS initialization via the JavaScript API.
+  function initGoogleGsiReg() {
+    if (!GOOGLE_CLIENT_ID_REG) return;
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+      setTimeout(initGoogleGsiReg, 200);
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID_REG,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      ux_mode: 'popup'
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('google-gsi-btn'),
+      { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', width: 320 }
+    );
+  }
+  window.addEventListener('load', initGoogleGsiReg);
+  if (document.readyState === 'complete') initGoogleGsiReg();
 
   function handleGoogleCredential(response) {
+    console.log('Google credential callback fired');
+    console.log('Google credential received:', !!response.credential);
     fetch('/google-auth/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN_REG },
       body: JSON.stringify({ credential: response.credential })
     })
-    .then(r => r.json())
+    .then(r => {
+      console.log('Google auth response status:', r.status);
+      return r.json();
+    })
     .then(d => {
+      console.log('Google auth response body success:', d.success);
+      console.log('Google auth response redirect:', d.redirect_url);
       if (d.success) {
         window.location.href = d.redirect_url;
       } else {
         Toast.show(d.error || 'Google sign-in failed. Please try again.', 'error');
       }
     })
-    .catch(() => Toast.show('Network error. Please try again.', 'error'));
+    .catch(err => {
+      console.error('Google auth fetch error:', err);
+      Toast.show('Network error. Please try again.', 'error');
+    });
   }
 </script>
 {% endblock %}

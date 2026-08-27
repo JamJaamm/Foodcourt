@@ -535,14 +535,18 @@ def _google_verify_credential(credential):
         _google_log.error('GOOGLE_CLIENT_ID is not configured.')
         return None
     try:
+        _google_log.info('GOOGLE_CLIENT_ID configured: YES')
+        _google_log.info('Verifying Google token...')
         idinfo = _google_id_token.verify_oauth2_token(
             credential, _google_requests.Request(), client_id,
         )
         if idinfo['iss'] not in ('accounts.google.com', 'https://accounts.google.com'):
             _google_log.warning('Invalid Google issuer: %s', idinfo.get('iss'))
             return None
+        _google_log.info('Token verification: SUCCESS')
         return idinfo
     except Exception as exc:
+        _google_log.warning('Token verification: FAIL (%s)', exc.__class__.__name__)
         _google_log.warning('Google token verification failed: %s', exc)
         return None
 
@@ -552,13 +556,17 @@ def google_auth_callback(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
 
+    _google_log.info('Google auth endpoint reached: YES')
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
+        _google_log.warning('Google auth: invalid JSON body')
         return JsonResponse({'error': 'Invalid request body'}, status=400)
 
     credential = (data.get('credential') or '').strip()
     if not credential:
+        _google_log.warning('Google auth: missing credential')
         return JsonResponse({'error': 'Missing Google credential'}, status=400)
 
     idinfo = _google_verify_credential(credential)
@@ -566,6 +574,7 @@ def google_auth_callback(request):
         return JsonResponse({'error': 'Google authentication failed. Please try again.'}, status=401)
 
     google_email = idinfo.get('email', '').strip().lower()
+    _google_log.info('Google email found: %s', 'YES' if google_email else 'NO')
     if not google_email:
         return JsonResponse({'error': 'Google account has no email address'}, status=400)
 
@@ -616,6 +625,9 @@ def google_auth_callback(request):
 
     # Log the user in
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    _google_log.info('User found/created: YES (%s)', 'created' if 'user' in locals() and not existing_user else 'existing')
+    _google_log.info('Django login(): SUCCESS')
+    _google_log.info('Session created: %s', bool(getattr(request, 'session', None)))
 
     # Check if profile needs completion (phone number)
     profile = getattr(user, 'profile', None)
