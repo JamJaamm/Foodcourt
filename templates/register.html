@@ -251,28 +251,29 @@
   if (document.readyState === 'complete') initGoogleGsiReg();
 
   function handleGoogleCredential(response) {
-    console.log('Google credential callback fired');
-    console.log('Google credential received:', !!response.credential);
+    console.log('=== GOOGLE CALLBACK FIRED ===');
+    console.log('Credential exists:', !!response?.credential);
+    console.log('=== SENDING GOOGLE TOKEN TO DJANGO ===');
     fetch('/google-auth/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN_REG },
       body: JSON.stringify({ credential: response.credential })
     })
     .then(r => {
-      console.log('Google auth response status:', r.status);
+      console.log('=== GOOGLE AUTH RESPONSE ===', r.status);
       return r.json();
     })
     .then(d => {
-      console.log('Google auth response body success:', d.success);
-      console.log('Google auth response redirect:', d.redirect_url);
+      console.log('=== GOOGLE AUTH BODY ===', 'success:', d.success, 'redirect:', d.redirect_url);
       if (d.success) {
+        console.log('=== REDIRECTING TO ===', d.redirect_url);
         window.location.href = d.redirect_url;
       } else {
         Toast.show(d.error || 'Google sign-in failed. Please try again.', 'error');
       }
     })
     .catch(err => {
-      console.error('Google auth fetch error:', err);
+      console.error('=== GOOGLE AUTH FETCH ERROR ===', err);
       Toast.show('Network error. Please try again.', 'error');
     });
   }
