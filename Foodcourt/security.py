@@ -17,11 +17,15 @@ class SecurityHeadersMiddleware:
         # Content-Security-Policy — tighten as the project grows.
         response['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+            "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com "
+            "https://accounts.google.com https://www.gstatic.com; "
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; "
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
             "img-src 'self' data: https: blob:; "
-            "connect-src 'self' https://nominatim.openstreetmap.org; "
+            "connect-src 'self' https://nominatim.openstreetmap.org "
+            "https://accounts.google.com https://www.gstatic.com; "
+            "frame-src https://accounts.google.com https://www.gstatic.com; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
             "form-action 'self'"
