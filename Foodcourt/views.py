@@ -51,7 +51,7 @@ def _sanitize(value, max_length=500):
 from django.conf import settings
 from django.http import JsonResponse
 from django.db import models as db_models
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import default_storage
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -2970,8 +2970,7 @@ def restaurant_api_view(request):
         image = ''
         if request.FILES.get('image_file'):
             img_file = request.FILES['image_file']
-            fs = FileSystemStorage()
-            filename = fs.save(f'menu_items/{img_file.name}', img_file)
+            filename = default_storage.save(f'menu_items/{img_file.name}', img_file)
             image = filename
         price = _parse_decimal(data.get('price'))
         if price is None:
@@ -3017,8 +3016,7 @@ def restaurant_api_view(request):
                 item.category_id = data['category_id'] or None
             if request.FILES.get('image_file'):
                 img_file = request.FILES['image_file']
-                fs = FileSystemStorage()
-                filename = fs.save(f'menu_items/{img_file.name}', img_file)
+                filename = default_storage.save(f'menu_items/{img_file.name}', img_file)
                 item.image = filename
             elif 'image' in data and not data.get('image'):
                 item.image = ''
@@ -3128,14 +3126,12 @@ def restaurant_api_view(request):
         if data.get('closing_time'): restaurant.closing_time = data['closing_time']
         if request.FILES.get('logo_file'):
             logo_file = request.FILES['logo_file']
-            fs = FileSystemStorage()
-            filename = fs.save(f'restaurant_logos/{logo_file.name}', logo_file)
-            restaurant.logo = fs.url(filename)
+            filename = default_storage.save(f'restaurant_logos/{logo_file.name}', logo_file)
+            restaurant.logo = default_storage.url(filename)
         if request.FILES.get('cover_file'):
             cover_file = request.FILES['cover_file']
-            fs = FileSystemStorage()
-            filename = fs.save(f'restaurant_covers/{cover_file.name}', cover_file)
-            restaurant.cover_image = fs.url(filename)
+            filename = default_storage.save(f'restaurant_covers/{cover_file.name}', cover_file)
+            restaurant.cover_image = default_storage.url(filename)
         restaurant.save()
         return JsonResponse({'success': True, 'logo': restaurant.logo, 'cover_image': restaurant.cover_image})
 

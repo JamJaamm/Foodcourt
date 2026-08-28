@@ -75,6 +75,12 @@ INSTALLED_APPS = [
     'payments',
 ]
 
+# Cloudinary app is only added when the Cloudinary env vars are configured,
+# so local development without the Cloudinary keys keeps working.
+if os.environ.get('CLOUDINARY_CLOUD_NAME') and os.environ.get('CLOUDINARY_API_KEY') and os.environ.get('CLOUDINARY_API_SECRET'):
+    INSTALLED_APPS.append('cloudinary_storage')
+    INSTALLED_APPS.append('cloudinary')
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'Foodcourt.security.SecurityHeadersMiddleware',
@@ -199,8 +205,20 @@ STATICFILES_DIRS = [
 ]
 
 MEDIA_URL = '/media/'
-MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# ── Cloudinary media storage ─────────────────────────────────────────────
+# Uploaded images (restaurant logos/covers, profile pictures, menu items)
+# are stored on Cloudinary so they persist on Render's ephemeral disk and
+# are served over HTTPS in production.
+# - If the Cloudinary env vars are set, all uploads go to Cloudinary.
+# - Otherwise it falls back to local FileSystemStorage (useful for local dev).
+CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME', '')
+CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY', '')
+CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET', '')
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
