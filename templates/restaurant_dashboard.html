@@ -970,7 +970,11 @@ function saveSettings(e){
   const logoFile=document.getElementById('set-logo-file');
   if(logoFile.files&&logoFile.files[0])formData.append('logo_file',logoFile.files[0]);
   fetch('/restaurant-admin/api/',{method:'POST',headers:{'X-CSRFToken':CSRF_TOKEN},body:formData})
-  .then(r=>r.json()).then(d=>{if(d.success){toast('Settings saved!');if(d.logo){if(document.getElementById('set-logo-preview'))document.getElementById('set-logo-preview').src=d.logo;const sbImg=document.querySelector('.db-avatar-container img');if(sbImg){sbImg.src=d.logo;sbImg.style.display='block';const fb=document.getElementById('db-avatar-fallback');if(fb)fb.style.display='none';}}}else{toast(d.error,'error')}}).catch(()=>toast('Failed to save','error'))
+  .then(r=>r.text().then(txt=>({status:r.status,text:txt}))).then(res=>{
+    if(res.status===200){
+      try{const d=JSON.parse(res.text);if(d.success){toast('Settings saved!');if(d.logo){if(document.getElementById('set-logo-preview'))document.getElementById('set-logo-preview').src=d.logo;const sbImg=document.querySelector('.db-avatar-container img');if(sbImg){sbImg.src=d.logo;sbImg.style.display='block';const fb=document.getElementById('db-avatar-fallback');if(fb)fb.style.display='none';}}}else{toast(d.error||'Server error','error');console.error('Save error body:',res.text)}}catch(e){toast('Invalid server response','error');console.error('Save non-JSON:',res.status,res.text)}}
+    else{toast('Request failed with status '+res.status,'error');console.error('Save HTTP error:',res.status,res.text)}
+  }).catch(err=>{toast('Network error: '+err,'error');console.error('Save network error:',err)})
   .finally(()=>{btn.disabled=false;btn.innerHTML=orig});
 }
 </script>

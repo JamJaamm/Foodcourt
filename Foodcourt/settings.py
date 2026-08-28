@@ -272,9 +272,13 @@ SESSION_COOKIE_NAME = 'choply_sessionid'
 
 # CSRF Cookies
 CSRF_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_HTTPONLY = True
+# The CSRF cookie MUST be readable by JavaScript so the frontend's AJAX/fetch
+# requests can send the X-CSRFToken header (see getCookie('csrftoken') in the
+# templates). Keeping it HttpOnly breaks every POST request made with fetch().
+# The session cookie below remains HttpOnly, which is the important one.
+CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_NAME = 'choply_csrftoken'
+CSRF_COOKIE_NAME = 'csrftoken'
 
 # Password hashing — PBKDF2 with SHA256 (Django default, 720k iterations)
 PASSWORD_HASHERS = [
