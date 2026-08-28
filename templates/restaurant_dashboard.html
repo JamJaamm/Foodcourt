@@ -55,11 +55,19 @@
   .stat-card { padding: 14px; }
   .stat-card .num { font-size: 20px; }
   .rd-card { padding: 16px; }
-  .rd-inline-form { grid-template-columns: 1fr; }
+  /* Override inline 1fr 1fr (and similar) grids so they stack on phones */
+  .rd-inline-form { grid-template-columns: 1fr !important; }
+  fieldset.rd-inline-form, .rd-inline-form, form.rd-inline-form { grid-template-columns: 1fr !important; }
+  .rd-inline-form > div[style*="grid-column"], .rd-inline-form > div { grid-column: span 1 !important; }
   .rd-toolbar { flex-direction: column; align-items: stretch; }
   .rd-toolbar select, .rd-toolbar input { width: 100%; }
   .rd-table th, .rd-table td { padding: 10px 12px; }
   .rd-header { flex-direction: column; align-items: flex-start; }
+}
+
+/* Stack the inventory quick-add grid (inline 1fr 1fr 1fr 1fr auto) on mobile */
+@media (max-width: 575px) {
+  .inv-add-grid, div[style*="grid-template-columns:1fr 1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
 }
 
 /* Make settings rows stack cleanly on small screens */
@@ -485,7 +493,7 @@
           <button class="fc-btn fc-btn-primary" onclick="document.getElementById('add-inventory-form').style.display=document.getElementById('add-inventory-form').style.display==='none'?'block':'none'"><i class="fa-solid fa-plus me-1"></i> Add Item</button>
         </div>
         <div id="add-inventory-form" class="rd-card" style="display:none;margin-bottom:16px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+          <div class="inv-add-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
             <div><label style="font-size:12px;font-weight:600;">Name</label><input type="text" id="inv-new-name" class="form-control form-control-sm" placeholder="e.g. Tomatoes"></div>
             <div><label style="font-size:12px;font-weight:600;">Stock</label><input type="number" step="0.1" id="inv-new-stock" class="form-control form-control-sm" placeholder="0" value="0"></div>
             <div><label style="font-size:12px;font-weight:600;">Unit</label><input type="text" id="inv-new-unit" class="form-control form-control-sm" placeholder="kg" value="units"></div>
