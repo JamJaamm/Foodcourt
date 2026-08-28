@@ -43,6 +43,29 @@
 .rd-inline-form label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px; }
 .empty-state-sm { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
 .empty-state-sm .icon { font-size: 32px; margin-bottom: 8px; }
+
+@media (max-width: 991px) {
+  .rd-header h2 { font-size: 19px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+  .rd-toolbar input { min-width: 100%; }
+}
+
+@media (max-width: 575px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .stat-card { padding: 14px; }
+  .stat-card .num { font-size: 20px; }
+  .rd-card { padding: 16px; }
+  .rd-inline-form { grid-template-columns: 1fr; }
+  .rd-toolbar { flex-direction: column; align-items: stretch; }
+  .rd-toolbar select, .rd-toolbar input { width: 100%; }
+  .rd-table th, .rd-table td { padding: 10px 12px; }
+  .rd-header { flex-direction: column; align-items: flex-start; }
+}
+
+/* Make settings rows stack cleanly on small screens */
+@media (max-width: 575px) {
+  .rd-settings-row { flex-direction: column; align-items: stretch !important; gap: 8px; }
+}
 </style>
 {% endblock %}
 

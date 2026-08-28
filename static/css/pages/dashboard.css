@@ -289,3 +289,64 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   Responsive — mobile & tablet (shared dashboard components)
+   ============================================================ */
+
+/* Collapse the left sidebar into a sticky horizontal scrollable nav
+   so the workspace gets the full width on phones/tablets. */
+@media (max-width: 991px) {
+  .dashboard-layout { padding-top: var(--space-4); }
+
+  .col-lg-3 { order: -1; } /* sidebar first */
+
+  .db-sidebar {
+    position: relative;
+    top: auto;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+  }
+
+  .db-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    padding: 0 0 var(--space-3);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-3);
+  }
+
+  .db-profile-header .db-avatar-container {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .db-profile-header .db-avatar { width: 44px; height: 44px; }
+  .db-profile-header .db-username { font-size: var(--text-sm); }
+  .db-profile-header .db-email { display: none; }
+
+  /* Horizontal scrollable menu */
+  .db-menu-list {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--space-2);
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .db-menu-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 575px) {
+  .db-sidebar { padding: var(--space-2); }
+  .db-menu-btn { font-size: var(--text-xs); padding: 9px 12px; gap: var(--space-2); }
+}
