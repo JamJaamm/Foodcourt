@@ -184,6 +184,13 @@
   position: relative;
 }
 
+/* Wraps just the input + its icons so absolute-positioned icons center
+   within the input's own height (not across the group's extra content
+   like password-strength meters/labels below the field). */
+.auth-input-wrap {
+  position: relative;
+}
+
 .auth-input {
   width: 100%;
   padding: 14px 50px 14px 50px;
@@ -205,11 +212,8 @@
 .auth-input-toggle {
   position: absolute;
   right: 14px;
-  top: 0;
-  bottom: 0;
-  margin: auto;
-  width: 32px;
-  height: 32px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,7 +222,7 @@
   color: var(--text-muted);
   font-size: 16px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   line-height: 1;
   z-index: 2;
   transition: color var(--transition-fast);
@@ -231,11 +235,8 @@
 .auth-input-icon {
   position: absolute;
   left: 16px;
-  top: 0;
-  bottom: 0;
-  margin: auto;
-  width: 20px;
-  height: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;

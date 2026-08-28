@@ -91,12 +91,14 @@
 
         <!-- Password Input with strength meter -->
         <div class="auth-form-group">
-          <i class="fa-solid fa-lock auth-input-icon"></i>
-          <input type="password" class="auth-input" name="password" id="reg-password" placeholder="Password" oninput="checkPasswordStrength(this.value)" required>
-          <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-password', this)" tabindex="-1">
-            <i class="fa-regular fa-eye"></i>
-          </button>
-          
+          <div class="auth-input-wrap">
+            <i class="fa-solid fa-lock auth-input-icon"></i>
+            <input type="password" class="auth-input" name="password" id="reg-password" placeholder="Password" oninput="checkPasswordStrength(this.value)" required>
+            <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-password', this)" tabindex="-1">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+
           <div class="pw-strength-container" id="pw-strength-meter">
             <div class="pw-strength-bar"></div>
             <div class="pw-strength-bar"></div>
@@ -107,11 +109,13 @@
 
         <!-- Confirm Password -->
         <div class="auth-form-group">
-          <i class="fa-solid fa-lock auth-input-icon"></i>
-          <input type="password" class="auth-input" name="confirm_password" id="reg-confirm-password" placeholder="Confirm Password" required>
-          <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)" tabindex="-1">
-            <i class="fa-regular fa-eye"></i>
-          </button>
+          <div class="auth-input-wrap">
+            <i class="fa-solid fa-lock auth-input-icon"></i>
+            <input type="password" class="auth-input" name="confirm_password" id="reg-confirm-password" placeholder="Confirm Password" required>
+            <button type="button" class="auth-input-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)" tabindex="-1">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
         </div>
 
         <!-- Terms terms checkboxes -->
