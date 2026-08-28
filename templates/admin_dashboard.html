@@ -37,6 +37,39 @@
 <section class="dashboard-layout">
   <div class="container">
 
+    <!-- Mobile top bar (hamburger + name) -->
+    <div class="db-mobile-bar">
+      <button type="button" class="db-hamburger" onclick="openDbDrawer()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+      <span class="db-mobile-title">{% if restaurant %}{{ restaurant.name }}{% else %}Admin Panel{% endif %}</span>
+      <i class="fa-solid fa-shield-halved db-mobile-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);color:var(--primary);"></i>
+    </div>
+
+    <!-- Mobile drawer -->
+    <div class="db-drawer-backdrop" id="dbDrawerBackdrop" onclick="closeDbDrawer()"></div>
+    <div class="db-drawer" id="dbDrawer">
+      <div class="db-drawer-profile">
+        <div class="db-avatar-container" style="width:44px;height:44px;margin:0;">
+          <div class="db-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);border:none;font-size:20px;color:var(--primary);"><i class="fa-solid fa-shield-halved"></i></div>
+        </div>
+        <div>
+          <div class="db-drawer-name">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+          <div class="db-drawer-sub">{% if restaurant %}{{ restaurant.name }}{% else %}Admin{% endif %}</div>
+        </div>
+        <button type="button" class="db-drawer-close" onclick="closeDbDrawer()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="db-menu-list">
+        <a href="/admin-dashboard/" class="db-menu-btn {% if section != 'riders' and section != 'restaurants' and section != 'orders' and section != 'payments' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-gauge"></i> Overview</a>
+        <a href="/admin-dashboard/restaurants/" class="db-menu-btn {% if section == 'restaurants' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-store"></i> Restaurants</a>
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <a href="/admin-dashboard/orders/" class="db-menu-btn {% if section == 'orders' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-list-check"></i> Orders</a>
+        <a href="/admin-dashboard/riders/" class="db-menu-btn {% if section == 'riders' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-people-carry-box"></i> Riders</a>
+        <a href="/admin-dashboard/users/" class="db-menu-btn {% if section == 'users' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-users"></i> Users</a>
+        <a href="/admin-dashboard/payments/" class="db-menu-btn {% if section == 'payments' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-credit-card"></i> Payments</a>
+        {% endif %}
+        <a href="{% url 'logout' %}" class="db-menu-btn mt-3" onclick="closeDbDrawer()" style="color: var(--danger); text-decoration: none;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</a>
+      </div>
+    </div>
+
     <div class="row g-4">
 
       <!-- Left Column: Sidebar -->
@@ -1276,6 +1309,16 @@ function getCookie(name) {
     });
   }
   return v;
+}
+
+// Mobile drawer toggle
+function openDbDrawer(){
+  var d=document.getElementById('dbDrawer'),b=document.getElementById('dbDrawerBackdrop');
+  if(d)d.classList.add('open');if(b)b.classList.add('open');
+}
+function closeDbDrawer(){
+  var d=document.getElementById('dbDrawer'),b=document.getElementById('dbDrawerBackdrop');
+  if(d)d.classList.remove('open');if(b)b.classList.remove('open');
 }
 
 // ─── Restaurant Location Modal ───

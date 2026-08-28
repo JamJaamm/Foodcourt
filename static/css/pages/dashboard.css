@@ -294,59 +294,135 @@
    Responsive — mobile & tablet (shared dashboard components)
    ============================================================ */
 
-/* Collapse the left sidebar into a sticky horizontal scrollable nav
-   so the workspace gets the full width on phones/tablets. */
+/* ── Tablets: compact sidebar ─────────────────────────────── */
+@media (min-width: 992px) {
+  .db-mobile-bar { display: none; }
+  .db-drawer, .db-drawer-backdrop { display: none !important; }
+}
+
+/* ── Mobile: hide sidebar, show top bar + drawer ──────────── */
 @media (max-width: 991px) {
   .dashboard-layout { padding-top: var(--space-4); }
 
-  .col-lg-3 { order: -1; } /* sidebar first */
+  /* Sidebar hidden; content takes full width */
+  .db-sidebar { display: none; }
+  .col-lg-3 { display: none; }
 
-  .db-sidebar {
-    position: relative;
-    top: auto;
-    padding: var(--space-3);
-    border-radius: var(--radius-lg);
-  }
-
-  .db-profile-header {
+  /* Sticky top bar with hamburger + restaurant/admin name */
+  .db-mobile-bar {
     display: flex;
     align-items: center;
     gap: 12px;
-    text-align: left;
-    padding: 0 0 var(--space-3);
-    border-bottom: 1px solid var(--border);
-    margin-bottom: var(--space-3);
+    position: sticky;
+    top: var(--navbar-h, 60px);
+    z-index: 1000;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
   }
 
-  .db-profile-header .db-avatar-container {
-    width: 44px;
-    height: 44px;
-    margin: 0;
+  .db-mobile-bar .db-hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 17px;
+    cursor: pointer;
     flex-shrink: 0;
   }
 
-  .db-profile-header .db-avatar { width: 44px; height: 44px; }
-  .db-profile-header .db-username { font-size: var(--text-sm); }
-  .db-profile-header .db-email { display: none; }
-
-  /* Horizontal scrollable menu */
-  .db-menu-list {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: var(--space-2);
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-
-  .db-menu-btn {
-    flex: 0 0 auto;
+  .db-mobile-bar .db-mobile-title {
+    font-weight: 700;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
     white-space: nowrap;
-    padding: 10px 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+
+  .db-mobile-bar .db-mobile-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* Slide-in drawer from the left */
+  .db-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(84vw, 320px);
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    z-index: 2000;
+    transform: translateX(-105%);
+    transition: transform 0.28s ease;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: var(--space-4);
+  }
+
+  .db-drawer.open { transform: translateX(0); }
+
+  .db-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1990;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease;
+  }
+
+  .db-drawer-backdrop.open { opacity: 1; visibility: visible; }
+
+  .db-drawer .db-drawer-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .db-drawer .db-drawer-profile .db-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .db-drawer .db-drawer-name { font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); }
+  .db-drawer .db-drawer-sub { font-size: var(--text-xs); color: var(--text-muted); }
+
+  .db-drawer .db-drawer-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .db-drawer .db-menu-list { flex-direction: column; }
 }
 
 @media (max-width: 575px) {
-  .db-sidebar { padding: var(--space-2); }
-  .db-menu-btn { font-size: var(--text-xs); padding: 9px 12px; gap: var(--space-2); }
+  .db-mobile-bar { padding: 9px 12px; }
+  .db-mobile-bar .db-hamburger { width: 38px; height: 38px; }
 }

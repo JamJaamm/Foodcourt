@@ -74,6 +74,44 @@
 <section class="dashboard-layout">
   <div class="container">
 
+    <!-- Mobile top bar (hamburger + name) -->
+    <div class="db-mobile-bar">
+      <button type="button" class="db-hamburger" onclick="openDbDrawer()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+      <span class="db-mobile-title">{{ restaurant.name|default:'Admin Panel' }}</span>
+      {% if restaurant.logo %}<img src="{{ restaurant.logo }}" alt="" class="db-mobile-avatar" onerror="this.style.display='none'">{% endif %}
+      {% if not restaurant.logo %}<i class="fa-solid fa-utensils db-mobile-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);color:var(--primary);"></i>{% endif %}
+    </div>
+
+    <!-- Mobile drawer -->
+    <div class="db-drawer-backdrop" id="dbDrawerBackdrop" onclick="closeDbDrawer()"></div>
+    <div class="db-drawer" id="dbDrawer">
+      <div class="db-drawer-profile">
+        <div class="db-avatar-container" style="width:44px;height:44px;margin:0;">
+          {% if restaurant.logo %}<img src="{{ restaurant.logo }}" alt="" class="db-avatar" onerror="this.style.display='none'">{% endif %}
+          <div class="db-avatar" style="display:{% if restaurant.logo %}none{% else %}flex{% endif %};align-items:center;justify-content:center;background:var(--primary-subtle);border:none;font-size:20px;color:var(--primary);"><i class="fa-solid fa-utensils"></i></div>
+        </div>
+        <div>
+          <div class="db-drawer-name">{{ restaurant.name|default:'Admin Panel' }}</div>
+          <div class="db-drawer-sub">Restaurant Admin</div>
+        </div>
+        <button type="button" class="db-drawer-close" onclick="closeDbDrawer()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="db-menu-list">
+        <a href="/restaurant-admin/" class="db-menu-btn {% if active_section == 'overview' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <a href="/restaurant-admin/orders/" class="db-menu-btn {% if active_section == 'orders' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-list"></i> Orders</a>
+        <a href="/restaurant-admin/menu/" class="db-menu-btn {% if active_section == 'menu' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-utensils"></i> Menu</a>
+        <a href="/restaurant-admin/categories/" class="db-menu-btn {% if active_section == 'categories' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-tags"></i> Categories</a>
+        <a href="/restaurant-admin/customers/" class="db-menu-btn {% if active_section == 'customers' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-users"></i> Customers</a>
+        <a href="/restaurant-admin/reviews/" class="db-menu-btn {% if active_section == 'reviews' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-star"></i> Reviews</a>
+        <a href="/restaurant-admin/inventory/" class="db-menu-btn {% if active_section == 'inventory' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-boxes"></i> Inventory</a>
+        <a href="/restaurant-admin/coupons/" class="db-menu-btn {% if active_section == 'coupons' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-ticket"></i> Coupons</a>
+        <a href="/restaurant-admin/payments/" class="db-menu-btn {% if active_section == 'payments' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-credit-card"></i> Payments</a>
+        <a href="/restaurant-admin/settings/" class="db-menu-btn {% if active_section == 'settings' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-sliders"></i> Settings</a>
+        <a href="/admin-dashboard/" class="db-menu-btn mt-3" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-shield-halved"></i> Admin Overview</a>
+        <a href="{% url 'logout' %}" class="db-menu-btn" onclick="closeDbDrawer()" style="color: var(--danger); text-decoration: none;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</a>
+      </div>
+    </div>
+
     <div class="row g-4">
 
       <!-- Left Column: Sidebar -->
@@ -642,6 +680,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const CSRF_TOKEN = getCookie('csrftoken');
 function getCookie(n){let v=null;if(document.cookie&&document.cookie!==''){document.cookie.split(';').forEach(c=>{c=c.trim();if(c.substring(0,n.length+1)===(n+'='))v=decodeURIComponent(c.substring(n.length+1))})}return v}
+
+// Mobile drawer toggle
+function openDbDrawer(){
+  var d=document.getElementById('dbDrawer'),b=document.getElementById('dbDrawerBackdrop');
+  if(d)d.classList.add('open');if(b)b.classList.add('open');
+}
+function closeDbDrawer(){
+  var d=document.getElementById('dbDrawer'),b=document.getElementById('dbDrawerBackdrop');
+  if(d)d.classList.remove('open');if(b)b.classList.remove('open');
+}
 
 // Toast helper
 function toast(msg, type='success') {
