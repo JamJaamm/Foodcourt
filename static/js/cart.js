@@ -179,7 +179,11 @@ function updateCheckoutTotals() {
   let discount = 0;
 
   if (appliedPromo) {
-    if (appliedPromo.type === 'percent') {
+    // Prefer the server-computed discount from validation (already capped at
+    // max discount / subtotal). Otherwise fall back to a client estimate.
+    if (appliedPromo.serverDiscount !== undefined) {
+      discount = appliedPromo.serverDiscount;
+    } else if (appliedPromo.type === 'percent') {
       discount = subtotal * (appliedPromo.value / 100);
     } else if (appliedPromo.type === 'fixed') {
       discount = appliedPromo.value;
@@ -233,7 +237,7 @@ function getDbCoupons() {
 window.applyPromoCode = function() {
   const input = document.getElementById('promo-code-input');
   const msgEl = document.getElementById('promo-feedback-message');
-  if (!input || !msgEl || !window.FOODCOURT_DATA) return;
+  if (!input || !msgEl) return;
 
   const code = input.value.trim().toUpperCase();
   msgEl.className = 'promo-feedback';
@@ -245,55 +249,46 @@ window.applyPromoCode = function() {
   }
 
   const subtotal = window.CartManager.getTotal();
+  const restaurantId = window.CartManager.getRestaurantId ? window.CartManager.getRestaurantId() : null;
 
-  // 1) Real coupons created in the restaurant dashboard
-  const dbPromo = getDbCoupons().find(c => c.code === code);
-  if (dbPromo) {
-    if (dbPromo.expiresAt && new Date(dbPromo.expiresAt).getTime() < Date.now()) {
+  // Validate the coupon server-side so rules (first-order, usage limits,
+  // min order, max discount, platform vs restaurant scope) cannot be
+  // bypassed with DevTools.
+  fetch('/api/coupons/validate/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+    body: JSON.stringify({code: code, subtotal: subtotal, restaurant_id: restaurantId})
+  })
+  .then(function(r){
+    return r.json().then(function(d){ return {ok: r.ok, body: d}; });
+  })
+  .then(function(res){
+    if (res.ok && res.body.success) {
+      const d = res.body;
+      appliedPromo = {
+        code: d.code,
+        type: (d.discount_label || '').indexOf('%') > -1 ? 'percent' : 'fixed',
+        value: d.discount,
+        label: d.discount_label,
+        serverDiscount: d.discount
+      };
+      msgEl.textContent = `Promo code "${d.code}" applied successfully! (${d.discount_label})`;
+      msgEl.classList.add('success');
+      updateCheckoutTotals();
+      Toast.show('Promo applied! 🎟️', 'success');
+    } else {
       appliedPromo = null;
-      msgEl.textContent = `Promo code "${code}" has expired.`;
+      msgEl.textContent = res.body.error || 'Invalid promo code.';
       msgEl.classList.add('error');
       updateCheckoutTotals();
-      return;
     }
-    if (dbPromo.maxUses > 0 && dbPromo.timesUsed >= dbPromo.maxUses) {
-      appliedPromo = null;
-      msgEl.textContent = `Promo code "${code}" has reached its usage limit.`;
-      msgEl.classList.add('error');
-      updateCheckoutTotals();
-      return;
-    }
-    if (dbPromo.minOrder > 0 && subtotal < dbPromo.minOrder) {
-      appliedPromo = null;
-      msgEl.textContent = `Promo code "${code}" requires a minimum order of ${window.formatPrice(dbPromo.minOrder)}.`;
-      msgEl.classList.add('error');
-      updateCheckoutTotals();
-      return;
-    }
-
-    appliedPromo = { code: code, type: dbPromo.type, value: dbPromo.value, label: dbPromo.label };
-    msgEl.textContent = `Promo code "${code}" applied successfully! (${dbPromo.label})`;
-    msgEl.classList.add('success');
-    updateCheckoutTotals();
-    Toast.show('Promo applied! 🎟️', 'success');
-    return;
-  }
-
-  // 2) Fall back to the built-in demo codes
-  const promo = window.FOODCOURT_DATA.promoCodes[code];
-
-  if (promo) {
-    appliedPromo = { ...promo, code: code };
-    msgEl.textContent = `Promo code "${code}" applied successfully! (${promo.label})`;
-    msgEl.classList.add('success');
-    updateCheckoutTotals();
-    Toast.show('Promo applied! 🎟️', 'success');
-  } else {
+  })
+  .catch(function(){
     appliedPromo = null;
-    msgEl.textContent = 'Invalid promo code. Try SAVE10, FIRST20, FREESHIP.';
+    msgEl.textContent = 'Unable to validate promo code. Please try again.';
     msgEl.classList.add('error');
     updateCheckoutTotals();
-  }
+  });
 };
 
 /* ══════════════════════════════════════════════
@@ -549,7 +544,8 @@ window.submitOrder = function() {
   const deliveryFee = currentDeliveryFee !== null ? currentDeliveryFee : 0;
   let discount = 0;
   if (appliedPromo) {
-    if (appliedPromo.type === 'percent') discount = subtotal * (appliedPromo.value / 100);
+    if (appliedPromo.serverDiscount !== undefined) discount = appliedPromo.serverDiscount;
+    else if (appliedPromo.type === 'percent') discount = subtotal * (appliedPromo.value / 100);
     else if (appliedPromo.type === 'fixed') discount = appliedPromo.value;
     else if (appliedPromo.type === 'delivery') { /* delivery fee override handled below */ }
   }
@@ -576,6 +572,7 @@ window.submitOrder = function() {
     delivery_fee: deliveryFee,
     discount: discount,
     total: subtotal + deliveryFee - discount,
+    coupon_code: appliedPromo ? appliedPromo.code : '',
     restaurant_name: restaurantName,
     restaurant_id: firstItem.restaurantId || null
   };

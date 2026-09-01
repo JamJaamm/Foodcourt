@@ -29,6 +29,14 @@
   .addr-form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.02em; text-transform: uppercase; }
   .db-card .form-control { padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); font-size: 13px; }
   .db-card .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+  .order-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .order-detail-section { background: var(--bg-elevated); border-radius: var(--radius-md); padding: 16px; }
+  .order-detail-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .order-detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .order-detail-row:last-child { border-bottom: none; }
+  .order-detail-row span:first-child { color: var(--text-muted); }
+  .order-detail-row span:last-child { font-weight: 600; }
+  @media (max-width: 768px) { .order-detail-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -58,13 +66,14 @@
         <button type="button" class="db-drawer-close" onclick="closeDbDrawer()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="db-menu-list">
-        <a href="/admin-dashboard/" class="db-menu-btn {% if section != 'riders' and section != 'restaurants' and section != 'orders' and section != 'payments' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-gauge"></i> Overview</a>
+        <a href="/admin-dashboard/" class="db-menu-btn {% if section != 'riders' and section != 'restaurants' and section != 'orders' and section != 'payments' and section != 'coupons' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-gauge"></i> Overview</a>
         <a href="/admin-dashboard/restaurants/" class="db-menu-btn {% if section == 'restaurants' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-store"></i> Restaurants</a>
         {% if request.user.is_staff or request.user.is_superuser %}
         <a href="/admin-dashboard/orders/" class="db-menu-btn {% if section == 'orders' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-list-check"></i> Orders</a>
         <a href="/admin-dashboard/riders/" class="db-menu-btn {% if section == 'riders' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-people-carry-box"></i> Riders</a>
         <a href="/admin-dashboard/users/" class="db-menu-btn {% if section == 'users' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-users"></i> Users</a>
         <a href="/admin-dashboard/payments/" class="db-menu-btn {% if section == 'payments' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-credit-card"></i> Payments</a>
+        <a href="/admin-dashboard/coupons/" class="db-menu-btn {% if section == 'coupons' %}active{% endif %}" onclick="closeDbDrawer()" style="text-decoration:none;"><i class="fa-solid fa-ticket"></i> Coupons</a>
         {% endif %}
         <a href="{% url 'logout' %}" class="db-menu-btn mt-3" onclick="closeDbDrawer()" style="color: var(--danger); text-decoration: none;"><i class="fa-solid fa-right-from-bracket"></i> Log Out</a>
       </div>
@@ -89,7 +98,7 @@
 
           <!-- Sidebar menu -->
           <div class="db-menu-list">
-            <a href="/admin-dashboard/" class="db-menu-btn {% if section != 'riders' and section != 'restaurants' and section != 'orders' and section != 'payments' %}active{% endif %}" style="text-decoration:none;">
+            <a href="/admin-dashboard/" class="db-menu-btn {% if section != 'riders' and section != 'restaurants' and section != 'orders' and section != 'payments' and section != 'coupons' %}active{% endif %}" style="text-decoration:none;">
               <i class="fa-solid fa-gauge"></i> Overview
             </a>
             <a href="/admin-dashboard/restaurants/" class="db-menu-btn {% if section == 'restaurants' %}active{% endif %}" style="text-decoration:none;">
@@ -107,6 +116,9 @@
             </a>
             <a href="/admin-dashboard/payments/" class="db-menu-btn {% if section == 'payments' %}active{% endif %}" style="text-decoration:none;">
               <i class="fa-solid fa-credit-card"></i> Payments
+            </a>
+            <a href="/admin-dashboard/coupons/" class="db-menu-btn {% if section == 'coupons' %}active{% endif %}" style="text-decoration:none;">
+              <i class="fa-solid fa-ticket"></i> Coupons
             </a>
             {% endif %}
             <a href="{% url 'logout' %}" class="db-menu-btn mt-3" style="color: var(--danger); text-decoration: none;">
@@ -886,7 +898,7 @@
                   </thead>
                   <tbody>
                     {% for o in group.orders %}
-                    <tr>
+                    <tr onclick="openOrderDetail('{{ o.order_id }}')" style="cursor:pointer;">
                       <td><strong>{{ o.order_id }}</strong></td>
                       <td>{{ o.user.get_full_name|default:o.user.email }}</td>
                       <td>{{ o.items.count }}</td>
@@ -991,6 +1003,262 @@
           </div>
         </div>
 
+        {% elif section == 'coupons' %}
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="db-header-title" style="margin-bottom:4px;">Coupon Management 🎟️</h2>
+            <p class="text-secondary mb-0">Create and manage platform-wide coupons. Restaurant coupons are managed by each restaurant.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="db-menu-btn" style="text-decoration:none;padding:10px 18px;" onclick="openAdminCouponForm()">
+              <i class="fa-solid fa-plus me-1"></i> New Coupon
+            </button>
+            <a href="/admin-dashboard/" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
+              <i class="fa-solid fa-arrow-left"></i> Back to Overview
+            </a>
+          </div>
+        </div>
+
+        <!-- Platform stats -->
+        <div class="db-stats-row" style="margin-top:18px;">
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ platform_stats.orders|compact }}</div>
+            <div class="db-stat-label">Total Orders</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num">{{ admin_coupons|length|compact }}</div>
+            <div class="db-stat-label">All Coupons</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num" style="color:var(--success);">{{ platform_coupon_count|compact }}</div>
+            <div class="db-stat-label">Platform-wide</div>
+          </div>
+          <div class="db-stat-card">
+            <div class="db-stat-num" style="color:var(--warning);">{{ restaurant_coupon_count|compact }}</div>
+            <div class="db-stat-label">Restaurant Coupons</div>
+          </div>
+        </div>
+
+        <!-- Coupons table -->
+        <div class="db-card">
+          <div class="db-table-wrap">
+            <table class="db-table">
+              <thead>
+                <tr><th>Code</th><th>Type</th><th>Value</th><th>Scope</th><th>First Order</th><th>Min Order</th><th>Max Discount</th><th>Uses</th><th>Valid Dates</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {% for c in admin_coupons %}
+                <tr>
+                  <td><strong>{{ c.code }}</strong></td>
+                  <td>{{ c.get_discount_type_display }}</td>
+                  <td>
+                    {% if c.discount_type == 'percent' %}{{ c.discount_value|floatformat:"0" }}% off
+                    {% else %}₦{{ c.discount_value|money }}{% endif %}
+                  </td>
+                  <td>
+                    {% if c.restaurant %}
+                    <span class="status-badge status-confirmed">Restaurant: {{ c.restaurant.name }}</span>
+                    {% else %}
+                    <span class="status-badge status-out_for_delivery">Platform-wide</span>
+                    {% endif %}
+                  </td>
+                  <td>{% if c.first_order_only %}<span class="status-badge status-ready">Yes</span>{% else %}<span class="text-muted">No</span>{% endif %}</td>
+                  <td>₦{{ c.min_order|money }}</td>
+                  <td>{% if c.max_discount > 0 %}₦{{ c.max_discount|money }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                  <td>{{ c.times_used }}{% if c.max_uses > 0 %} / {{ c.max_uses }}{% endif %}</td>
+                  <td style="font-size:12px;">
+                    {% if c.start_date or c.expires_at %}
+                      {{ c.start_date|date:"M d, Y"|default:"—" }} → {{ c.expires_at|date:"M d, Y"|default:"∞" }}
+                    {% else %}<span class="text-muted">Always</span>{% endif %}
+                  </td>
+                  <td>
+                    {% if c.is_active %}<span class="status-badge status-delivered">Active</span>
+                    {% else %}<span class="status-badge status-cancelled">Inactive</span>{% endif %}
+                  </td>
+                  <td>
+                    {% if c.restaurant is None %}
+                    <div style="display:flex;gap:6px;">
+                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openAdminCouponForm({{ c.id }}, '{{ c.code|escapejs }}', '{{ c.discount_type }}', {{ c.discount_value }} , {{ c.min_order }}, {{ c.max_discount }}, {{ c.max_uses }}, {{ c.times_used }}, {{ c.first_order_only|yesno:"true,false" }}, {{ c.is_active|yesno:"true,false" }}, '{{ c.start_date|date:"Y-m-d\TH:i"|default:'' }}', '{{ c.expires_at|date:"Y-m-d\TH:i"|default:'' }}')">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
+                      <button class="btn btn-sm" style="background:{% if c.is_active %}#fff3e0;color:#e65100;{% else %}#e8f5e9;color:#1b5e20;{% endif %};border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="toggleAdminCoupon({{ c.id }}, {% if c.is_active %}false{% else %}true{% endif %})">
+                        {% if c.is_active %}<i class="fa-solid fa-pause"></i>{% else %}<i class="fa-solid fa-play"></i>{% endif %}
+                      </button>
+                      <button class="btn btn-sm" style="background:#ffebee;color:#c62828;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="deleteAdminCoupon({{ c.id }}, '{{ c.code|escapejs }}')">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                    {% else %}
+                    <span style="font-size:11px;color:var(--text-muted);">Managed by restaurant</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="text-center text-muted py-4">No coupons yet. Create a platform-wide coupon to get started.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Coupon Create/Edit Modal -->
+        <div id="adminCouponModal" style="display:none;position:fixed;inset:0;z-index:5000;align-items:center;justify-content:center;padding:20px;">
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);" onclick="closeAdminCouponForm()"></div>
+          <div style="position:relative;background:var(--bg-card);border-radius:var(--radius-xl);width:100%;max-width:640px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-xl);">
+            <div style="position:sticky;top:0;background:var(--bg-card);padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;z-index:1;">
+              <h3 style="margin:0;font-size:18px;font-weight:800;" id="admin-coupon-modal-title">Create Platform-Wide Coupon</h3>
+              <button onclick="closeAdminCouponForm()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);">&times;</button>
+            </div>
+            <div style="padding:24px;">
+              <input type="hidden" id="ac-id" value="">
+              <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--primary-subtle);border-radius:var(--radius-md);font-size:13px;color:var(--primary);margin-bottom:16px;">
+                <i class="fa-solid fa-globe"></i> This coupon applies across all FoodCourt restaurants (platform-wide).
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="addr-form-label">Coupon Code *</label>
+                  <input type="text" id="ac-code" class="form-control" placeholder="e.g. WELCOME20" style="text-transform:uppercase;">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">Discount Type</label>
+                  <select id="ac-type" class="form-select" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                    <option value="percent">Percentage (%)</option>
+                    <option value="fixed">Fixed Amount (₦)</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">Discount Value *</label>
+                  <input type="number" step="0.01" min="0" id="ac-value" class="form-control" placeholder="e.g. 20">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">Maximum Discount (₦)</label>
+                  <input type="number" step="0.01" min="0" id="ac-max-discount" class="form-control" placeholder="0 = no limit">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">Minimum Order (₦)</label>
+                  <input type="number" step="0.01" min="0" id="ac-min-order" class="form-control" placeholder="0 = none">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">Usage Limit</label>
+                  <input type="number" min="0" id="ac-uses" class="form-control" placeholder="0 = unlimited">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">Start Date</label>
+                  <input type="datetime-local" id="ac-start" class="form-control">
+                </div>
+                <div class="col-md-6">
+                  <label class="addr-form-label">End Date</label>
+                  <input type="datetime-local" id="ac-end" class="form-control">
+                </div>
+              </div>
+              <div class="d-flex gap-4 mt-3">
+                <label class="d-flex align-items-center gap-2" style="font-size:13px;font-weight:600;cursor:pointer;">
+                  <input type="checkbox" id="ac-first-order" style="width:16px;height:16px;"> First Order Only
+                </label>
+                <label class="d-flex align-items-center gap-2" style="font-size:13px;font-weight:600;cursor:pointer;">
+                  <input type="checkbox" id="ac-active" checked style="width:16px;height:16px;"> Active
+                </label>
+              </div>
+              <div id="ac-msg" style="font-size:13px;margin-top:12px;display:none;"></div>
+              <div class="d-flex gap-2 mt-3">
+                <button class="fc-btn fc-btn-primary w-100 py-2" style="font-weight:700;" onclick="saveAdminCoupon()"><i class="fa-solid fa-save me-1"></i> Save Coupon</button>
+                <button class="fc-btn fc-btn-outline" style="padding:10px 20px;" onclick="closeAdminCouponForm()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+        function getCookieAdmin(name) {
+          let v = null;
+          if (document.cookie && document.cookie !== '') {
+            document.cookie.split(';').forEach(c => {
+              c = c.trim();
+              if (c.substring(0, name.length + 1) === name + '=') v = decodeURIComponent(c.substring(name.length + 1));
+            });
+          }
+          return v;
+        }
+        function openAdminCouponForm(id, code, type, value, minOrder, maxDiscount, maxUses, timesUsed, firstOrder, active, startDate, endDate) {
+          document.getElementById('ac-id').value = id || '';
+          document.getElementById('ac-code').value = code || '';
+          document.getElementById('ac-type').value = type || 'percent';
+          document.getElementById('ac-value').value = value !== undefined ? value : '';
+          document.getElementById('ac-min-order').value = minOrder || 0;
+          document.getElementById('ac-max-discount').value = maxDiscount || 0;
+          document.getElementById('ac-uses').value = maxUses || 0;
+          document.getElementById('ac-start').value = startDate || '';
+          document.getElementById('ac-end').value = endDate || '';
+          document.getElementById('ac-first-order').checked = !!firstOrder;
+          document.getElementById('ac-active').checked = active !== false;
+          document.getElementById('admin-coupon-modal-title').textContent = id ? 'Edit Platform-Wide Coupon' : 'Create Platform-Wide Coupon';
+          document.getElementById('ac-msg').style.display = 'none';
+          document.getElementById('adminCouponModal').style.display = 'flex';
+        }
+        function closeAdminCouponForm() {
+          document.getElementById('adminCouponModal').style.display = 'none';
+        }
+        function saveAdminCoupon() {
+          var msgEl = document.getElementById('ac-msg');
+          var payload = {
+            action: document.getElementById('ac-id').value ? 'update_coupon' : 'create_coupon',
+            id: document.getElementById('ac-id').value,
+            code: document.getElementById('ac-code').value.trim(),
+            discount_type: document.getElementById('ac-type').value,
+            discount_value: parseFloat(document.getElementById('ac-value').value) || 0,
+            min_order: parseFloat(document.getElementById('ac-min-order').value) || 0,
+            max_discount: parseFloat(document.getElementById('ac-max-discount').value) || 0,
+            max_uses: parseInt(document.getElementById('ac-uses').value) || 0,
+            first_order_only: document.getElementById('ac-first-order').checked,
+            is_active: document.getElementById('ac-active').checked,
+            start_date: document.getElementById('ac-start').value || null,
+            end_date: document.getElementById('ac-end').value || null
+          };
+          msgEl.style.display = 'block';
+          msgEl.style.color = 'var(--text-secondary)';
+          msgEl.textContent = 'Saving...';
+          fetch('/admin-dashboard/coupons/api/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookieAdmin('csrftoken')},
+            body: JSON.stringify(payload)
+          }).then(r => r.json()).then(d => {
+            if (d.success) {
+              msgEl.style.color = 'var(--success)';
+              msgEl.textContent = 'Saved successfully! Reloading...';
+              setTimeout(() => location.reload(), 900);
+            } else {
+              msgEl.style.color = 'var(--danger)';
+              msgEl.textContent = d.error || 'Failed to save.';
+            }
+          }).catch(() => {
+            msgEl.style.color = 'var(--danger)';
+            msgEl.textContent = 'Network error.';
+          });
+        }
+        function toggleAdminCoupon(id, isActive) {
+          fetch('/admin-dashboard/coupons/api/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookieAdmin('csrftoken')},
+            body: JSON.stringify({action: 'toggle_coupon', id: id, is_active: isActive})
+          }).then(r => r.json()).then(d => {
+            if (d.success) location.reload();
+            else alert(d.error || 'Failed to update.');
+          }).catch(() => alert('Network error.'));
+        }
+        function deleteAdminCoupon(id, code) {
+          if (!confirm('Delete coupon "' + code + '"?')) return;
+          fetch('/admin-dashboard/coupons/api/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookieAdmin('csrftoken')},
+            body: JSON.stringify({action: 'delete_coupon', id: id})
+          }).then(r => r.json()).then(d => {
+            if (d.success) location.reload();
+            else alert(d.error || 'Failed to delete.');
+          }).catch(() => alert('Network error.'));
+        }
+        </script>
+
         {% elif no_restaurant %}
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
           <div>
@@ -1072,7 +1340,7 @@
               <thead><tr><th>Order</th><th>Customer</th><th>Restaurant</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
               <tbody>
                 {% for o in platform_orders %}
-                <tr>
+                <tr onclick="openOrderDetail('{{ o.order_id }}')" style="cursor:pointer;">
                   <td><strong>{{ o.order_id }}</strong></td>
                   <td>{{ o.user.get_full_name|default:o.user.email }}</td>
                   <td>{{ o.restaurant.name }}</td>
@@ -1226,7 +1494,7 @@
               <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
               <tbody>
                 {% for o in orders|slice:":8" %}
-                <tr>
+                <tr onclick="openOrderDetail('{{ o.order_id }}')" style="cursor:pointer;">
                   <td><strong>{{ o.order_id }}</strong></td>
                   <td>{{ o.user.get_full_name|default:o.user.email }}</td>
                   <td>{{ o.items.count }}</td>
@@ -1422,6 +1690,143 @@ document.querySelectorAll('#restaurantLocationModal, #deliverySettingsModal').fo
     if (e.target === el) el.style.display = 'none';
   });
 });
+</script>
+
+<!-- Order Detail Modal -->
+<div id="orderDetailModal" style="display:none;position:fixed;inset:0;z-index:5000;align-items:center;justify-content:center;padding:20px;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);" onclick="closeOrderDetail()"></div>
+  <div style="position:relative;background:var(--bg-card);border-radius:var(--radius-xl);width:100%;max-width:780px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-xl);">
+    <div style="position:sticky;top:0;background:var(--bg-card);padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;z-index:1;">
+      <h3 style="margin:0;font-size:18px;font-weight:800;">Order Details</h3>
+      <button onclick="closeOrderDetail()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);">&times;</button>
+    </div>
+    <div id="orderDetailContent" style="padding:24px;">
+      <div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;color:var(--primary);"></i></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openOrderDetail(orderId) {
+  var modal = document.getElementById('orderDetailModal');
+  var content = document.getElementById('orderDetailContent');
+  modal.style.display = 'flex';
+  content.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px;color:var(--primary);"></i></div>';
+  fetch('/admin-dashboard/orders/' + orderId + '/detail-api/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var statusClass = 'status-' + d.status;
+
+      var customerHtml = '<div class="order-detail-section">' +
+        '<div class="order-detail-label">Customer</div>' +
+        '<div class="order-detail-row"><span>Name</span><span>' + d.customer.name + '</span></div>' +
+        '<div class="order-detail-row"><span>Email</span><span>' + d.customer.email + '</span></div>' +
+        '<div class="order-detail-row"><span>Phone</span><span>' + d.customer.phone + '</span></div>' +
+        '</div>';
+
+      var restaurantHtml = '<div class="order-detail-section">' +
+        '<div class="order-detail-label">Restaurant</div>' +
+        '<div class="order-detail-row"><span>Name</span><span>' + (d.restaurant.name || '—') + '</span></div>' +
+        (d.restaurant.address ? '<div class="order-detail-row"><span>Address</span><span>' + d.restaurant.address + '</span></div>' : '') +
+        (d.restaurant.phone ? '<div class="order-detail-row"><span>Phone</span><span>' + d.restaurant.phone + '</span></div>' : '') +
+        '</div>';
+
+      var deliveryAddrHtml = '<div class="order-detail-section">' +
+        '<div class="order-detail-label">Delivery Address</div>' +
+        '<div style="font-size:13px;">' + (d.delivery_address || '—') + '</div>' +
+        '</div>';
+
+      var itemsHtml = '<div class="order-detail-section">' +
+        '<div class="order-detail-label">Items (' + d.items.length + ')</div>';
+      if (d.items.length) {
+        d.items.forEach(function(item) {
+          itemsHtml += '<div class="order-detail-row"><span>' + item.name + ' &times; ' + item.quantity + '</span><span>\u20A6' + (item.price * item.quantity).toLocaleString() + '</span></div>';
+        });
+      } else {
+        itemsHtml += '<div style="font-size:13px;color:var(--text-muted);">No items</div>';
+      }
+      itemsHtml += '</div>';
+
+      var pricingHtml = '<div class="order-detail-section">' +
+        '<div class="order-detail-label">Pricing</div>' +
+        '<div class="order-detail-row"><span>Subtotal</span><span>\u20A6' + d.subtotal.toLocaleString() + '</span></div>' +
+        '<div class="order-detail-row"><span>Delivery Fee</span><span>\u20A6' + d.delivery_fee.toLocaleString() + '</span></div>' +
+        (d.delivery_distance_km ? '<div class="order-detail-row"><span>Distance</span><span>' + d.delivery_distance_km + ' km</span></div>' : '') +
+        (d.discount > 0 ? '<div class="order-detail-row"><span>Discount</span><span>-\u20A6' + d.discount.toLocaleString() + '</span></div>' : '') +
+        '<div class="order-detail-row" style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px;"><span style="font-weight:700;color:var(--text-primary);">Total</span><span style="font-size:16px;color:var(--primary);">\u20A6' + d.total.toLocaleString() + '</span></div>' +
+        '</div>';
+
+      var riderHtml = '';
+      if (d.delivery && d.delivery.rider) {
+        var r = d.delivery.rider;
+        riderHtml = '<div class="order-detail-section">' +
+          '<div class="order-detail-label">Rider</div>' +
+          '<div class="order-detail-row"><span>Name</span><span>' + r.name + '</span></div>' +
+          '<div class="order-detail-row"><span>Email</span><span>' + r.email + '</span></div>' +
+          '<div class="order-detail-row"><span>Phone</span><span>' + r.phone + '</span></div>' +
+          '<div class="order-detail-row"><span>Vehicle</span><span>' + r.vehicle + '</span></div>' +
+          '<div class="order-detail-row"><span>Plate</span><span>' + r.vehicle_plate + '</span></div>' +
+          (r.vehicle_color ? '<div class="order-detail-row"><span>Color</span><span>' + r.vehicle_color + '</span></div>' : '') +
+          '</div>';
+      } else {
+        riderHtml = '<div class="order-detail-section">' +
+          '<div class="order-detail-label">Rider</div>' +
+          '<div style="font-size:13px;color:var(--text-muted);">No rider assigned</div>' +
+          '</div>';
+      }
+
+      var deliveryStatusHtml = '';
+      if (d.delivery) {
+        var ds = d.delivery;
+        deliveryStatusHtml = '<div class="order-detail-section">' +
+          '<div class="order-detail-label">Delivery Status</div>' +
+          '<div class="order-detail-row"><span>Status</span><span><span class="status-badge status-' + ds.status + '">' + ds.status_label + '</span></span></div>' +
+          (ds.payout > 0 ? '<div class="order-detail-row"><span>Payout</span><span>\u20A6' + ds.payout.toLocaleString() + '</span></div>' : '') +
+          '</div>';
+
+        if (d.delivery_logs.length) {
+          deliveryStatusHtml += '<div class="order-detail-section" style="margin-top:16px;">' +
+            '<div class="order-detail-label">Delivery Timeline</div>';
+          d.delivery_logs.forEach(function(log) {
+            deliveryStatusHtml += '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">' +
+              '<span style="color:var(--text-muted);min-width:110px;">' + log.created_at + '</span>' +
+              '<span style="font-weight:600;">' + log.label + '</span>' +
+              (log.note ? '<span style="color:var(--text-muted);">— ' + log.note + '</span>' : '') +
+              '</div>';
+          });
+          deliveryStatusHtml += '</div>';
+        }
+      }
+
+      var paymentHtml = '<div class="order-detail-section">' +
+        '<div class="order-detail-label">Payment</div>' +
+        '<div class="order-detail-row"><span>Method</span><span>' + d.payment_method + '</span></div>';
+      if (d.payment) {
+        paymentHtml += '<div class="order-detail-row"><span>Status</span><span><span class="status-badge status-' + d.payment.status + '">' + d.payment.status + '</span></span></div>' +
+          '<div class="order-detail-row"><span>Reference</span><span style="font-size:11px;">' + d.payment.reference + '</span></div>' +
+          (d.payment.paystack_reference ? '<div class="order-detail-row"><span>Paystack Ref</span><span style="font-size:11px;">' + d.payment.paystack_reference + '</span></div>' : '') +
+          (d.payment.paid_at ? '<div class="order-detail-row"><span>Paid At</span><span>' + d.payment.paid_at + '</span></div>' : '');
+      }
+      paymentHtml += '</div>';
+
+      var headerHtml = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">' +
+        '<span class="status-badge ' + statusClass + '" style="font-size:13px;padding:6px 14px;">' + d.status_display + '</span>' +
+        '<span style="font-size:13px;color:var(--text-muted);">Order <strong>' + d.order_id + '</strong></span>' +
+        '<span style="font-size:12px;color:var(--text-muted);margin-left:auto;">' + d.created_at + '</span>' +
+        '</div>';
+
+      content.innerHTML = headerHtml +
+        '<div class="order-detail-grid">' + customerHtml + restaurantHtml + '</div>' +
+        deliveryAddrHtml +
+        '<div class="order-detail-grid" style="margin-top:16px;">' + riderHtml + deliveryStatusHtml + '</div>' +
+        '<div class="order-detail-grid" style="margin-top:16px;">' + itemsHtml + pricingHtml + '</div>' +
+        '<div style="margin-top:16px;">' + paymentHtml + '</div>';
+    })
+    .catch(function(){ content.innerHTML = '<div class="text-center py-4" style="color:var(--danger);">Failed to load order details.</div>'; });
+}
+function closeOrderDetail() {
+  document.getElementById('orderDetailModal').style.display = 'none';
+}
 </script>
 
 {% endblock %}

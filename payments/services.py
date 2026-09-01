@@ -8,6 +8,7 @@ import requests
 import time
 from django.conf import settings
 from django.db import transaction
+from django.db.models import F
 from django.urls import reverse
 from django.utils import timezone
 from urllib.parse import urljoin
@@ -17,6 +18,7 @@ from .signals import payment_completed
 from .utils import from_kobo, generate_reference, log_payment, to_kobo
 
 from Foodcourt.notifications import send_order_confirmation_emails
+from Foodcourt.models import Coupon
 
 PAYSTACK_BASE_URL = 'https://api.paystack.co'
 PAYSTACK_INITIALIZE_URL = urljoin(PAYSTACK_BASE_URL, '/transaction/initialize')
@@ -288,6 +290,17 @@ def _mark_successful(payment, data):
         order.status = 'confirmed'
         order.is_accepted = True
         order.save(update_fields=['status', 'is_accepted'])
+
+        # Increment coupon usage now that the order is paid & confirmed.
+        # Failed/cancelled/abandoned orders never reach here, so they do not
+        # consume coupon usage. This runs inside the same transaction as the
+        # confirmation, so it is also idempotent (guarded by the status check
+        # above when the webhook is delivered more than once).
+        coupon_code = order.coupon_code if hasattr(order, 'coupon_code') else None
+        if coupon_code:
+            Coupon.objects.filter(code=coupon_code, is_active=True).update(
+                times_used=F('times_used') + 1
+            )
 
     payment_completed.send(sender=Payment, payment=payment)
     send_order_confirmation_emails(order)

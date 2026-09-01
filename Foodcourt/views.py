@@ -1741,6 +1741,19 @@ def admin_dashboard_view(request, section=None):
             'hide_navbar': True,
         })
 
+    if section == 'coupons':
+        if not is_staff:
+            return redirect('admin_dashboard')
+        coupons = Coupon.objects.select_related('restaurant', 'created_by').order_by('-created_at')
+        return render(request, 'admin_dashboard.html', {
+            'section': 'coupons',
+            'admin_coupons': coupons,
+            'platform_coupon_count': coupons.filter(restaurant__isnull=True).count(),
+            'restaurant_coupon_count': coupons.filter(restaurant__isnull=False).count(),
+            'platform_stats': build_platform_stats(),
+            'hide_navbar': True,
+        })
+
     try:
         restaurant = Restaurant.objects.get(owner=request.user)
     except Restaurant.DoesNotExist:
@@ -1904,6 +1917,97 @@ def admin_user_detail_api(request, pk):
         'recent_orders': recent_orders,
         'recent_actions': recent_actions,
     })
+
+
+def admin_order_detail_api(request, order_id):
+    if not _admin_required(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    order = get_object_or_404(
+        Order.objects.select_related('user', 'restaurant', 'rider'),
+        order_id=order_id,
+    )
+    profile = getattr(order.user, 'profile', None)
+    items = list(order.items.values('name', 'price', 'quantity', 'image'))
+
+    delivery = getattr(order, 'delivery', None)
+    delivery_info = None
+    delivery_logs = []
+    if delivery:
+        rider = delivery.rider
+        delivery_info = {
+            'status': delivery.status,
+            'status_label': delivery.status_label,
+            'payout': float(delivery.payout),
+            'otp': delivery.otp,
+            'accepted_at': delivery.accepted_at.isoformat() if delivery.accepted_at else None,
+            'arrived_at_restaurant_at': delivery.arrived_at_restaurant_at.isoformat() if delivery.arrived_at_restaurant_at else None,
+            'picked_up_at': delivery.picked_up_at.isoformat() if delivery.picked_up_at else None,
+            'on_the_way_at': delivery.on_the_way_at.isoformat() if delivery.on_the_way_at else None,
+            'arrived_at': delivery.arrived_at.isoformat() if delivery.arrived_at else None,
+            'delivered_at': delivery.delivered_at.isoformat() if delivery.delivered_at else None,
+            'cancelled_at': delivery.cancelled_at.isoformat() if delivery.cancelled_at else None,
+            'rider': {
+                'id': rider.id,
+                'name': rider.get_full_name(),
+                'email': rider.email,
+                'phone': rider.phone,
+                'vehicle': f"{rider.vehicle_brand} {rider.vehicle_model}".strip() or rider.vehicle_type,
+                'vehicle_plate': rider.vehicle_plate,
+                'vehicle_color': rider.vehicle_color,
+            } if rider else None,
+        }
+        delivery_logs = [{
+            'status': log.status,
+            'label': log.label,
+            'note': log.note,
+            'created_at': log.created_at.strftime('%b %d, %Y %H:%M'),
+        } for log in delivery.status_logs.all()]
+
+    payment = getattr(order, 'payment', None)
+    payment_info = None
+    if payment:
+        payment_info = {
+            'status': payment.status,
+            'method': payment.get_payment_method_display(),
+            'amount': float(payment.amount),
+            'currency': payment.currency,
+            'reference': payment.transaction_reference,
+            'paystack_reference': payment.paystack_reference,
+            'paid_at': payment.paid_at.strftime('%b %d, %Y %H:%M') if payment.paid_at else None,
+        }
+
+    return JsonResponse({
+        'order_id': order.order_id,
+        'status': order.status,
+        'status_display': order.get_status_display(),
+        'created_at': order.created_at.strftime('%b %d, %Y %H:%M'),
+        'subtotal': float(order.subtotal),
+        'delivery_fee': float(order.delivery_fee),
+        'delivery_distance_km': float(order.delivery_distance_km) if order.delivery_distance_km else None,
+        'discount': float(order.discount),
+        'total': float(order.total),
+        'payment_method': order.payment_method,
+        'delivery_address': order.delivery_address,
+        'customer': {
+            'id': order.user.id,
+            'name': order.user.get_full_name() or order.user.username,
+            'email': order.user.email,
+            'phone': getattr(profile, 'phone', None) or '—',
+        },
+        'restaurant': {
+            'id': order.restaurant.id if order.restaurant else None,
+            'name': order.restaurant_name or (order.restaurant.name if order.restaurant else '—'),
+            'address': order.restaurant.address if order.restaurant else '—',
+            'phone': order.restaurant.phone if order.restaurant else '—',
+        } if order.restaurant else {
+            'name': order.restaurant_name or '—',
+        },
+        'items': items,
+        'delivery': delivery_info,
+        'delivery_logs': delivery_logs,
+        'payment': payment_info,
+    })
+
 
 @login_required(login_url='login')
 def admin_bulk_user_action_view(request):
@@ -2362,6 +2466,231 @@ def admin_delivery_settings_api(request):
 
 
 @login_required(login_url='login')
+def admin_coupon_api(request):
+    """General Admin AJAX: create/edit/toggle/delete platform-wide coupons.
+
+    Only staff/superusers may manage coupons here. Restaurant-owned coupons
+    are never modified by this endpoint — the General Admin may only create,
+    edit, toggle or delete coupons that have no restaurant (platform-wide).
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    action = data.get('action', '')
+    code = (data.get('code') or '').strip().upper()
+
+    def parse_dec(field, default=0):
+        val = data.get(field, default)
+        try:
+            return Decimal(str(val)) if val not in (None, '') else Decimal(str(default))
+        except (InvalidOperation, ValueError, TypeError):
+            return Decimal(str(default))
+
+    def parse_date(field):
+        val = data.get(field)
+        if not val:
+            return None
+        try:
+            return datetime.strptime(str(val), '%Y-%m-%dT%H:%M')
+        except (ValueError, TypeError):
+            try:
+                return datetime.strptime(str(val), '%Y-%m-%d %H:%M:%S')
+            except (ValueError, TypeError):
+                return None
+
+    if action == 'create_coupon':
+        if not code or len(code) > 50:
+            return JsonResponse({'error': 'Coupon code is required.'}, status=400)
+        discount_type = data.get('discount_type', 'percent')
+        if discount_type not in ('percent', 'fixed'):
+            discount_type = 'percent'
+        discount_value = parse_dec('discount_value')
+        if discount_value <= 0:
+            return JsonResponse({'error': 'Discount value must be greater than zero.'}, status=400)
+        if Coupon.objects.filter(code__iexact=code).exists():
+            return JsonResponse({'error': 'A coupon with this code already exists.'}, status=400)
+        coupon = Coupon.objects.create(
+            restaurant=None,  # platform-wide
+            code=code,
+            discount_type=discount_type,
+            discount_value=discount_value,
+            min_order=parse_dec('min_order'),
+            max_discount=parse_dec('max_discount'),
+            max_uses=int(data.get('max_uses', 0) or 0),
+            is_active=bool(data.get('is_active', True)),
+            first_order_only=bool(data.get('first_order_only', False)),
+            start_date=parse_date('start_date'),
+            expires_at=parse_date('end_date'),
+            created_by=request.user,
+        )
+        return JsonResponse({'success': True, 'id': coupon.id})
+
+    if action == 'update_coupon':
+        coupon_id = data.get('id')
+        if not coupon_id:
+            return JsonResponse({'error': 'Coupon ID required.'}, status=400)
+        try:
+            coupon = Coupon.objects.get(pk=coupon_id)
+        except Coupon.DoesNotExist:
+            return JsonResponse({'error': 'Coupon not found.'}, status=404)
+        # General Admin must not modify restaurant-owned coupons.
+        if coupon.restaurant is not None:
+            return JsonResponse({'error': 'Cannot edit a restaurant coupon.'}, status=403)
+        if code and code != coupon.code:
+            if Coupon.objects.filter(code__iexact=code).exclude(pk=coupon.pk).exists():
+                return JsonResponse({'error': 'A coupon with this code already exists.'}, status=400)
+            coupon.code = code
+        discount_type = data.get('discount_type')
+        if discount_type in ('percent', 'fixed'):
+            coupon.discount_type = discount_type
+        if 'discount_value' in data:
+            coupon.discount_value = parse_dec('discount_value')
+        if 'min_order' in data:
+            coupon.min_order = parse_dec('min_order')
+        if 'max_discount' in data:
+            coupon.max_discount = parse_dec('max_discount')
+        if 'max_uses' in data:
+            coupon.max_uses = int(data.get('max_uses', 0) or 0)
+        if 'is_active' in data:
+            coupon.is_active = bool(data['is_active'])
+        if 'first_order_only' in data:
+            coupon.first_order_only = bool(data['first_order_only'])
+        if 'start_date' in data:
+            coupon.start_date = parse_date('start_date')
+        if 'end_date' in data:
+            coupon.expires_at = parse_date('end_date')
+        coupon.save()
+        return JsonResponse({'success': True})
+
+    if action == 'toggle_coupon':
+        coupon_id = data.get('id')
+        try:
+            coupon = Coupon.objects.get(pk=coupon_id)
+        except Coupon.DoesNotExist:
+            return JsonResponse({'error': 'Coupon not found.'}, status=404)
+        if coupon.restaurant is not None:
+            return JsonResponse({'error': 'Cannot modify a restaurant coupon.'}, status=403)
+        coupon.is_active = bool(data.get('is_active', not coupon.is_active))
+        coupon.save(update_fields=['is_active', 'updated_at'])
+        return JsonResponse({'success': True, 'is_active': coupon.is_active})
+
+    if action == 'delete_coupon':
+        coupon_id = data.get('id')
+        try:
+            coupon = Coupon.objects.get(pk=coupon_id)
+        except Coupon.DoesNotExist:
+            return JsonResponse({'error': 'Coupon not found.'}, status=404)
+        if coupon.restaurant is not None:
+            return JsonResponse({'error': 'Cannot delete a restaurant coupon.'}, status=403)
+        coupon.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Invalid action'}, status=400)
+
+
+def _user_has_completed_order(user):
+    """Return True if the user has a paid/confirmed order (first-order check).
+
+    Only orders that reached a confirmed (or later) state count. Pending,
+    failed, cancelled or abandoned payments do NOT count as a completed order.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    return Order.objects.filter(
+        user=user,
+    ).exclude(
+        status__in=['pending', 'cancelled'],
+    ).exists()
+
+
+def validate_coupon_apply(request, code, subtotal, restaurant=None, raise_on_invalid=True):
+    """Server-side coupon validation used by both the cart API and checkout.
+
+    Returns (ok, message, coupon, discount_amount). Security rules are applied
+    here; never trust the client-supplied discount.
+    """
+    from django.utils import timezone as _tz
+
+    if not request.user.is_authenticated:
+        return (False, 'Please log in to use a promo code.', None, Decimal('0'))
+
+    subtotal = Decimal(str(subtotal or 0))
+    code = (code or '').strip().upper()
+
+    try:
+        coupon = Coupon.objects.get(code__iexact=code)
+    except Coupon.DoesNotExist:
+        return (False, 'Invalid promo code.', None, Decimal('0'))
+
+    now = _tz.now()
+
+    # A restaurant-owned coupon can only be applied to its own restaurant.
+    # A platform-wide coupon (restaurant is None) applies to any eligible restaurant.
+    if coupon.restaurant is not None:
+        if restaurant is None or coupon.restaurant_id != restaurant.id:
+            return (False, 'This promo code is not valid for this restaurant.', None, Decimal('0'))
+
+    if not coupon.is_active:
+        return (False, 'This promo code is inactive.', None, Decimal('0'))
+    if coupon.start_date and now < coupon.start_date:
+        return (False, 'This promo code is not active yet.', None, Decimal('0'))
+    if coupon.expires_at and now > coupon.expires_at:
+        return (False, 'This promo code has expired.', None, Decimal('0'))
+    if coupon.max_uses > 0 and coupon.times_used >= coupon.max_uses:
+        return (False, 'This promo code has reached its usage limit.', None, Decimal('0'))
+    if coupon.min_order and subtotal < Decimal(str(coupon.min_order)):
+        return (False, f'This promo code requires a minimum order of \u20A6{coupon.min_order}.', None, Decimal('0'))
+    if coupon.first_order_only and _user_has_completed_order(request.user):
+        return (False, 'This promo code is only valid for your first order.', None, Decimal('0'))
+
+    discount = coupon.calculate_discount(subtotal)
+
+    if raise_on_invalid:
+        msg = f"Promo code {coupon.code} applied! You save \u20A6{discount}"
+        return (True, msg, coupon, discount)
+    return (True, '', coupon, discount)
+
+
+@login_required(login_url='login')
+def coupon_validate_api(request):
+    """AJAX endpoint for the cart to validate a coupon server-side."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body or b'{}')
+    except json.JSONDecodeError:
+        data = {}
+    code = data.get('code', '')
+    subtotal = Decimal(str(data.get('subtotal', 0)))
+    restaurant_id = data.get('restaurant_id')
+
+    restaurant = None
+    if restaurant_id:
+        try:
+            restaurant = Restaurant.objects.get(pk=int(restaurant_id))
+        except (TypeError, ValueError, Restaurant.DoesNotExist):
+            restaurant = None
+
+    ok, msg, coupon, discount = validate_coupon_apply(
+        request, code, subtotal, restaurant=restaurant, raise_on_invalid=False
+    )
+    if not ok:
+        return JsonResponse({'success': False, 'error': msg}, status=400)
+    return JsonResponse({
+        'success': True,
+        'code': coupon.code,
+        'discount': float(discount),
+        'discount_label': f"{float(coupon.discount_value):g}% off" if coupon.discount_type == 'percent' else f"\u20A6{coupon.discount_value:g} off",
+    })
+
+
+@login_required(login_url='login')
 def place_order_view(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
@@ -2374,8 +2703,7 @@ def place_order_view(request):
     items_data = data.get('items', [])
     delivery_address = data.get('delivery_address', '')
     payment_method = data.get('payment_method', 'cash')
-    subtotal = Decimal(str(data.get('subtotal', 0)))
-    discount = Decimal(str(data.get('discount', 0)))
+    coupon_code = (data.get('coupon_code') or '').strip().upper()
     restaurant_name = data.get('restaurant_name', 'Choply Order')
     address_id = data.get('address_id')
 
@@ -2383,6 +2711,22 @@ def place_order_view(request):
         return JsonResponse({'error': 'Cart is empty'}, status=400)
     if not delivery_address:
         return JsonResponse({'error': 'Delivery address required'}, status=400)
+
+    # Recompute the subtotal server-side from the actual item prices/quantities
+    # so a manipulated 'subtotal' or 'discount' sent from the frontend cannot
+    # influence what the customer pays.
+    subtotal = Decimal('0')
+    for item in items_data:
+        try:
+            price = Decimal(str(item.get('price', 0)))
+            qty = max(1, int(item.get('qty', 1)))
+        except (InvalidOperation, ValueError, TypeError):
+            price = Decimal('0')
+            qty = 1
+        if price < 0:
+            price = Decimal('0')
+        subtotal += price * qty
+    subtotal = subtotal.quantize(Decimal('0.01'))
 
     # Resolve restaurant
     restaurant = None
@@ -2433,9 +2777,18 @@ def place_order_view(request):
         else:
             delivery_fee = Decimal(str(data.get('delivery_fee', 0)))
 
-    # Ensure discount doesn't exceed subtotal
-    if discount > subtotal:
-        discount = subtotal
+    # Server-side coupon validation & discount calculation.
+    # Never trust the discount sent from the frontend.
+    discount = Decimal('0')
+    applied_coupon = None
+    if coupon_code:
+        ok, msg, applied_coupon, computed_discount = validate_coupon_apply(
+            request, coupon_code, subtotal, restaurant=restaurant, raise_on_invalid=False
+        )
+        if not ok:
+            return JsonResponse({'error': msg}, status=400)
+        discount = computed_discount
+
     total = subtotal + delivery_fee - discount
 
     year = datetime.now().year
@@ -2453,6 +2806,7 @@ def place_order_view(request):
         delivery_fee=delivery_fee,
         delivery_distance_km=distance_km,
         discount=discount,
+        coupon_code=applied_coupon.code if applied_coupon else '',
         total=total,
         status='pending'
     )
@@ -2490,6 +2844,14 @@ def place_order_view(request):
     order.status = 'confirmed'
     order.is_accepted = True
     order.save(update_fields=['status', 'is_accepted'])
+
+    # Increment coupon usage for cash-on-delivery orders once they are
+    # confirmed. (Paystack orders increment in payments/services.py
+    # _mark_successful instead, on payment success.)
+    if applied_coupon:
+        Coupon.objects.filter(id=applied_coupon.id).update(
+            times_used=db_models.F('times_used') + 1
+        )
 
     send_order_confirmation_emails(order)
 

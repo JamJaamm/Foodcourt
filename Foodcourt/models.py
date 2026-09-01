@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
+from decimal import Decimal
 from django_resized import ResizedImageField 
 
 class VerificationCode(models.Model):
@@ -49,6 +50,7 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     is_accepted = models.BooleanField(default=False)
     rider = models.ForeignKey('Riders', on_delete=models.SET_NULL, null=True, blank=True, related_name='delivery_orders')
+    coupon_code = models.CharField(max_length=50, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
@@ -226,19 +228,56 @@ class InventoryItem(models.Model):
 
 
 class Coupon(models.Model):
-    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='coupons')
+    DISCOUNT_TYPE_CHOICES = [('percent', 'Percentage'), ('fixed', 'Fixed Amount')]
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='coupons', null=True, blank=True, help_text='Null = platform-wide coupon')
     code = models.CharField(max_length=50)
-    discount_type = models.CharField(max_length=10, choices=[('percent', 'Percentage'), ('fixed', 'Fixed Amount')])
+    discount_type = models.CharField(max_length=10, choices=DISCOUNT_TYPE_CHOICES)
     discount_value = models.DecimalField(max_digits=8, decimal_places=2)
     min_order = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    max_uses = models.IntegerField(default=0)
+    max_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Max discount for percent coupons. 0 = no limit.')
+    max_uses = models.IntegerField(default=0, help_text='0 = unlimited')
     times_used = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    first_order_only = models.BooleanField(default=False)
+    start_date = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_coupons')
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
-        return self.code
+        owner = self.restaurant.name if self.restaurant else 'Platform'
+        return f"{self.code} ({owner})"
+
+    @property
+    def is_platform_coupon(self):
+        return self.restaurant is None
+
+    def is_valid_now(self):
+        from django.utils import timezone as _tz
+        now = _tz.now()
+        if not self.is_active:
+            return False, 'Coupon is inactive.'
+        if self.start_date and now < self.start_date:
+            return False, 'Coupon is not yet active.'
+        if self.expires_at and now > self.expires_at:
+            return False, 'Coupon has expired.'
+        if self.max_uses > 0 and self.times_used >= self.max_uses:
+            return False, 'Coupon usage limit reached.'
+        return True, ''
+
+    def calculate_discount(self, subtotal):
+        subtotal = Decimal(str(subtotal))
+        if self.discount_type == 'percent':
+            amount = subtotal * (self.discount_value / Decimal('100'))
+            if self.max_discount > 0:
+                amount = min(amount, self.max_discount)
+        else:
+            amount = self.discount_value
+        return min(amount, subtotal)
 
 
 class Review(models.Model):
