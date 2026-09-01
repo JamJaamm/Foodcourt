@@ -1057,10 +1057,10 @@
                     {% else %}₦{{ c.discount_value|money }}{% endif %}
                   </td>
                   <td>
-                    {% if c.restaurant %}
-                    <span class="status-badge status-confirmed">Restaurant: {{ c.restaurant.name }}</span>
-                    {% else %}
+                    {% if c.restaurant is None %}
                     <span class="status-badge status-out_for_delivery">Platform-wide</span>
+                    {% else %}
+                    <span class="status-badge status-confirmed">Restaurant: {{ c.restaurant.name }}</span>
                     {% endif %}
                   </td>
                   <td>{% if c.first_order_only %}<span class="status-badge status-ready">Yes</span>{% else %}<span class="text-muted">No</span>{% endif %}</td>
@@ -1077,9 +1077,8 @@
                     {% else %}<span class="status-badge status-cancelled">Inactive</span>{% endif %}
                   </td>
                   <td>
-                    {% if c.restaurant is None %}
                     <div style="display:flex;gap:6px;align-items:center;">
-                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="openAdminCouponForm({{ c.id }}, '{{ c.code|escapejs }}', '{{ c.discount_type }}', {{ c.discount_value }} , {{ c.min_order }}, {{ c.max_discount }}, {{ c.max_uses }}, {{ c.times_used }}, {{ c.first_order_only|yesno:"true,false" }}, {{ c.is_active|yesno:"true,false" }}, '{{ c.start_date|date:"Y-m-d\TH:i"|default:'' }}', '{{ c.expires_at|date:"Y-m-d\TH:i"|default:'' }}')">
+                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="openAdminCouponForm({{ c.id }}, '{{ c.code|escapejs }}', '{{ c.discount_type }}', {{ c.discount_value }} , {{ c.min_order }}, {{ c.max_discount }}, {{ c.max_uses }}, {{ c.times_used }}, {{ c.first_order_only|yesno:"true,false" }}, {{ c.is_active|yesno:"true,false" }}, '{{ c.start_date|date:"Y-m-d\TH:i"|default:'' }}', '{{ c.expires_at|date:"Y-m-d\TH:i"|default:'' }}', '{{ c.restaurant.name|escapejs|default:"platform-wide" }}')">
                         <i class="fa-solid fa-pen"></i> Edit
                       </button>
                       <button class="btn btn-sm" style="background:{% if c.is_active %}#fff3e0;color:#e65100;{% else %}#e8f5e9;color:#1b5e20;{% endif %};border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="toggleAdminCoupon({{ c.id }}, {% if c.is_active %}false{% else %}true{% endif %})">
@@ -1089,9 +1088,6 @@
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </div>
-                    {% else %}
-                    <span style="font-size:11px;color:var(--text-muted);">Managed by restaurant</span>
-                    {% endif %}
                   </td>
                 </tr>
                 {% empty %}
@@ -1113,7 +1109,7 @@
             <div style="padding:24px;">
               <input type="hidden" id="ac-id" value="">
               <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--primary-subtle);border-radius:var(--radius-md);font-size:13px;color:var(--primary);margin-bottom:16px;">
-                <i class="fa-solid fa-globe"></i> This coupon applies across all FoodCourt restaurants (platform-wide).
+                <i class="fa-solid fa-globe"></i> <span id="ac-scope-note">This coupon applies across all FoodCourt restaurants (platform-wide).</span>
               </div>
               <div class="row g-3">
                 <div class="col-md-6">
@@ -1180,7 +1176,7 @@
           }
           return v;
         }
-        function openAdminCouponForm(id, code, type, value, minOrder, maxDiscount, maxUses, timesUsed, firstOrder, active, startDate, endDate) {
+        function openAdminCouponForm(id, code, type, value, minOrder, maxDiscount, maxUses, timesUsed, firstOrder, active, startDate, endDate, scopeLabel) {
           document.getElementById('ac-id').value = id || '';
           document.getElementById('ac-code').value = code || '';
           document.getElementById('ac-type').value = type || 'percent';
@@ -1192,8 +1188,12 @@
           document.getElementById('ac-end').value = endDate || '';
           document.getElementById('ac-first-order').checked = !!firstOrder;
           document.getElementById('ac-active').checked = active !== false;
-          document.getElementById('admin-coupon-modal-title').textContent = id ? 'Edit Platform-Wide Coupon' : 'Create Platform-Wide Coupon';
+          document.getElementById('admin-coupon-modal-title').textContent = id ? 'Edit Coupon' : 'Create Platform-Wide Coupon';
+          document.getElementById('ac-scope-note').textContent = (id && scopeLabel && scopeLabel !== 'platform-wide')
+            ? 'This coupon belongs to restaurant: ' + scopeLabel + '.'
+            : 'This coupon applies across all FoodCourt restaurants (platform-wide).';
           document.getElementById('ac-msg').style.display = 'none';
+          document.getElementById('ac-msg').textContent = '';
           document.getElementById('adminCouponModal').style.display = 'flex';
         }
         function closeAdminCouponForm() {

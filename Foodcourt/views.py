@@ -2467,11 +2467,11 @@ def admin_delivery_settings_api(request):
 
 @login_required(login_url='login')
 def admin_coupon_api(request):
-    """General Admin AJAX: create/edit/toggle/delete platform-wide coupons.
+    """General Admin AJAX: create/edit/toggle/delete coupons.
 
-    Only staff/superusers may manage coupons here. Restaurant-owned coupons
-    are never modified by this endpoint — the General Admin may only create,
-    edit, toggle or delete coupons that have no restaurant (platform-wide).
+    Only staff/superusers may manage coupons here. Both platform-wide coupons
+    (restaurant is None) and restaurant-owned coupons can be managed here, so
+    the General Admin has full control over all coupons in the system.
     """
     if not (request.user.is_staff or request.user.is_superuser):
         return JsonResponse({'error': 'Forbidden'}, status=403)
@@ -2539,9 +2539,6 @@ def admin_coupon_api(request):
             coupon = Coupon.objects.get(pk=coupon_id)
         except Coupon.DoesNotExist:
             return JsonResponse({'error': 'Coupon not found.'}, status=404)
-        # General Admin must not modify restaurant-owned coupons.
-        if coupon.restaurant is not None:
-            return JsonResponse({'error': 'Cannot edit a restaurant coupon.'}, status=403)
         if code and code != coupon.code:
             if Coupon.objects.filter(code__iexact=code).exclude(pk=coupon.pk).exists():
                 return JsonResponse({'error': 'A coupon with this code already exists.'}, status=400)
@@ -2574,8 +2571,6 @@ def admin_coupon_api(request):
             coupon = Coupon.objects.get(pk=coupon_id)
         except Coupon.DoesNotExist:
             return JsonResponse({'error': 'Coupon not found.'}, status=404)
-        if coupon.restaurant is not None:
-            return JsonResponse({'error': 'Cannot modify a restaurant coupon.'}, status=403)
         coupon.is_active = bool(data.get('is_active', not coupon.is_active))
         coupon.save(update_fields=['is_active', 'updated_at'])
         return JsonResponse({'success': True, 'is_active': coupon.is_active})
@@ -2586,8 +2581,6 @@ def admin_coupon_api(request):
             coupon = Coupon.objects.get(pk=coupon_id)
         except Coupon.DoesNotExist:
             return JsonResponse({'error': 'Coupon not found.'}, status=404)
-        if coupon.restaurant is not None:
-            return JsonResponse({'error': 'Cannot delete a restaurant coupon.'}, status=403)
         coupon.delete()
         return JsonResponse({'success': True})
 
