@@ -1078,9 +1078,9 @@
                   </td>
                   <td>
                     {% if c.restaurant is None %}
-                    <div style="display:flex;gap:6px;">
-                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openAdminCouponForm({{ c.id }}, '{{ c.code|escapejs }}', '{{ c.discount_type }}', {{ c.discount_value }} , {{ c.min_order }}, {{ c.max_discount }}, {{ c.max_uses }}, {{ c.times_used }}, {{ c.first_order_only|yesno:"true,false" }}, {{ c.is_active|yesno:"true,false" }}, '{{ c.start_date|date:"Y-m-d\TH:i"|default:'' }}', '{{ c.expires_at|date:"Y-m-d\TH:i"|default:'' }}')">
-                        <i class="fa-solid fa-pen"></i>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="openAdminCouponForm({{ c.id }}, '{{ c.code|escapejs }}', '{{ c.discount_type }}', {{ c.discount_value }} , {{ c.min_order }}, {{ c.max_discount }}, {{ c.max_uses }}, {{ c.times_used }}, {{ c.first_order_only|yesno:"true,false" }}, {{ c.is_active|yesno:"true,false" }}, '{{ c.start_date|date:"Y-m-d\TH:i"|default:'' }}', '{{ c.expires_at|date:"Y-m-d\TH:i"|default:'' }}')">
+                        <i class="fa-solid fa-pen"></i> Edit
                       </button>
                       <button class="btn btn-sm" style="background:{% if c.is_active %}#fff3e0;color:#e65100;{% else %}#e8f5e9;color:#1b5e20;{% endif %};border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="toggleAdminCoupon({{ c.id }}, {% if c.is_active %}false{% else %}true{% endif %})">
                         {% if c.is_active %}<i class="fa-solid fa-pause"></i>{% else %}<i class="fa-solid fa-play"></i>{% endif %}

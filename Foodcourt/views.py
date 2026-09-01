@@ -3199,6 +3199,24 @@ def restaurant_api_view(request):
             data = request.POST
 
     # === ORDER ACTIONS ===
+    def _coupon_data():
+        if request.content_type == 'application/json':
+            try:
+                return json.loads(request.body)
+            except json.JSONDecodeError:
+                return request.POST
+        return request.POST
+
+    def _parse_coupon_expiry(val):
+        if not val:
+            return None
+        for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S'):
+            try:
+                return datetime.strptime(str(val), fmt)
+            except ValueError:
+                continue
+        return None
+
     if action == 'update_order_status':
         order_id = data.get('order_id')
         new_status = data.get('status')
@@ -3527,21 +3545,60 @@ def restaurant_api_view(request):
 
     # === COUPON ACTIONS ===
     elif action == 'create_coupon':
-        if request.content_type == 'application/json':
-            try:
-                data = json.loads(request.body)
-            except json.JSONDecodeError:
-                data = request.POST
-        else:
-            data = request.POST
+        data = _coupon_data()
         Coupon.objects.create(
             restaurant=restaurant, code=data.get('code', '').upper(),
             discount_type=data.get('discount_type', 'percent'),
             discount_value=data.get('discount_value', 0),
             min_order=data.get('min_order', 0),
+            max_discount=data.get('max_discount', 0),
             max_uses=data.get('max_uses', 0),
-            expires_at=data.get('expires_at') or None,
+            first_order_only=str(data.get('first_order_only', 'false')).lower() == 'true',
+            expires_at=_parse_coupon_expiry(data.get('expires_at')),
         )
+        return JsonResponse({'success': True})
+
+    elif action == 'update_coupon':
+        data = _coupon_data()
+        coupon_id = data.get('id')
+        if not coupon_id:
+            return JsonResponse({'error': 'Coupon ID required.'}, status=400)
+        try:
+            coupon = Coupon.objects.get(id=coupon_id, restaurant=restaurant)
+        except (Coupon.DoesNotExist, ValueError, TypeError):
+            return JsonResponse({'error': 'Coupon not found'}, status=404)
+        code = str(data.get('code', '')).strip().upper()
+        if code:
+            if Coupon.objects.filter(code__iexact=code).exclude(id=coupon.id).exists():
+                return JsonResponse({'error': 'A coupon with this code already exists.'}, status=400)
+            coupon.code = code
+        discount_type = data.get('discount_type')
+        if discount_type in ('percent', 'fixed'):
+            coupon.discount_type = discount_type
+        if 'discount_value' in data:
+            try:
+                discount_value = Decimal(str(data.get('discount_value')))
+            except (InvalidOperation, ValueError, TypeError):
+                return JsonResponse({'error': 'Invalid discount value.'}, status=400)
+            if discount_value <= 0:
+                return JsonResponse({'error': 'Discount value must be greater than zero.'}, status=400)
+            coupon.discount_value = discount_value
+        for field in ('min_order', 'max_discount'):
+            if field in data:
+                try:
+                    setattr(coupon, field, Decimal(str(data.get(field))))
+                except (InvalidOperation, ValueError, TypeError):
+                    return JsonResponse({'error': 'Invalid value for ' + field.replace('_', ' ') + '.'}, status=400)
+        if 'max_uses' in data:
+            try:
+                coupon.max_uses = max(0, int(data.get('max_uses')))
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'Invalid usage limit.'}, status=400)
+        if 'first_order_only' in data:
+            coupon.first_order_only = str(data.get('first_order_only')).lower() == 'true'
+        if 'expires_at' in data:
+            coupon.expires_at = _parse_coupon_expiry(data.get('expires_at'))
+        coupon.save()
         return JsonResponse({'success': True})
 
     elif action == 'delete_coupon':

@@ -528,15 +528,20 @@
         </div>
         <div class="rd-card d-none" id="coupon-form-card">
           <form onsubmit="saveCoupon(event)" class="rd-inline-form">
+            <input type="hidden" id="cp-id">
             <div><label>Code *</label><input type="text" id="cp-code" required></div>
             <div><label>Type</label><select id="cp-type"><option value="percent">Percentage</option><option value="fixed">Fixed Amount</option></select></div>
             <div><label>Value *</label><input type="number" step="0.01" id="cp-value" required></div>
             <div><label>Min Order</label><input type="number" step="0.01" id="cp-min" value="0"></div>
+            <div><label>Max Discount (₦)</label><input type="number" step="0.01" id="cp-max-discount" value="0" placeholder="0 = no limit"></div>
             <div><label>Max Uses</label><input type="number" id="cp-uses" value="0" placeholder="0 = unlimited"></div>
             <div><label>Expires</label><input type="datetime-local" id="cp-expires"></div>
+            <div style="display:flex;align-items:center;gap:8px;grid-column:span 2;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;"><input type="checkbox" id="cp-first-order" style="width:16px;height:16px;"> First Order Only</label>
+            </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;grid-column:span 2;">
               <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="document.getElementById('coupon-form-card').classList.add('d-none')">Cancel</button>
-              <button type="submit" class="fc-btn fc-btn-primary fc-btn-sm">Create Coupon</button>
+              <button type="submit" id="cp-submit-btn" class="fc-btn fc-btn-primary fc-btn-sm">Create Coupon</button>
             </div>
           </form>
         </div>
@@ -552,7 +557,10 @@
                 <td>₦{{ cp.min_order|money }}</td>
                 <td>{{ cp.times_used }}{% if cp.max_uses > 0 %}/{{ cp.max_uses }}{% endif %}</td>
                 <td style="font-size:12px;">{% if cp.expires_at %}{{ cp.expires_at|date:"M d, Y" }}{% else %}—{% endif %}</td>
-                <td><button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="deleteCoupon({{ cp.id }})"><i class="fa-solid fa-trash"></i></button></td>
+                <td style="display:flex;gap:6px;">
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="editCoupon({{ cp.id }}, '{{ cp.code|escapejs }}', '{{ cp.discount_type }}', {{ cp.discount_value }} , {{ cp.min_order }}, {{ cp.max_uses }}, '{{ cp.expires_at|date:"Y-m-d\TH:i"|default:'' }}', {{ cp.max_discount }}, {{ cp.first_order_only|yesno:"true,false" }})"><i class="fa-solid fa-pen"></i></button>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="deleteCoupon({{ cp.id }})"><i class="fa-solid fa-trash"></i></button>
+                </td>
               </tr>
               {% empty %}<tr><td colspan="7" class="text-center py-4 text-muted">No coupons</td></tr>{% endfor %}
             </tbody>
@@ -927,12 +935,30 @@ function unhideReview(id){
 }
 
 // ═══ COUPONS ═══
-function showCouponForm(){document.getElementById('coupon-form-card').classList.remove('d-none')}
+function showCouponForm(){
+  document.getElementById('cp-id').value='';
+  document.getElementById('coupon-form-card').classList.remove('d-none');
+  document.getElementById('cp-submit-btn').textContent='Create Coupon';
+}
+function editCoupon(id, code, type, value, minOrder, maxUses, expiresAt, maxDiscount, firstOrder){
+  document.getElementById('cp-id').value=id||'';
+  document.getElementById('cp-code').value=code||'';
+  document.getElementById('cp-type').value=type||'percent';
+  document.getElementById('cp-value').value=value!==undefined?value:'';
+  document.getElementById('cp-min').value=minOrder||0;
+  document.getElementById('cp-max-discount').value=maxDiscount||0;
+  document.getElementById('cp-uses').value=maxUses||0;
+  document.getElementById('cp-expires').value=expiresAt||'';
+  document.getElementById('cp-first-order').checked=!!firstOrder;
+  document.getElementById('cp-submit-btn').textContent='Save Changes';
+  document.getElementById('coupon-form-card').classList.remove('d-none');
+}
 function saveCoupon(e){
   e.preventDefault();
-  const data={action:'create_coupon',code:document.getElementById('cp-code').value,discount_type:document.getElementById('cp-type').value,discount_value:parseFloat(document.getElementById('cp-value').value),min_order:parseFloat(document.getElementById('cp-min').value)||0,max_uses:parseInt(document.getElementById('cp-uses').value)||0,expires_at:document.getElementById('cp-expires').value||null};
+  const id=document.getElementById('cp-id').value;
+  const data={action:id?'update_coupon':'create_coupon',id:id,code:document.getElementById('cp-code').value,discount_type:document.getElementById('cp-type').value,discount_value:parseFloat(document.getElementById('cp-value').value),min_order:parseFloat(document.getElementById('cp-min').value)||0,max_discount:parseFloat(document.getElementById('cp-max-discount').value)||0,max_uses:parseInt(document.getElementById('cp-uses').value)||0,first_order_only:document.getElementById('cp-first-order').checked,expires_at:document.getElementById('cp-expires').value||null};
   fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify(data)})
-  .then(r=>r.json()).then(d=>{if(d.success){toast('Coupon created!');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
+  .then(r=>r.json()).then(d=>{if(d.success){toast(id?'Coupon updated!':'Coupon created!');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
 }
 function deleteCoupon(id){
   if(!confirm('Delete this coupon?'))return;
