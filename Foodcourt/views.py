@@ -826,22 +826,29 @@ CATEGORY_KEYWORDS = {
     'wings': ['wing', 'fried', 'chicken'],
 }
 
-def guess_category(cuisine):
+def guess_category(cuisine, menu_categories=None):
     c = (cuisine or '').lower()
     for cat, words in CATEGORY_KEYWORDS.items():
         if any(w in c for w in words):
             return cat
+    if menu_categories:
+        for cat_name in menu_categories:
+            cn = (cat_name or '').lower()
+            for cat, words in CATEGORY_KEYWORDS.items():
+                if any(w in cn for w in words):
+                    return cat
     return 'other'
 
 def build_restaurants_payload():
     default_img = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80'
     db_restaurants = []
     for r in Restaurant.objects.all():
+        cat_names = list(r.categories.values_list('name', flat=True))
         db_restaurants.append({
             'id': r.id,
             'name': r.name,
             'description': r.description or '',
-            'category': guess_category(r.cuisine),
+            'category': guess_category(r.cuisine, cat_names),
             'tags': [r.cuisine] if r.cuisine else [],
             'rating': float(r.rating or 0),
             'reviewCount': r.reviews.count(),
@@ -1420,11 +1427,12 @@ def restaurant_detail_view(request, pk):
     default_img = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80'
     default_avatar = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80'
 
+    _menu_cat_names = list(restaurant.categories.values_list('name', flat=True))
     restaurant_json = {
         'id': restaurant.id,
         'name': restaurant.name,
         'description': restaurant.description or '',
-        'category': guess_category(restaurant.cuisine),
+        'category': guess_category(restaurant.cuisine, _menu_cat_names),
         'tags': [restaurant.cuisine] if restaurant.cuisine else [],
         'rating': float(restaurant.rating or 0),
         'reviewCount': restaurant.reviews.count(),

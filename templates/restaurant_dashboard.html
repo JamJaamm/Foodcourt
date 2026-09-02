@@ -380,10 +380,9 @@
           <button class="fc-btn fc-btn-primary fc-btn-sm" onclick="showCategoryForm()"><i class="fa-solid fa-plus me-1"></i>Add Category</button>
         </div>
         <div class="rd-card d-none" id="cat-form-card">
-          <form onsubmit="saveCategory(event)" class="rd-inline-form" style="grid-template-columns:1fr 1fr auto;">
+          <form onsubmit="saveCategory(event)" class="rd-inline-form" style="grid-template-columns:1fr auto;">
             <input type="hidden" id="cat-id">
             <div><label>Name *</label><input type="text" id="cat-name" required></div>
-            <div><label>Emoji</label><input type="text" id="cat-emoji" placeholder="🍕" maxlength="10"></div>
             <div style="display:flex;align-items:end;gap:8px;">
               <button type="button" class="fc-btn fc-btn-outline fc-btn-sm" onclick="document.getElementById('cat-form-card').classList.add('d-none')">Cancel</button>
               <button type="submit" class="fc-btn fc-btn-primary fc-btn-sm">Save</button>
@@ -392,21 +391,20 @@
         </div>
         <div class="rd-table-wrap">
           <table class="rd-table">
-            <thead><tr><th>Emoji</th><th>Name</th><th>Items</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Items</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="cat-table-body">
               {% for c in categories %}
               <tr id="cat-row-{{ c.id }}">
-                <td style="font-size:20px;">{{ c.emoji }}</td>
                 <td><strong>{{ c.name }}</strong></td>
                 <td>{{ c.items.count }}</td>
                 <td>{% if c.is_available %}<span class="status-badge status-delivered">Active</span>{% else %}<span class="status-badge status-cancelled">Disabled</span>{% endif %}</td>
                 <td>
-                  <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="editCategory({{ c.id }},'{{ c.name }}','{{ c.emoji }}')"><i class="fa-solid fa-pen"></i></button>
+                  <button class="fc-btn fc-btn-ghost fc-btn-xs" onclick="editCategory({{ c.id }},'{{ c.name }}')"><i class="fa-solid fa-pen"></i></button>
                   <button class="fc-btn fc-btn-ghost fc-btn-xs" style="color:var(--danger)" onclick="deleteCategory({{ c.id }})"><i class="fa-solid fa-trash"></i></button>
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="5" class="text-center py-4 text-muted">No categories</td></tr>
+              <tr><td colspan="4" class="text-center py-4 text-muted">No categories</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -882,19 +880,18 @@ function showCategoryForm(data){
   const f=document.getElementById('cat-form-card');f.classList.remove('d-none');
   document.getElementById('cat-id').value=data?.id||'';
   document.getElementById('cat-name').value=data?.name||'';
-  document.getElementById('cat-emoji').value=data?.emoji||'';
   f.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 function saveCategory(e){
   e.preventDefault();
   const id=document.getElementById('cat-id').value;
-  const data={action: id?'update_category':'create_category', id:parseInt(id)||null, name:document.getElementById('cat-name').value, emoji:document.getElementById('cat-emoji').value};
+  const data={action: id?'update_category':'create_category', id:parseInt(id)||null, name:document.getElementById('cat-name').value};
   fetch('/restaurant-admin/api/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF_TOKEN},body:JSON.stringify(data)})
   .then(r=>r.json()).then(d=>{if(d.success){toast('Category saved!');setTimeout(()=>location.reload(),800)}else toast(d.error,'error')});
 }
 
-function editCategory(id,name,emoji){showCategoryForm({id:id,name:name,emoji:emoji})}
+function editCategory(id,name){showCategoryForm({id:id,name:name})}
 
 function deleteCategory(id){
   if(!confirm('Delete this category?'))return;
