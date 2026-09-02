@@ -241,7 +241,28 @@ def register_view(request):
         elif len(password) < 8:
             error = "Password must be at least 6 characters long."
         elif User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
-            error = "An account with this email already exists."
+            existing_user = User.objects.filter(username=email).first() or User.objects.filter(email=email).first()
+            if existing_user is not None and not existing_user.is_active:
+                # Email already registered but not yet verified — resend the code
+                # and send them to the verification page, just like a fresh registration.
+                request.session['foodcourt_user_phone'] = phone
+
+                VerificationCode.objects.filter(user=existing_user).delete()
+                code = f"{random.randint(100000, 999999)}"
+                VerificationCode.objects.create(user=existing_user, code=code)
+
+                email_sent = send_email(
+                    subject="Verify your Choply account",
+                    template_name="emails/verify_email.html",
+                    context={"code": code},
+                    recipient_list=[email]
+                )
+
+                request.session['verification_user_id'] = existing_user.id
+                request.session['verification_email_sent'] = email_sent
+                return redirect('verify')
+            else:
+                error = "An account with this email already exists."
         else:
             user = User.objects.create_user(
                 username=email,
