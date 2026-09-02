@@ -128,3 +128,46 @@ def send_support_notification(name, sender_email, category, subject, message):
         },
         recipient_list=[support_email],
     )
+
+
+def send_coupon_welcome_blast(coupon):
+    """Send a welcome-offer email to all active users when a first-order-only
+    coupon is created by the General Admin.
+
+    Called from ``admin_coupon_api`` when ``first_order_only`` is True.
+    """
+    from django.contrib.auth.models import User as DjangoUser
+
+    if not coupon.first_order_only:
+        return
+
+    users = DjangoUser.objects.filter(is_active=True).exclude(email='').order_by('id')
+    if not users:
+        return
+
+    subject = "You've got a welcome offer from Choply! \U0001f389"
+
+    for user in users:
+        name = user.first_name or user.email.split('@')[0]
+        description = (
+            f"Use code {coupon.code} on your first order"
+            + (
+                f" to get {coupon.get_discount_type_display()} "
+                + (f"up to \u20A6{coupon.max_discount} off" if coupon.max_discount
+                   else f"\u20A6{coupon.discount_value} off")
+                + "!"
+                if coupon.discount_type == 'fixed'
+                else f" for {coupon.discount_value}% off your first order!"
+            )
+        )
+        send_email(
+            subject=subject,
+            template_name="emails/welcome_email.html",
+            context={
+                "name": name,
+                "dashboard_url": _site_url("/dashboard/"),
+                "coupon_code": coupon.code,
+                "coupon_description": description,
+            },
+            recipient_list=[user.email],
+        )

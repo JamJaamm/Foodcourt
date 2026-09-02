@@ -456,12 +456,33 @@ def verify_view(request):
 
             request.session.pop('verification_user_id', None)
 
+            # Find the most recent active first-order-only coupon to include
+            # in the welcome email.
+            _welcome_coupon = Coupon.objects.filter(
+                is_active=True, first_order_only=True,
+            ).exclude(
+                expires_at__lt=timezone.now(),
+            ).order_by('-created_at').first()
+            _coupon_ctx = {}
+            if _welcome_coupon:
+                _coupon_ctx = {
+                    'coupon_code': _welcome_coupon.code,
+                    'coupon_description': (
+                        f"Use code {_welcome_coupon.code} on your first order"
+                        + (f" to get {_welcome_coupon.get_discount_type_display()} "
+                           f"{'up to ₦' + str(_welcome_coupon.max_discount) + ' off' if _welcome_coupon.discount_type == 'percent' else '₦' + str(_welcome_coupon.discount_value) + ' off'}!"
+                           if _welcome_coupon.max_discount or _welcome_coupon.discount_type == 'fixed'
+                           else f" for {_welcome_coupon.discount_value}% off your first order!")
+                    ),
+                }
+
             send_email(
                 subject="Welcome to Choply!",
                 template_name="emails/welcome_email.html",
                 context={
                     "name": user.first_name,
-                    "dashboard_url": f"{request.scheme}://{request.get_host()}/dashboard/"
+                    "dashboard_url": f"{request.scheme}://{request.get_host()}/dashboard/",
+                    **_coupon_ctx,
                 },
                 recipient_list=[user.email]
             )
@@ -2529,6 +2550,12 @@ def admin_coupon_api(request):
             expires_at=parse_date('end_date'),
             created_by=request.user,
         )
+        # Blast a welcome-offer email to all active users when a first-order
+        # coupon is created.  Runs synchronously; if the list is large, consider
+        # moving to a background task.
+        if coupon.first_order_only and coupon.is_active:
+            from .notifications import send_coupon_welcome_blast
+            send_coupon_welcome_blast(coupon)
         return JsonResponse({'success': True, 'id': coupon.id})
 
     if action == 'update_coupon':

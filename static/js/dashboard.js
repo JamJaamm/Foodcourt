@@ -34,9 +34,11 @@ window.switchDashboardTab = function(tabId) {
   // Toggle buttons
   tabs.forEach(t => {
     const btn = document.getElementById(`db-btn-${t}`);
+    const drawerBtn = document.getElementById(`db-drawer-btn-${t}`);
     const panel = document.getElementById(`db-tab-${t}`);
     
     if (btn) btn.classList.toggle('active', t === tabId);
+    if (drawerBtn) drawerBtn.classList.toggle('active', t === tabId);
     if (panel) panel.classList.toggle('active', t === tabId);
   });
 
@@ -47,6 +49,20 @@ window.switchDashboardTab = function(tabId) {
   if (tabId === 'favorites') {
     renderFavorites();
   }
+};
+
+/* Mobile drawer toggle */
+window.openDbDrawer = function() {
+  const d = document.getElementById('dbDrawer');
+  const b = document.getElementById('dbDrawerBackdrop');
+  if (d) d.classList.add('open');
+  if (b) b.classList.add('open');
+};
+window.closeDbDrawer = function() {
+  const d = document.getElementById('dbDrawer');
+  const b = document.getElementById('dbDrawerBackdrop');
+  if (d) d.classList.remove('open');
+  if (b) b.classList.remove('open');
 };
 
 /* ══════════════════════════════════════════════

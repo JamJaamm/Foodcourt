@@ -36,7 +36,51 @@
 
 <section class="dashboard-layout">
   <div class="container">
-    
+
+    <!-- Mobile top bar (hamburger + name) -->
+    <div class="db-mobile-bar">
+      <button type="button" class="db-hamburger" onclick="openDbDrawer()" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+      <span class="db-mobile-title">My Dashboard</span>
+      <div class="db-avatar db-mobile-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);border:none;">
+        <span style="font-family:var(--font-display);font-weight:var(--font-bold);font-size:15px;color:var(--primary);">{{ request.user.first_name|first|default:'F'|upper }}{{ request.user.last_name|first|default:''|upper }}</span>
+      </div>
+    </div>
+
+    <!-- Mobile drawer -->
+    <div class="db-drawer-backdrop" id="dbDrawerBackdrop" onclick="closeDbDrawer()"></div>
+    <div class="db-drawer" id="dbDrawer">
+      <div class="db-drawer-profile">
+        <div class="db-avatar-container" style="width:44px;height:44px;margin:0;">
+          <div class="db-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary-subtle);border:none;font-size:16px;color:var(--primary);">{{ request.user.first_name|first|default:'F'|upper }}{{ request.user.last_name|first|default:''|upper }}</div>
+        </div>
+        <div>
+          <div class="db-drawer-name">{{ request.user.first_name }} {{ request.user.last_name }}</div>
+          <div class="db-drawer-sub">My Account</div>
+        </div>
+        <button type="button" class="db-drawer-close" onclick="closeDbDrawer()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="db-menu-list">
+        <button class="db-menu-btn active" id="db-drawer-btn-overview" onclick="switchDashboardTab('overview');closeDbDrawer()">
+          <i class="fa-solid fa-gauge"></i> Overview
+        </button>
+        <button class="db-menu-btn" id="db-drawer-btn-orders" onclick="switchDashboardTab('orders');closeDbDrawer()">
+          <i class="fa-solid fa-clock-rotate-left"></i> My Orders
+        </button>
+        <button class="db-menu-btn" id="db-drawer-btn-addresses" onclick="switchDashboardTab('addresses');closeDbDrawer()">
+          <i class="fa-solid fa-location-dot"></i> Saved Addresses
+        </button>
+        <button class="db-menu-btn" id="db-drawer-btn-favorites" onclick="switchDashboardTab('favorites');closeDbDrawer()">
+          <i class="fa-solid fa-heart"></i> Favourites
+        </button>
+        <button class="db-menu-btn" id="db-drawer-btn-settings" onclick="switchDashboardTab('settings');closeDbDrawer()">
+          <i class="fa-solid fa-sliders"></i> Settings
+        </button>
+        <a href="{% url 'logout' %}" class="db-menu-btn mt-3" onclick="closeDbDrawer()" style="color: var(--danger); text-decoration: none;">
+          <i class="fa-solid fa-right-from-bracket"></i> Log Out
+        </a>
+      </div>
+    </div>
+
     <div class="row g-4">
       
       <!-- Left Column: Sidebar -->

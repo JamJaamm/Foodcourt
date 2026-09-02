@@ -98,6 +98,12 @@ const CartManager = {
   clear() {
     localStorage.removeItem(this.key);
     Navbar.updateCartBadge();
+  },
+
+  getRestaurantId() {
+    const cart = this.getCart();
+    if (!cart.length) return null;
+    return cart[0].restaurantId || null;
   }
 };
 

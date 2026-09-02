@@ -42,6 +42,7 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    'choply.name.ng'
 ]
 
 if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
