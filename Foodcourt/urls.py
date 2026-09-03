@@ -82,6 +82,7 @@ urlpatterns = [
     path('admin-dashboard/restaurants/<int:pk>/update/', views.admin_restaurant_update_api, name='admin_restaurant_update_api'),
     path('logout/', views.logout_view, name='logout'),
     path('google-auth/', views.google_auth_callback, name='google_auth_callback'),
+    path('google-auth/rider/', views.google_auth_rider_callback, name='google_auth_rider_callback'),
     path('complete-profile/', views.complete_profile_view, name='complete_profile'),
     path('restaurant-admin/', views.restaurant_dashboard_view, name='restaurant_dashboard'),
     path('restaurant-admin/orders/', views.restaurant_dashboard_view, {'section': 'orders'}, name='restaurant_orders'),

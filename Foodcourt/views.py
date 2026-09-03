@@ -628,6 +628,7 @@ def google_auth_callback(request):
 
     # Check if user already exists (by email)
     existing_user = User.objects.filter(email=google_email).first()
+    is_new_google_user = False
 
     if existing_user:
         # Existing Choply account — sign them in
@@ -646,6 +647,7 @@ def google_auth_callback(request):
             user.save()
     else:
         # New Google user — create account
+        is_new_google_user = True
         username_base = google_email.split('@')[0]
         username = username_base
         counter = 1
@@ -667,13 +669,48 @@ def google_auth_callback(request):
 
     # Log the user in
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-    _google_log.info('User found/created: YES (%s)', 'created' if 'user' in locals() and not existing_user else 'existing')
+    _google_log.info('User found/created: YES (%s)', 'created' if is_new_google_user else 'existing')
     _google_log.info('Django login(): SUCCESS')
     _google_log.info('Session created: %s', bool(getattr(request, 'session', None)))
 
-    # Check if profile needs completion (phone number)
-    profile = getattr(user, 'profile', None)
-    needs_profile = profile and not (profile.phone or '').strip()
+    # Only prompt for phone number if this is a BRAND-NEW Google account.
+    # Returning users are never redirected to the phone completion page.
+    needs_profile = False
+    if is_new_google_user:
+        profile = getattr(user, 'profile', None)
+        needs_profile = profile and not (profile.phone or '').strip()
+
+        # Send a welcome email to the new user (with any first-order coupon).
+        if needs_profile:
+            from Foodcourt.notifications import send_email as _send_email
+            _welcome_coupon = Coupon.objects.filter(
+                is_active=True, first_order_only=True,
+            ).exclude(
+                expires_at__lt=timezone.now(),
+            ).order_by('-created_at').first()
+            _coupon_ctx = {}
+            if _welcome_coupon:
+                _coupon_ctx = {
+                    'coupon_code': _welcome_coupon.code,
+                    'coupon_description': (
+                        f"Use code {_welcome_coupon.code} on your first order"
+                        + (f" to get {_welcome_coupon.get_discount_type_display()} "
+                           f"{'up to ₦' + str(_welcome_coupon.max_discount) + ' off' if _welcome_coupon.discount_type == 'percent' else '₦' + str(_welcome_coupon.discount_value) + ' off'}!"
+                           if _welcome_coupon.max_discount or _welcome_coupon.discount_type == 'fixed'
+                           else f" for {_welcome_coupon.discount_value}% off your first order!")
+                    ),
+                }
+
+            _send_email(
+                subject="Welcome to Choply!",
+                template_name="emails/welcome_email.html",
+                context={
+                    "name": user.first_name,
+                    "dashboard_url": f"{request.scheme}://{request.get_host()}/dashboard/",
+                    **_coupon_ctx,
+                },
+                recipient_list=[user.email],
+            )
 
     return JsonResponse({
         'success': True,
@@ -690,6 +727,58 @@ def get_dashboard_redirect_url(user):
     if hasattr(user, 'restaurant') or Restaurant.objects.filter(owner=user).exists():
         return reverse('restaurant_dashboard')
     return reverse('dashboard')
+
+
+def google_auth_rider_callback(request):
+    """Handle Google sign-in for riders.
+
+    The rider must already have a Choply rider account (registered via the
+    rider application form) AND have been APPROVED by the general admin.
+    Google is used only as the sign-in method — it never auto-creates
+    or auto-approves a rider account.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request body'}, status=400)
+
+    credential = (data.get('credential') or '').strip()
+    if not credential:
+        return JsonResponse({'error': 'Missing Google credential'}, status=400)
+
+    idinfo = _google_verify_credential(credential)
+    if idinfo is None:
+        return JsonResponse({'error': 'Google authentication failed. Please try again.'}, status=401)
+
+    google_email = idinfo.get('email', '').strip().lower()
+    if not google_email:
+        return JsonResponse({'error': 'Google account has no email address'}, status=400)
+
+    try:
+        rider = Riders.objects.get(email=google_email)
+    except Riders.DoesNotExist:
+        return JsonResponse({
+            'error': "No rider account found for this Google email. Please register as a rider first.",
+        }, status=404)
+
+    if rider.status == 'pending':
+        return JsonResponse({'error': 'Please verify your email before logging in.'}, status=403)
+    if rider.status == 'verified':
+        return JsonResponse({'error': "Your application is awaiting admin approval. You'll receive an email once you're approved."}, status=403)
+    if rider.status == 'rejected':
+        return JsonResponse({'error': 'Your rider application was rejected.'}, status=403)
+    if not rider.is_active:
+        return JsonResponse({'error': 'Your rider account is not active yet.'}, status=403)
+
+    request.session.cycle_key()
+    request.session['rider_id'] = rider.id
+    rider.last_login = timezone.now()
+    rider.save(update_fields=['last_login'])
+
+    return JsonResponse({'success': True, 'redirect_url': '/riders/dashboard/'})
 
 
 @login_required(login_url='login')
