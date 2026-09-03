@@ -400,6 +400,7 @@ img { max-width: 100%; }
 
 /* Body */
 .rdr-modal-body { padding: 24px 30px; overflow-y: auto; flex: 1; min-height: 0; }
+#rdrForm { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .rdr-step-panel { display: none; animation: rdrStep .3s ease; }
 .rdr-step-panel.active { display: block; }
 @keyframes rdrStep { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
