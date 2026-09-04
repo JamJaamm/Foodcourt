@@ -497,18 +497,32 @@ def verify_view(request):
                     ),
                 }
 
-            send_email(
-                subject="Welcome to Choply!",
-                template_name="emails/welcome_email.html",
-                context={
-                    "name": user.first_name,
-                    "dashboard_url": f"{request.scheme}://{request.get_host()}/dashboard/",
-                    **_coupon_ctx,
-                },
-                recipient_list=[user.email]
-            )
-
-            messages.success(request, f"Welcome to Choply, {user.first_name}!")
+            _is_restaurant_owner = Restaurant.objects.filter(owner=user).exists()
+            if _is_restaurant_owner:
+                _restaurant = Restaurant.objects.filter(owner=user).first()
+                send_email(
+                    subject="Welcome to Choply! Your restaurant is live",
+                    template_name="emails/restaurant_welcome_email.html",
+                    context={
+                        "name": user.first_name,
+                        "restaurant_name": _restaurant.name if _restaurant else None,
+                        "dashboard_url": f"{request.scheme}://{request.get_host()}{reverse('restaurant_dashboard')}",
+                    },
+                    recipient_list=[user.email]
+                )
+                messages.success(request, f"Welcome to Choply, {user.first_name}! Your restaurant account is ready.")
+            else:
+                send_email(
+                    subject="Welcome to Choply!",
+                    template_name="emails/welcome_email.html",
+                    context={
+                        "name": user.first_name,
+                        "dashboard_url": f"{request.scheme}://{request.get_host()}/dashboard/",
+                        **_coupon_ctx,
+                    },
+                    recipient_list=[user.email]
+                )
+                messages.success(request, f"Welcome to Choply, {user.first_name}!")
             return get_dashboard_redirect(user)
 
     email_sent = request.session.get('verification_email_sent', True)

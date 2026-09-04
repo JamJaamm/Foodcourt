@@ -36,8 +36,9 @@
 .rd-toolbar input { min-width: 200px; }
 .rd-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
 .rd-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); }
-.rd-inline-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.rd-inline-form input, .rd-inline-form select, .rd-inline-form textarea { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); font-size: 13px; outline: none; }
+.rd-inline-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; min-width: 0; }
+.rd-inline-form > * { min-width: 0; }
+.rd-inline-form input, .rd-inline-form select, .rd-inline-form textarea { min-width: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); font-size: 13px; outline: none; }
 .rd-inline-form input:focus, .rd-inline-form select:focus { border-color: var(--primary); }
 .rd-inline-form textarea { resize: vertical; min-height: 60px; }
 .rd-inline-form label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; display: block; margin-bottom: 4px; }
@@ -332,9 +333,9 @@
             </div>
             <div style="grid-column:span 2"><label>Description</label><textarea id="menu-desc" rows="2"></textarea></div>
             <div style="grid-column:span 2"><label>Image</label>
-              <div style="display:flex;gap:12px;align-items:center;">
+              <div style="display:flex;gap:12px;align-items:center;min-width:0;">
                 <img id="menu-image-preview" src="" alt="" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:2px solid var(--border);flex-shrink:0;display:none;" onerror="this.style.display='none'">
-                <input type="file" id="menu-image-file" accept="image/*" style="flex:1;" onchange="previewMenuImage(this)">
+                <input type="file" id="menu-image-file" accept="image/*" style="flex:1;min-width:0;" onchange="previewMenuImage(this)">
               </div>
             </div>
             <div><label>Prep Time (min)</label><input type="number" id="menu-prep" value="10"></div>
