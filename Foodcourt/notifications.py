@@ -62,6 +62,7 @@ def _order_context(order):
         'customer_name': order.user.get_full_name() or order.user.email,
         'customer_email': order.user.email,
         'delivery_address': order.delivery_address,
+        'fulfillment_type': order.fulfillment_type,
         'payment_method': order.payment_method.title(),
         'subtotal': _fmt(order.subtotal),
         'delivery_fee': _fmt(order.delivery_fee),

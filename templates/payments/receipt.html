@@ -68,7 +68,11 @@
             <span class="text-secondary">Subtotal</span><span>{{ order.subtotal|money }}</span>
           </div>
           <div class="d-flex justify-content-between mb-1">
+            {% if order.fulfillment_type == 'pickup' %}
+            <span class="text-secondary">Pickup fee</span><span>{{ order.delivery_fee|money }}</span>
+            {% else %}
             <span class="text-secondary">Delivery {% if order.delivery_distance_km %}({{ order.delivery_distance_km|floatformat:1 }} km){% endif %}</span><span>{{ order.delivery_fee|money }}</span>
+            {% endif %}
           </div>
           {% if order.discount %}
           <div class="d-flex justify-content-between mb-1">
@@ -81,7 +85,11 @@
         </div>
 
         <div class="border-top pt-3 mt-4">
+          {% if order.fulfillment_type == 'pickup' %}
+          <div class="text-secondary mb-1" style="font-size:12px;">Pickup Location</div>
+          {% else %}
           <div class="text-secondary mb-1" style="font-size:12px;">Delivery Address</div>
+          {% endif %}
           <p class="mb-0">{{ order.delivery_address }}</p>
         </div>
 

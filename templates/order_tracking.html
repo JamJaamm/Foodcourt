@@ -52,7 +52,7 @@
           <span class="track-meta-value" id="track-date">--</span>
         </div>
         <div class="track-meta-item">
-          <span class="track-meta-label">Est. Delivery</span>
+          <span class="track-meta-label" id="track-eta-label">Est. Delivery</span>
           <span class="track-meta-value" id="track-eta-time">--:--</span>
         </div>
         <div class="track-meta-item">
@@ -195,7 +195,22 @@
 
         <!-- Rider Info -->
         <div class="track-card track-rider-card" id="track-rider-card">
-          <h3 class="track-card-title"><i class="fa-solid fa-user-ninja text-primary"></i>Your Courier</h3>
+          <h3 class="track-card-title" id="track-rider-card-title"><i class="fa-solid fa-user-ninja text-primary"></i>Your Courier</h3>
+
+          <!-- Pickup info (shown for pickup orders) -->
+          <div id="track-pickup-info" style="display:none;">
+            <div class="d-flex align-items-center gap-3">
+              <div style="width:56px;height:56px;border-radius:16px;background:var(--primary-subtle);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;"><i class="fa-solid fa-store"></i></div>
+              <div class="flex-grow-1">
+                <div class="driver-name" id="track-pickup-restaurant">--</div>
+                <div class="driver-meta" id="track-pickup-address">--</div>
+              </div>
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-top:14px;padding:12px 14px;background:var(--bg-elevated);border-radius:var(--radius-md);border:1px solid var(--border);">
+              <i class="fa-solid fa-circle-info me-1" style="color:var(--primary);"></i>
+              Head over to the restaurant to collect your order. Show your order ID to the staff when you arrive.
+            </div>
+          </div>
 
           <!-- Searching state -->
           <div class="track-searching-rider" id="track-rider-searching">
@@ -278,7 +293,7 @@
           <div class="track-address-row">
             <i class="fa-solid fa-location-dot"></i>
             <div>
-              <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">Delivery Address</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;" id="track-address-label">Delivery Address</div>
               <div class="track-address-text" id="track-address">--</div>
             </div>
           </div>
@@ -351,5 +366,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/tracking.js' %}?v=7"></script>
+<script src="{% static 'js/tracking.js' %}?v=8"></script>
 {% endblock %}

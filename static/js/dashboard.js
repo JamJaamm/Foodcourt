@@ -88,7 +88,7 @@ function renderPastOrders() {
         <img src="${o.restaurantLogo || o.restaurantImage || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100&q=80'}" alt="${o.restaurantName}" class="db-order-img" loading="lazy">
         <div>
           <div class="db-order-name">${o.restaurantName}</div>
-          <div class="db-order-date">${o.date} · ${o.items.length} items · <strong>${window.formatPrice(o.total)}</strong></div>
+          <div class="db-order-date">${o.date} · ${o.items.length} items${o.fulfillmentType === 'pickup' ? ' · <strong style="color:var(--primary);"><i class="fa-solid fa-store"></i> Pickup</strong>' : ''} · <strong>${window.formatPrice(o.total)}</strong></div>
         </div>
       </div>
       

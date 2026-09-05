@@ -32,6 +32,15 @@ const TRACK = {
     cancelled:        { msg: 'Your order has been cancelled.',                        sub: 'If you need help, contact our support team.',   icon: 'fa-solid fa-circle-xmark',       variant: '' },
   },
 
+  PICKUP_STATUS_MESSAGES: {
+    pending:          { msg: 'Your pickup order is pending confirmation.',           sub: 'The restaurant will review your order shortly.',  icon: 'fa-solid fa-clock',              variant: '' },
+    confirmed:        { msg: 'Your pickup order has been confirmed!',                sub: 'The restaurant will start preparing your order.',  icon: 'fa-solid fa-circle-check',       variant: '' },
+    preparing:        { msg: 'The restaurant is preparing your food.',                sub: 'Your meal is being freshly prepared.',            icon: 'fa-solid fa-fire-burner',        variant: 'status-warning' },
+    ready:            { msg: 'Your order is ready for pickup!',                      sub: 'Head over to the restaurant to collect it.',       icon: 'fa-solid fa-bag-shopping',       variant: 'status-success' },
+    delivered:        { msg: 'Your order has been collected successfully!',           sub: 'Enjoy your meal!',                                 icon: 'fa-solid fa-circle-check',       variant: 'status-delivered' },
+    cancelled:        { msg: 'Your pickup order has been cancelled.',                 sub: 'If you need help, contact our support team.',      icon: 'fa-solid fa-circle-xmark',       variant: '' },
+  },
+
   DELIVERY_MESSAGES: {
     searching:            { msg: 'Searching for an available rider...',               sub: 'We\'re matching you with the best rider nearby.', icon: 'fa-solid fa-magnifying-glass',  variant: 'status-warning' },
     assigned:             { msg: 'A rider has accepted your delivery.',               sub: 'Your rider is heading to the restaurant.',        icon: 'fa-solid fa-user-check',        variant: '' },
@@ -208,6 +217,10 @@ function buildPastOrderModalHtml(d) {
     ? `<div class="track-price-row"><span>Discount</span><span class="discount-value">-${formatPrice(d.discount)}</span></div>`
     : '';
 
+  const isPickupOrder = isPickup(d);
+  const feeLabel = isPickupOrder ? 'Pickup Fee' : 'Delivery Fee';
+  const addrLabel = isPickupOrder ? 'Pickup Location' : 'Delivery Address';
+
   return `
     <div class="track-modal-head">
       <div>
@@ -227,14 +240,14 @@ function buildPastOrderModalHtml(d) {
       <div class="track-modal-items">${items}</div>
       <div class="track-modal-prices">
         <div class="track-price-row"><span>Subtotal</span><span>${formatPrice(d.subtotal)}</span></div>
-        <div class="track-price-row"><span>Delivery Fee</span><span>${formatPrice(d.delivery_fee)}</span></div>
+        <div class="track-price-row"><span>${feeLabel}</span><span>${formatPrice(d.delivery_fee)}</span></div>
         ${discountRow}
         <div class="track-price-row grand-total"><span>Total</span><span>${formatPrice(d.total)}</span></div>
       </div>
       <div class="track-address-row">
         <i class="fa-solid fa-location-dot"></i>
         <div>
-          <div class="track-modal-addr-label">Delivery Address</div>
+          <div class="track-modal-addr-label">${addrLabel}</div>
           <div class="track-address-text">${escapeHtml(d.address || '--')}</div>
         </div>
       </div>
@@ -275,6 +288,8 @@ function renderOrderHeader(data) {
   setText('track-total', formatPrice(data.total));
   setText('track-payment', data.payment || '--');
   setText('track-address', data.address || '--');
+  setText('track-address-label', isPickup(data) ? 'Pickup Location' : 'Delivery Address');
+  setText('track-eta-label', isPickup(data) ? 'Est. Pickup' : 'Est. Delivery');
 
   if (data.date) {
     const d = new Date(data.date);
@@ -332,7 +347,9 @@ function renderStatusBanner(data) {
   let info;
   const delivery = data.delivery;
 
-  if (delivery && delivery.status) {
+  if (isPickup(data) && data.status) {
+    info = TRACK.PICKUP_STATUS_MESSAGES[data.status];
+  } else if (delivery && delivery.status) {
     info = TRACK.DELIVERY_MESSAGES[delivery.status];
   }
   if (!info && data.status) {
@@ -474,6 +491,23 @@ function renderRider(data) {
   const rider = delivery && delivery.rider;
   const searching = document.getElementById('track-rider-searching');
   const details = document.getElementById('track-rider-details');
+  const pickupInfo = document.getElementById('track-pickup-info');
+  const title = document.getElementById('track-rider-card-title');
+
+  if (isPickup(data)) {
+    searching.style.display = 'none';
+    details.style.display = 'none';
+    if (title) title.innerHTML = '<i class="fa-solid fa-store text-primary"></i>Pickup Location';
+    if (pickupInfo) {
+      pickupInfo.style.display = 'block';
+      setText('track-pickup-restaurant', data.restaurant || '--');
+      setText('track-pickup-address', data.address || '--');
+    }
+    return;
+  }
+
+  if (pickupInfo) pickupInfo.style.display = 'none';
+  if (title) title.innerHTML = '<i class="fa-solid fa-user-ninja text-primary"></i>Your Courier';
 
   if (rider) {
     searching.style.display = 'none';
@@ -827,7 +861,17 @@ function renderCountdown(data) {
     arrived: 'Meet your rider at the door.',
   };
   if (subtextEl) {
-    subtextEl.textContent = (delivery && subtextMap[delivery.status]) || 'Your order is being prepared.';
+    if (isPickup(data)) {
+      const pickupMap = {
+        pending: 'Waiting for the restaurant to confirm your order.',
+        confirmed: 'Your order is being prepared.',
+        preparing: 'Your meal is being freshly prepared.',
+        ready: 'Your order is ready! Come pick it up at the restaurant.',
+      };
+      subtextEl.textContent = pickupMap[data.status] || 'Your order is being prepared.';
+    } else {
+      subtextEl.textContent = (delivery && subtextMap[delivery.status]) || 'Your order is being prepared.';
+    }
   }
 
   /* Progress bar */
@@ -1008,6 +1052,10 @@ window.downloadReceipt = function () {
 function setText(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text;
+}
+
+function isPickup(data) {
+  return (data && data.fulfillment_type === 'pickup') === true;
 }
 
 function toggleEl(id, show) {

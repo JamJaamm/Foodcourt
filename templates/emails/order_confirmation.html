@@ -40,7 +40,11 @@
         <div><div class="k">Order ID</div><div class="v">{{ order_id }}</div></div>
         <div><div class="k">Restaurant</div><div class="v">{{ restaurant_name }}</div></div>
         <div><div class="k">Payment</div><div class="v">{{ payment_method }}</div></div>
+        {% if fulfillment_type == 'pickup' %}
+        <div><div class="k">Pickup at</div><div class="v">{{ delivery_address }}</div></div>
+        {% else %}
         <div><div class="k">Delivery to</div><div class="v">{{ delivery_address }}</div></div>
+        {% endif %}
         <div><div class="k">Ordered</div><div class="v">{{ created_at|date:"M j, Y g:i A" }}</div></div>
         <div><div class="k">Status</div><div class="v">Confirmed</div></div>
       </div>
@@ -56,7 +60,11 @@
 
       <div class="totals">
         <div><span>Subtotal</span><span>₦{{ subtotal }}</span></div>
+        {% if fulfillment_type == 'pickup' %}
+        <div><span>Pickup fee</span><span>₦{{ delivery_fee }}</span></div>
+        {% else %}
         <div><span>Delivery fee</span><span>₦{{ delivery_fee }}</span></div>
+        {% endif %}
         {% if discount and discount != '0.00' %}<div><span>Discount</span><span>-₦{{ discount }}</span></div>{% endif %}
         <div class="grand"><span>Total</span><span>₦{{ total }}</span></div>
       </div>
@@ -64,7 +72,7 @@
       <div class="cta">
         <a href="{{ tracking_url }}">Track your order</a>
       </div>
-      <p>We'll update you as your order is prepared and out for delivery. Thanks for choosing Choply!</p>
+      <p>{% if fulfillment_type == 'pickup' %}Your order is being prepared. We'll update you as soon as it's ready for pickup.{% else %}We'll update you as your order is prepared and out for delivery.{% endif %} Thanks for choosing Choply!</p>
     </div>
     <div class="footer">
       <p>&copy; 2026 Choply Inc. All rights reserved.</p>

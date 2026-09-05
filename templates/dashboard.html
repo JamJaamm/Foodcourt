@@ -446,7 +446,7 @@
 {{ db_restaurants|json_script:"db-restaurants-data" }}
 <script src="{% static 'js/locations_data.js' %}"></script>
 <script src="{% static 'js/map-picker.js' %}"></script>
-<script src="{% static 'js/dashboard.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}?v=2"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setupCountryStateCascade('new-addr-country', 'new-addr-state', '', 'Nigeria');

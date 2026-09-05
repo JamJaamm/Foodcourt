@@ -40,7 +40,14 @@ class Order(models.Model):
     restaurant = models.ForeignKey('Restaurant', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     order_id = models.CharField(max_length=20, unique=True)
     restaurant_name = models.CharField(max_length=200, default='')
+    FULFILLMENT_CHOICES = [
+        ('delivery', 'Delivery'),
+        ('pickup', 'Pickup'),
+    ]
     delivery_address = models.TextField()
+    fulfillment_type = models.CharField(
+        max_length=10, choices=FULFILLMENT_CHOICES, default='delivery'
+    )
     payment_method = models.CharField(max_length=20)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2)

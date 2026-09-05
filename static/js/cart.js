@@ -5,6 +5,7 @@ let currentPaymentMethod = 'card';
 let appliedPromo = null;
 let currentDeliveryFee = null;
 let currentDeliveryDistance = null;
+let currentFulfillment = 'delivery';
 
 function readJsonData(id) {
   const el = document.getElementById(id);
@@ -18,6 +19,50 @@ function getUserAddresses() {
     || (window.FOODCOURT_DATA && window.FOODCOURT_DATA.addresses)
     || [];
 }
+
+function getCartRestaurant() {
+  const cart = window.CartManager.getCart();
+  const firstItem = cart[0];
+  const restaurantId = firstItem ? (firstItem.restaurantId || null) : null;
+  const restaurants = readJsonData('db-restaurants') || [];
+  if (!restaurantId) return restaurants[0] || null;
+  return restaurants.find(r => r.id === restaurantId) || restaurants[0] || null;
+}
+
+window.switchFulfillment = function(type) {
+  if (type !== 'delivery' && type !== 'pickup') return;
+  currentFulfillment = type;
+
+  document.querySelectorAll('#fm-tab-delivery, #fm-tab-pickup').forEach(btn => {
+    btn.classList.toggle('active', btn.id === 'fm-tab-' + type);
+  });
+
+  const addrCard = document.getElementById('delivery-address-card');
+  const pickupInfo = document.getElementById('pickup-info-card');
+
+  if (type === 'pickup') {
+    if (addrCard) addrCard.classList.add('d-none');
+    if (pickupInfo) {
+      const restaurant = getCartRestaurant();
+      const nameEl = document.getElementById('pickup-restaurant-name');
+      const addrEl = document.getElementById('pickup-restaurant-address');
+      if (nameEl) nameEl.textContent = restaurant ? restaurant.name : 'the restaurant';
+      if (addrEl) addrEl.textContent = restaurant && restaurant.address ? restaurant.address : '';
+      pickupInfo.style.display = 'block';
+    }
+    currentDeliveryFee = 0;
+    currentDeliveryDistance = null;
+    updateCheckoutTotals();
+  } else {
+    if (addrCard) addrCard.classList.remove('d-none');
+    if (pickupInfo) pickupInfo.style.display = 'none';
+    if (currentAddressId !== null) {
+      fetchDeliveryFee();
+    } else {
+      updateCheckoutTotals();
+    }
+  }
+};
 
 function getCookie(name) {
   let cookieValue = null;
@@ -121,6 +166,13 @@ window.clearFullCart = function() {
    DELIVERY FEE CALCULATION (AJAX)
    ══════════════════════════════════════════════ */
 function fetchDeliveryFee() {
+  if (currentFulfillment === 'pickup') {
+    currentDeliveryFee = 0;
+    currentDeliveryDistance = null;
+    updateCheckoutTotals();
+    return;
+  }
+
   const cart = window.CartManager.getCart();
   const firstItem = cart[0];
   const restaurantId = firstItem ? firstItem.restaurantId : null;
@@ -165,13 +217,13 @@ function fetchDeliveryFee() {
    ══════════════════════════════════════════════ */
 function updateCheckoutTotals() {
   const subtotal = window.CartManager.getTotal();
-  
+
   // Use server-calculated fee if available, otherwise show placeholder
   let deliveryFee;
-  if (currentDeliveryFee !== null) {
-    deliveryFee = currentDeliveryFee;
-  } else if (currentAddressId === null) {
+  if (currentFulfillment === 'pickup') {
     deliveryFee = 0;
+  } else if (currentDeliveryFee !== null) {
+    deliveryFee = currentDeliveryFee;
   } else {
     deliveryFee = 0;
   }
@@ -202,7 +254,12 @@ function updateCheckoutTotals() {
   // Update delivery row
   const deliveryEl = document.getElementById('checkout-delivery');
   const distEl = document.getElementById('checkout-delivery-distance');
-  if (currentDeliveryFee !== null) {
+  const fulfillmentLabel = document.getElementById('checkout-fulfillment-label');
+  if (fulfillmentLabel) fulfillmentLabel.textContent = currentFulfillment === 'pickup' ? 'Pickup' : 'Delivery';
+  if (currentFulfillment === 'pickup') {
+    deliveryEl.textContent = 'Free';
+    if (distEl) distEl.textContent = '';
+  } else if (currentDeliveryFee !== null) {
     const distText = currentDeliveryDistance ? currentDeliveryDistance.toFixed(1) + ' km' : '';
     deliveryEl.textContent = deliveryFee === 0 ? 'Free' : window.formatPrice(deliveryFee);
     if (distEl) distEl.textContent = distText ? '(' + distText + ')' : '';
@@ -511,7 +568,12 @@ window.submitOrder = function() {
   }
 
   let finalAddress = '';
-  if (currentAddressId !== null) {
+  if (currentFulfillment === 'pickup') {
+    const restaurant = getCartRestaurant();
+    finalAddress = restaurant
+      ? (restaurant.address || restaurant.name)
+      : 'Pickup at restaurant';
+  } else if (currentAddressId !== null) {
     const addressList = getUserAddresses();
     const saved = addressList.find(a => a.id === currentAddressId);
     finalAddress = saved ? (saved.address || [saved.street, saved.city, saved.state, saved.country].filter(Boolean).join(', ')) : '';
@@ -522,8 +584,8 @@ window.submitOrder = function() {
     return;
   }
 
-  // Validate delivery fee is calculated
-  if (currentDeliveryFee === null && currentAddressId !== null) {
+  // Validate delivery fee is calculated (delivery orders only)
+  if (currentFulfillment !== 'pickup' && currentDeliveryFee === null && currentAddressId !== null) {
     Toast.show('Unable to calculate delivery fee. Please try a different address.', 'error');
     return;
   }
@@ -541,7 +603,7 @@ window.submitOrder = function() {
   }
 
   const subtotal = window.CartManager.getTotal();
-  const deliveryFee = currentDeliveryFee !== null ? currentDeliveryFee : 0;
+  const deliveryFee = currentFulfillment === 'pickup' ? 0 : (currentDeliveryFee !== null ? currentDeliveryFee : 0);
   let discount = 0;
   if (appliedPromo) {
     if (appliedPromo.serverDiscount !== undefined) discount = appliedPromo.serverDiscount;
@@ -566,7 +628,8 @@ window.submitOrder = function() {
       image: item.image || ''
     })),
     delivery_address: finalAddress,
-    address_id: currentAddressId,
+    address_id: currentFulfillment === 'pickup' ? null : currentAddressId,
+    fulfillment_type: currentFulfillment,
     payment_method: currentPaymentMethod,
     subtotal: subtotal,
     delivery_fee: deliveryFee,

@@ -248,12 +248,15 @@
               {% for o in orders %}
               <tr class="order-row" data-status="{{ o.status }}" id="order-row-{{ o.id }}">
                 <td><strong>{{ o.order_id }}</strong></td>
-                <td>{{ o.user.get_full_name|default:o.user.email }}<br><small style="color:var(--text-muted)">{{ o.delivery_address|truncatechars:30 }}</small></td>
+                <td>{{ o.user.get_full_name|default:o.user.email }}<br>{% if o.fulfillment_type == 'pickup' %}<small style="color:var(--primary);font-weight:600;"><i class="fa-solid fa-store me-1"></i>Pickup</small>{% else %}<small style="color:var(--text-muted)">{{ o.delivery_address|truncatechars:30 }}</small>{% endif %}</td>
                 <td>{% for i in o.items.all %}{{ i.name }} x{{ i.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                 <td><strong>₦{{ o.total|money }}</strong></td>
                 <td>{{ o.payment_method|title }}</td>
                 <td><span class="status-badge status-{{ o.status }}" id="status-badge-{{ o.id }}">{{ o.get_status_display }}</span></td>
-                <td id="delivery-cell-{{ o.id }}">
+<td id="delivery-cell-{{ o.id }}">
+                  {% if o.fulfillment_type == 'pickup' %}
+                    <span style="color:var(--primary);font-size:12px;font-weight:600;"><i class="fa-solid fa-store me-1"></i>Customer pickup — no rider</span>
+                  {% else %}
                   {% with d=o.delivery %}
                     {% if d %}
                       {% if d.rider %}
@@ -268,6 +271,7 @@
                       <span style="color:var(--text-muted);font-size:12px;">—</span>
                     {% endif %}
                   {% endwith %}
+                  {% endif %}
                 </td>
                 <td>
                   {% if o.status == 'pending' %}

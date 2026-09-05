@@ -2333,6 +2333,7 @@ def build_order_data(order, include_otp=True):
         'status': order.status,
         'payment_status': order.payment_status,
         'address': order.delivery_address,
+        'fulfillment_type': order.fulfillment_type,
         'payment': order.payment_method,
         'date': order.created_at.isoformat(),
         'delivery': delivery_payload(delivery, include_otp=include_otp),
@@ -2858,10 +2859,14 @@ def place_order_view(request):
     coupon_code = (data.get('coupon_code') or '').strip().upper()
     restaurant_name = data.get('restaurant_name', 'Choply Order')
     address_id = data.get('address_id')
+    fulfillment_type = data.get('fulfillment_type', 'delivery')
+    if fulfillment_type not in ('delivery', 'pickup'):
+        fulfillment_type = 'delivery'
 
     if not items_data:
         return JsonResponse({'error': 'Cart is empty'}, status=400)
-    if not delivery_address:
+    is_pickup = fulfillment_type == 'pickup'
+    if not is_pickup and not delivery_address:
         return JsonResponse({'error': 'Delivery address required'}, status=400)
 
     # Recompute the subtotal server-side from the actual item prices/quantities
@@ -2891,10 +2896,10 @@ def place_order_view(request):
     if restaurant is None and restaurant_name:
         restaurant = Restaurant.objects.filter(name__iexact=restaurant_name).first()
 
-    # Server-side delivery fee calculation
+    # Server-side delivery fee calculation (pickup orders have no fee)
     delivery_fee = Decimal('0')
     distance_km = None
-    if restaurant and address_id:
+    if not is_pickup and restaurant and address_id:
         if not restaurant.has_coordinates:
             geo_lat, geo_lng = geocode_restaurant(
                 street=restaurant.street_address or '',
@@ -2947,12 +2952,21 @@ def place_order_view(request):
     random_num = random.randint(1000, 9999)
     order_id = f'FC-{year}-{random_num}'
 
+    # For pickup orders ensure there is a meaningful address on the order —
+    # fall back to the restaurant's own address so crews know where it goes.
+    order_delivery_address = delivery_address
+    if is_pickup:
+        order_delivery_address = delivery_address or 'Pickup at restaurant'
+        if restaurant and restaurant.address:
+            order_delivery_address = delivery_address or restaurant.address
+
     order = Order.objects.create(
         user=request.user,
         restaurant=restaurant,
         order_id=order_id,
         restaurant_name=restaurant.name if restaurant else restaurant_name,
-        delivery_address=delivery_address,
+        delivery_address=order_delivery_address,
+        fulfillment_type=fulfillment_type,
         payment_method=payment_method,
         subtotal=subtotal,
         delivery_fee=delivery_fee,
@@ -3038,6 +3052,7 @@ def dashboard_view(request):
             'status': o.status.capitalize(),
             'date': o.created_at.strftime('%Y-%m-%d'),
             'deliveryAddress': o.delivery_address,
+            'fulfillmentType': o.fulfillment_type,
             'paymentMethod': o.payment_method.title(),
         })
 
@@ -3375,22 +3390,36 @@ def restaurant_api_view(request):
         try:
             order = Order.objects.get(id=order_id, restaurant=restaurant)
             if new_status == 'ready':
-                delivery_services.create_delivery_for_order(order)
                 order.status = 'ready'
                 order.is_accepted = True
                 order.save()
-                delivery_services.notify_user(
-                    order.user, 'Order ready for pickup 📦',
-                    f'Your order #{order.order_id} from {restaurant.name} is ready. We are finding a rider for you.',
-                    kind='order', order=order,
-                    link='/tracking/',
-                )
+                if order.fulfillment_type == 'pickup':
+                    delivery_services.notify_user(
+                        order.user, 'Order ready for pickup 📦',
+                        f'Your order #{order.order_id} from {restaurant.name} is ready. Head over to the restaurant to pick it up.',
+                        kind='order', order=order,
+                        link='/tracking/',
+                    )
+                else:
+                    delivery_services.create_delivery_for_order(order)
+                    delivery_services.notify_user(
+                        order.user, 'Order ready for pickup 📦',
+                        f'Your order #{order.order_id} from {restaurant.name} is ready. We are finding a rider for you.',
+                        kind='order', order=order,
+                        link='/tracking/',
+                    )
             elif new_status == 'delivered':
-                if hasattr(order, 'delivery'):
+                if hasattr(order, 'delivery') and order.delivery is not None:
                     delivery_services.force_complete_delivery(order.delivery)
                 else:
                     order.status = 'delivered'
                     order.save()
+                    delivery_services.notify_user(
+                        order.user, 'Order completed 🎉',
+                        f'Your pickup order #{order.order_id} has been marked as collected. Enjoy!',
+                        kind='order', order=order,
+                        link='/tracking/',
+                    )
             elif new_status == 'cancelled':
                 if hasattr(order, 'delivery'):
                     delivery_services.cancel_delivery(order.delivery, 'Cancelled by the restaurant')
@@ -3803,4 +3832,5 @@ def cart_view(request):
     return render(request, 'cart.html', {
         'user_addresses_json': addresses,
         'coupons_json': coupons,
+        'restaurants_json': build_restaurants_payload(),
     })

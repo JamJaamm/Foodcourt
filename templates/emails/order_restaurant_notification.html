@@ -39,7 +39,11 @@
         <div><div class="k">Order ID</div><div class="v">{{ order_id }}</div></div>
         <div><div class="k">Customer</div><div class="v">{{ customer_name }}</div></div>
         <div><div class="k">Payment</div><div class="v">{{ payment_method }}</div></div>
+        {% if fulfillment_type == 'pickup' %}
+        <div><div class="k">Pickup order</div><div class="v">Customer collects in person</div></div>
+        {% else %}
         <div><div class="k">Delivery to</div><div class="v">{{ delivery_address }}</div></div>
+        {% endif %}
         <div><div class="k">Ordered</div><div class="v">{{ created_at|date:"M j, Y g:i A" }}</div></div>
         <div><div class="k">Status</div><div class="v">Confirmed</div></div>
       </div>
@@ -55,7 +59,11 @@
 
       <div class="totals">
         <div><span>Subtotal</span><span>₦{{ subtotal }}</span></div>
+        {% if fulfillment_type == 'pickup' %}
+        <div><span>Pickup fee</span><span>₦{{ delivery_fee }}</span></div>
+        {% else %}
         <div><span>Delivery fee</span><span>₦{{ delivery_fee }}</span></div>
+        {% endif %}
         {% if discount and discount != '0.00' %}<div><span>Discount</span><span>-₦{{ discount }}</span></div>{% endif %}
         <div class="grand"><span>Total</span><span>₦{{ total }}</span></div>
       </div>

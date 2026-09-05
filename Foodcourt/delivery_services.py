@@ -104,6 +104,8 @@ def record_status(delivery, status, note=''):
 
 def create_delivery_for_order(order):
     """Create a Delivery for a ready order and notify all eligible riders."""
+    if getattr(order, 'fulfillment_type', 'delivery') == 'pickup':
+        return None
     delivery, created = Delivery.objects.get_or_create(order=order)
     if not created:
         return delivery

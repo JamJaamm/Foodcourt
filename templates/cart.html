@@ -50,7 +50,7 @@
               <span id="checkout-subtotal">₦0.00</span>
             </div>
             <div class="checkout-totals-row">
-              <span>Delivery <span id="checkout-delivery-distance" style="font-size:12px;color:var(--text-secondary);"></span></span>
+              <span><span id="checkout-fulfillment-label">Delivery</span> <span id="checkout-delivery-distance" style="font-size:12px;color:var(--text-secondary);"></span></span>
               <span id="checkout-delivery">₦0.00</span>
             </div>
             <div class="checkout-totals-row text-success fw-bold d-none" id="discount-row">
@@ -69,8 +69,30 @@
       <!-- Right Column — Checkout Form -->
       <div class="col-lg-5">
         
-        <!-- Cart Card: Delivery Details -->
+        <!-- Cart Card: Fulfillment Method -->
         <div class="cart-card">
+          <h3 class="cart-card-title"><i class="fa-solid fa-truck-fast text-primary"></i>Delivery Method</h3>
+          <div class="payment-tabs">
+            <button class="payment-tab-btn active" id="fm-tab-delivery" onclick="switchFulfillment('delivery')">
+              <i class="fa-solid fa-truck-fast d-block mb-1"></i> Delivery
+            </button>
+            <button class="payment-tab-btn" id="fm-tab-pickup" onclick="switchFulfillment('pickup')">
+              <i class="fa-solid fa-store d-block mb-1"></i> Pickup
+            </button>
+          </div>
+          <div id="pickup-info-card" style="display:none;font-size:13px;">
+            <div style="background:var(--primary-subtle);border:1px solid var(--primary);border-radius:var(--radius-md);padding:12px 14px;">
+              <p class="mb-0" style="color:var(--text-primary);font-weight:600;">
+                <i class="fa-solid fa-store me-1" style="color:var(--primary);"></i>
+                Pickup at <span id="pickup-restaurant-name">the restaurant</span>
+              </p>
+              <p class="mb-0" id="pickup-restaurant-address" style="color:var(--text-secondary);margin-top:4px;"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cart Card: Delivery Details -->
+        <div class="cart-card" id="delivery-address-card">
           <h3 class="cart-card-title"><i class="fa-solid fa-location-dot text-primary"></i>Delivery Address</h3>
           
           <div id="saved-addresses-container">
@@ -253,9 +275,10 @@ window.FOODCOURT_USER = {
 </script>
 {{ user_addresses_json|json_script:"db-user-addresses" }}
 {{ coupons_json|json_script:"db-promo-data" }}
+{{ restaurants_json|json_script:"db-restaurants" }}
 <script src="{% static 'js/locations_data.js' %}"></script>
 <script src="{% static 'js/map-picker.js' %}"></script>
-<script src="{% static 'js/cart.js' %}?v=5"></script>
+<script src="{% static 'js/cart.js' %}?v=6"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setupCountryStateCascade('naddr-country', 'naddr-state', '', 'Nigeria');
