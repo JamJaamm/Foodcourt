@@ -129,11 +129,19 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if os.environ.get("RENDER"):
+# If a DATABASE_URL is provided (Render, Neon, or any Postgres host) use it.
+# Neon connection strings come in the form:
+#   postgresql://user:password@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require
+# This works identically on Render and locally (set DATABASE_URL in .env).
+if os.environ.get("DATABASE_URL"):
+    _db_url = os.environ.get("DATABASE_URL")
     DATABASES = {
         'default': dj_database_url.config(
+            default=_db_url,
             conn_max_age=600,
-            ssl_require=True
+            # Force SSL only for PostgreSQL URLs (required by Neon and managed
+            # Postgres providers). Other engines reject the sslmode option.
+            ssl_require=_db_url.startswith(('postgres://', 'postgresql://'))
         )
     }
 else:
