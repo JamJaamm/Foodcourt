@@ -76,9 +76,18 @@ INSTALLED_APPS = [
     'payments',
 ]
 
-# Cloudinary app is only added when the Cloudinary env vars are configured,
-# so local development without the Cloudinary keys keeps working.
-if os.environ.get('CLOUDINARY_CLOUD_NAME') and os.environ.get('CLOUDINARY_API_KEY') and os.environ.get('CLOUDINARY_API_SECRET'):
+# Cloudinary app is only added when the Cloudinary env vars are configured
+# AND the cloudinary package is actually installed, so local development
+# without Cloudinary never crashes with ModuleNotFoundError.
+try:
+    import cloudinary  # noqa: F401
+except ImportError:
+    cloudinary = None
+
+if (cloudinary is not None
+        and os.environ.get('CLOUDINARY_CLOUD_NAME')
+        and os.environ.get('CLOUDINARY_API_KEY')
+        and os.environ.get('CLOUDINARY_API_SECRET')):
     INSTALLED_APPS.append('cloudinary_storage')
     INSTALLED_APPS.append('cloudinary')
 
@@ -226,8 +235,8 @@ CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME', '')
 CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY', '')
 CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET', '')
 
-if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    import cloudinary
+if (cloudinary is not None
+        and CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET):
     cloudinary.config(
         cloud_name=CLOUDINARY_CLOUD_NAME,
         api_key=CLOUDINARY_API_KEY,
