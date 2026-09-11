@@ -348,7 +348,7 @@ Set these in the Render dashboard:
 - `DATABASE_URL` — PostgreSQL connection string (auto-provided by Render)
 - `RESEND_API_KEY` — Resend API key
 - `DEFAULT_FROM_EMAIL` — Sender email address
-- `SITE_URL` — Your production domain (e.g., `https://yourapp.onrender.com`)
+- `SITE_URL` — Your production domain (e.g., `choply.name.ng`)
 - `PAYSTACK_PUBLIC_KEY` — Paystack public key
 - `PAYSTACK_SECRET_KEY` — Paystack secret key
 - `PAYSTACK_CURRENCY` — `NGN`
