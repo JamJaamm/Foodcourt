@@ -143,10 +143,14 @@ CHANNEL_LAYERS = {
 #   postgresql://user:password@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require
 # This works identically on Render and locally (set DATABASE_URL in .env).
 if os.environ.get("DATABASE_URL"):
-    _db_url = os.environ.get("DATABASE_URL")
+    # Strip surrounding whitespace/quotes: values pasted into dashboards or
+    # .env files sometimes arrive as "postgresql://..." or 'postgresql://...'.
+    # Use parse() (not config()) so we use the cleaned value — config(default=)
+    # would re-read the raw DATABASE_URL from the environment instead.
+    _db_url = (os.environ.get("DATABASE_URL") or "").strip().strip('"').strip("'")
     DATABASES = {
-        'default': dj_database_url.config(
-            default=_db_url,
+        'default': dj_database_url.parse(
+            _db_url,
             conn_max_age=600,
             # Force SSL only for PostgreSQL URLs (required by Neon and managed
             # Postgres providers). Other engines reject the sslmode option.
