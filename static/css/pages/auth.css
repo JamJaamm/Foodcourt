@@ -36,7 +36,7 @@
   font-size: clamp(2rem, 4vw, 3.5rem);
   line-height: 1.15;
   margin-bottom: var(--space-4);
-  color: var(--text-primary);
+  color: #fff;
 }
 
 .auth-brand-tagline {

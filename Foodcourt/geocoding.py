@@ -1,11 +1,4 @@
-"""
-Geocoding service for converting addresses to latitude/longitude.
 
-Uses Nominatim (OpenStreetMap) — free, no API key required.
-Rate limited to 1 request/second per policy.
-
-Can be swapped out for Google Maps, Mapbox, etc. by changing geocode_address().
-"""
 import logging
 import urllib.request
 import urllib.parse
