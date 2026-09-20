@@ -578,14 +578,23 @@ def logout_view(request):
 
 # ── Google OAuth ─────────────────────────────────────────────────────────
 import logging as _logging
-from google.oauth2 import id_token as _google_id_token
-from google.auth.transport import requests as _google_requests
+# google-auth is optional: if it's not installed, the server still boots and
+# only "Sign in with Google" degrades (it returns a friendly error).
+try:
+    from google.oauth2 import id_token as _google_id_token
+    from google.auth.transport import requests as _google_requests
+except ImportError:
+    _google_id_token = None
+    _google_requests = None
 
 _google_log = _logging.getLogger('google_auth')
 
 
 def _google_verify_credential(credential):
     """Verify a Google ID token and return the decoded payload, or None."""
+    if _google_id_token is None or _google_requests is None:
+        _google_log.error('google-auth package is not installed.')
+        return None
     client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
     if not client_id:
         _google_log.error('GOOGLE_CLIENT_ID is not configured.')
