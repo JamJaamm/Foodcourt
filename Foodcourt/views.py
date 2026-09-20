@@ -2,6 +2,7 @@ import random
 import json
 import functools
 import time
+import secrets
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -10,7 +11,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.validators import validate_email
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -2031,6 +2033,132 @@ def admin_resend_verification_view(request, pk):
     return redirect('admin_users')
 
 @login_required(login_url='login')
+def admin_user_add_view(request):
+    if not _admin_required(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    role = request.POST.get('role', '').strip().lower()
+    first_name = _sanitize(request.POST.get('first_name', ''), 200)
+    last_name = _sanitize(request.POST.get('last_name', ''), 200)
+    email = request.POST.get('email', '').strip().lower()
+    phone = _sanitize(request.POST.get('phone', ''), 20)
+    restaurant_name = _sanitize(request.POST.get('restaurant_name', ''), 200)
+    cuisine = _sanitize(request.POST.get('cuisine', ''), 100)
+
+    if role not in ('customer', 'owner', 'rider'):
+        return JsonResponse({'error': 'Invalid account type.'}, status=400)
+    if not email:
+        return JsonResponse({'error': 'Email is required.'}, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return JsonResponse({'error': 'Enter a valid email address.'}, status=400)
+    if not first_name or not last_name:
+        return JsonResponse({'error': 'First and last name are required.'}, status=400)
+    if role == 'owner' and not restaurant_name:
+        return JsonResponse({'error': 'Restaurant name is required.'}, status=400)
+
+    duplicated = False
+    if role == 'rider':
+        duplicated = Riders.objects.filter(
+            db_models.Q(email__iexact=email) | db_models.Q(username__iexact=email)
+        ).exists()
+    else:
+        duplicated = User.objects.filter(
+            db_models.Q(email__iexact=email) | db_models.Q(username__iexact=email)
+        ).exists()
+    if duplicated:
+        return JsonResponse({'error': 'An account with this email already exists.'}, status=400)
+
+    password = secrets.token_urlsafe(10)
+    role_label = {'customer': 'Customer', 'owner': 'Restaurant Owner', 'rider': 'Rider'}[role]
+    login_link = f"{request.scheme}://{request.get_host()}{reverse('rider_login' if role == 'rider' else 'login')}"
+
+    if role == 'rider':
+        rider = Riders.objects.create(
+            username=email, email=email,
+            first_name=first_name, last_name=last_name, phone=phone,
+            status='approved', is_active=True,
+        )
+        rider.set_password(password)
+        rider.save(update_fields=['password'])
+        AdminAction.objects.create(
+            admin=request.user, action='add_user',
+            details=f"Added rider {email} (approved)",
+        )
+    else:
+        user = User.objects.create_user(
+            username=email, email=email, password=password,
+            first_name=first_name, last_name=last_name, is_active=True,
+        )
+        Profile.objects.get_or_create(user=user, defaults={'phone': phone})
+        if role == 'owner':
+            Restaurant.objects.create(
+                owner=user, name=restaurant_name, cuisine=cuisine,
+                email=email, phone=phone, is_open=True,
+            )
+        AdminAction.objects.create(
+            admin=request.user, target_user=user, action='add_user',
+            details=f"Added {role} {email}",
+        )
+
+    email_ok = send_email(
+        subject=f"Your Choply {role_label} account is ready",
+        template_name="emails/admin_credentials_email.html",
+        context={
+            "name": f"{first_name} {last_name}".strip(),
+            "email": email,
+            "password": password,
+            "role_label": role_label,
+            "login_link": login_link,
+            "restaurant_name": restaurant_name or '',
+        },
+        recipient_list=[email],
+    )
+    return JsonResponse({'success': True, 'email_sent': email_ok})
+
+@login_required(login_url='login')
+def admin_user_edit_view(request, pk):
+    if not _admin_required(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    user = get_object_or_404(User, pk=pk)
+    if user.is_superuser and not request.user.is_superuser:
+        return JsonResponse({'error': 'Only superusers can edit superuser accounts.'}, status=403)
+
+    first_name = _sanitize(request.POST.get('first_name', ''), 200)
+    last_name = _sanitize(request.POST.get('last_name', ''), 200)
+    phone = _sanitize(request.POST.get('phone', ''), 20)
+    password = request.POST.get('password', '')
+
+    if not first_name or not last_name:
+        return JsonResponse({'error': 'First and last name are required.'}, status=400)
+    if password and len(password) < 8:
+        return JsonResponse({'error': 'New password must be at least 8 characters.'}, status=400)
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.save(update_fields=['first_name', 'last_name'])
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+    profile.phone = phone
+    profile.save(update_fields=['phone'])
+
+    if password:
+        user.set_password(password)
+        user.save(update_fields=['password'])
+
+    AdminAction.objects.create(
+        admin=request.user, target_user=user, action='edit_user',
+        details=f"Edited {user.email}",
+    )
+    return JsonResponse({'success': True})
+
+@login_required(login_url='login')
 def admin_user_detail_api(request, pk):
     if not _admin_required(request):
         return JsonResponse({'error': 'Forbidden'}, status=403)
@@ -2066,6 +2194,8 @@ def admin_user_detail_api(request, pk):
     return JsonResponse({
         'id': user.id,
         'name': user.get_full_name() or user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
         'email': user.email,
         'phone': getattr(profile, 'phone', None) or '—',
         'is_active': user.is_active,

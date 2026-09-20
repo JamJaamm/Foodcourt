@@ -476,6 +476,8 @@ class AdminAction(models.Model):
         ('bulk_block', 'Bulk blocked users'),
         ('bulk_unblock', 'Bulk unblocked users'),
         ('export_users', 'Exported users'),
+        ('add_user', 'Added user'),
+        ('edit_user', 'Edited user'),
     ]
     admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='admin_actions')
     target_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_actions_received')

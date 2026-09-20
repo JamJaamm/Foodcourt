@@ -248,6 +248,9 @@
             <p class="text-secondary mb-0">Manage and inspect all platform users.</p>
           </div>
           <div class="d-flex gap-2">
+            <a href="#" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;background:var(--primary);color:#fff;border:none;" onclick="openUserEdit(0);return false;">
+              <i class="fa-solid fa-user-plus me-1"></i> Add User
+            </a>
             <a href="{% url 'admin_export_users' %}" class="db-menu-btn" style="text-decoration:none;padding:10px 18px;">
               <i class="fa-solid fa-download me-1"></i> Export CSV
             </a>
@@ -415,6 +418,9 @@
                       <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openUserDetail({{ u.id }})">
                         <i class="fa-solid fa-eye"></i>
                       </button>
+                      <button class="btn btn-sm" style="background:var(--primary-subtle);color:var(--primary);border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="openUserEdit({{ u.id }})">
+                        <i class="fa-solid fa-pen"></i>
+                      </button>
                       {% if u.is_active %}
                       <button class="btn btn-sm" style="background:#ffebee;color:#c62828;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;" onclick="confirmAction('block','{% url 'admin_block_user' u.id %}')">
                         <i class="fa-solid fa-ban"></i>
@@ -494,6 +500,73 @@
             <div class="d-flex gap-2 justify-content-center">
               <button class="fc-btn fc-btn-ghost" onclick="closeConfirm()" style="padding:10px 20px;">Cancel</button>
               <a id="confirm-btn" href="#" class="fc-btn" style="padding:10px 20px;text-decoration:none;color:#fff;"></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add / Edit User Modal -->
+        <div id="userEditModal" style="display:none;position:fixed;inset:0;z-index:5000;align-items:center;justify-content:center;padding:20px;">
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.5);" onclick="closeUserEdit()"></div>
+          <div style="position:relative;background:var(--bg-card);border-radius:var(--radius-lg);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-xl);">
+            <div style="position:sticky;top:0;background:var(--bg-card);padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;z-index:1;">
+              <h3 style="margin:0;font-size:18px;font-weight:800;" id="userEditTitle">Add User</h3>
+              <button onclick="closeUserEdit()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">&times;</button>
+            </div>
+            <div style="padding:24px;">
+              <form id="userEditForm" onsubmit="submitUserEdit(event)">
+                <input type="hidden" name="user_id" id="ue-user-id" value="0">
+
+                <div class="mb-3" id="ue-role-wrap">
+                  <label class="addr-form-label" for="ue-role">Account Type</label>
+                  <select name="role" id="ue-role" class="form-select" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);" onchange="toggleUserEditFields()">
+                    <option value="customer">Customer</option>
+                    <option value="owner">Restaurant Owner</option>
+                    <option value="rider">Rider</option>
+                  </select>
+                </div>
+
+                <div class="mb-3" id="ue-restaurant-wrap" style="display:none;">
+                  <label class="addr-form-label" for="ue-restaurant-name">Restaurant Name</label>
+                  <input type="text" name="restaurant_name" id="ue-restaurant-name" class="form-control" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-sm-6">
+                    <label class="addr-form-label" for="ue-first">First Name</label>
+                    <input type="text" name="first_name" id="ue-first" class="form-control" required style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="addr-form-label" for="ue-last">Last Name</label>
+                    <input type="text" name="last_name" id="ue-last" class="form-control" required style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="addr-form-label" for="ue-email">Email</label>
+                  <input type="email" name="email" id="ue-email" class="form-control" required style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                </div>
+
+                <div class="mb-3">
+                  <label class="addr-form-label" for="ue-phone">Phone</label>
+                  <input type="text" name="phone" id="ue-phone" class="form-control" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                </div>
+
+                <div class="mb-3" id="ue-password-wrap" style="display:none;">
+                  <label class="addr-form-label" for="ue-password">New Password <span style="text-transform:none;font-weight:400;color:var(--text-muted);font-size:11px;">(optional &mdash; blank keeps current)</span></label>
+                  <input type="password" name="password" id="ue-password" class="form-control" autocomplete="new-password" style="padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-md);font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+                </div>
+
+                <div id="ue-hint" class="mb-3" style="display:none;font-size:12px;color:var(--text-muted);background:var(--bg-elevated);border-radius:var(--radius-md);padding:12px 14px;">
+                  A secure password will be generated and sent to the email above.
+                </div>
+
+                <div id="ue-error" class="mb-3" style="display:none;font-size:13px;color:#c62828;background:#ffebee;border-radius:var(--radius-md);padding:12px 14px;font-weight:600;"></div>
+
+                <div class="d-flex gap-2 justify-content-end" style="margin-top:24px;">
+                  <button type="button" class="fc-btn fc-btn-ghost" onclick="closeUserEdit()" style="padding:10px 20px;">Cancel</button>
+                  <button type="submit" class="fc-btn" id="ue-submit" style="padding:10px 20px;color:#fff;">Create Account</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -623,6 +696,68 @@
           };
           window.closeUserDetail = function(){
             document.getElementById('userDetailModal').style.display = 'none';
+          };
+
+          /* Add / Edit user modal */
+          window.toggleUserEditFields = function(){
+            var role = document.getElementById('ue-role').value;
+            document.getElementById('ue-restaurant-wrap').style.display = (role === 'owner') ? 'block' : 'none';
+          };
+          window.closeUserEdit = function(){
+            document.getElementById('userEditModal').style.display = 'none';
+          };
+          window.openUserEdit = function(id){
+            var isAdd = !id;
+            var modal = document.getElementById('userEditModal');
+            var form = document.getElementById('userEditForm');
+            form.reset();
+            document.getElementById('ue-user-id').value = id || 0;
+            document.getElementById('ue-role-wrap').style.display = isAdd ? 'block' : 'none';
+            document.getElementById('ue-password-wrap').style.display = isAdd ? 'none' : 'block';
+            document.getElementById('ue-hint').style.display = isAdd ? 'block' : 'none';
+            document.getElementById('ue-error').style.display = 'none';
+            document.getElementById('userEditTitle').textContent = isAdd ? 'Add User' : 'Edit User';
+            document.getElementById('ue-submit').textContent = isAdd ? 'Create Account' : 'Save Changes';
+            document.getElementById('ue-restaurant-wrap').style.display = 'none';
+            var emailEl = document.getElementById('ue-email');
+            emailEl.readOnly = !isAdd;
+            emailEl.style.opacity = isAdd ? '1' : '0.7';
+            if (isAdd){
+              modal.style.display = 'flex';
+              return;
+            }
+            fetch('/admin-dashboard/users/' + id + '/detail-api/', {headers:{'X-Requested-With':'XMLHttpRequest'}})
+              .then(function(r){ return r.json(); })
+              .then(function(d){
+                document.getElementById('ue-first').value = d.first_name || '';
+                document.getElementById('ue-last').value = d.last_name || '';
+                document.getElementById('ue-email').value = d.email || '';
+                document.getElementById('ue-phone').value = (d.phone && d.phone !== '—') ? d.phone : '';
+                modal.style.display = 'flex';
+              })
+              .catch(function(){ Toast.show('Failed to load user details.', 'error'); });
+          };
+          window.submitUserEdit = function(e){
+            e.preventDefault();
+            var id = document.getElementById('ue-user-id').value || 0;
+            var url = id ? '/admin-dashboard/users/' + id + '/edit/' : '/admin-dashboard/users/add/';
+            fetch(url, {
+              method: 'POST',
+              headers: {'X-CSRFToken': getCookie('csrftoken')},
+              body: new URLSearchParams(new FormData(document.getElementById('userEditForm')))
+            })
+              .then(function(r){ return r.json(); })
+              .then(function(d){
+                if (d.success){
+                  Toast.show(id ? 'User updated.' : 'Account created \u2014 sign-in details emailed.', 'success');
+                  setTimeout(function(){ window.location.reload(); }, 900);
+                } else {
+                  var err = document.getElementById('ue-error');
+                  err.textContent = d.error || 'Something went wrong. Please try again.';
+                  err.style.display = 'block';
+                }
+              })
+              .catch(function(){ Toast.show('Network error. Please try again.', 'error'); });
           };
         })();
         </script>
